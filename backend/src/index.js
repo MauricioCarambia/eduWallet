@@ -1,0 +1,33 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+require('./db/conexion');
+require('./tareas');
+
+const empleadosRoutes = require('./routes/empleados');
+const alumnosRoutes = require('./routes/alumnos');
+const productosRoutes = require('./routes/productos');
+const transaccionesRoutes = require('./routes/transacciones');
+const cajasRoutes = require('./routes/cajas');
+const auditoriaRoutes = require('./routes/auditoria');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/empleados', empleadosRoutes);
+app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/productos', productosRoutes);
+app.use('/api/transacciones', transaccionesRoutes);
+app.use('/api/cajas', cajasRoutes);
+app.use('/api/auditoria', auditoriaRoutes);
+
+app.get('/', (req, res) => {
+  res.json({ mensaje: 'EduWallet API funcionando correctamente' });
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});

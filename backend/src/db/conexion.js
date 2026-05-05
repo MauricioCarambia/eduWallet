@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 require('dotenv').config();
-
+console.log('DATABASE_URL existe:', !!process.env.DATABASE_URL);
 const pool = new Pool(
   process.env.DATABASE_URL
     ? {

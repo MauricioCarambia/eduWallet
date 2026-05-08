@@ -10,6 +10,7 @@ const productosRoutes = require('./routes/productos');
 const transaccionesRoutes = require('./routes/transacciones');
 const cajasRoutes = require('./routes/cajas');
 const auditoriaRoutes = require('./routes/auditoria');
+const padresRoutes = require('./routes/padres');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -23,6 +24,7 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/transacciones', transaccionesRoutes);
 app.use('/api/cajas', cajasRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
+app.use('/api/padres', padresRoutes);
 
 app.get('/', (req, res) => {
   res.json({ mensaje: 'EduWallet API funcionando correctamente' });

@@ -25,4 +25,17 @@ const soloAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { verificarToken, soloAdmin };
+const verificarPadre = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token requerido' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.tipo !== 'padre') return res.status(403).json({ error: 'Acceso restringido a padres' });
+    req.padre = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Token inválido' });
+  }
+};
+module.exports = { verificarToken, soloAdmin, verificarPadre };

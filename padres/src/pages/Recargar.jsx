@@ -54,40 +54,57 @@ export default function Recargar() {
     }
   }
 
-  const initBricks = async () => {
-    if (controllerRef.current) {
-      controllerRef.current.unmount()
-      controllerRef.current = null
-    }
+const initBricks = async () => {
+  if (controllerRef.current) {
+    controllerRef.current.unmount()
+    controllerRef.current = null
+  }
 
-    const mp = new window.MercadoPago(publicKey)
-    const bricksBuilder = mp.bricks()
+  const mp = new window.MercadoPago(publicKey, { locale: 'es-AR' })
+  const bricksBuilder = mp.bricks()
 
-    controllerRef.current = await bricksBuilder.create('wallet', 'wallet_container', {
-      initialization: { preferenceId },
-      customization: {
-        texts: { action: 'pay', valueProp: 'smart_option' },
-        visual: { buttonBackground: 'black', borderRadius: '8px' }
-      },
-      callbacks: {
-        onReady: () => console.log('Brick listo'),
-        onError: err => { console.error(err); showMsg('error', 'Error al cargar el formulario de pago') },
+  controllerRef.current = await bricksBuilder.create('cardPayment', 'wallet_container', {
+    initialization: {
+      amount: parseInt(monto),
+      payer: { email: '' }
+    },
+    customization: {
+      visual: { style: { theme: 'default' } },
+      paymentMethods: { maxInstallments: 1 }
+    },
+    callbacks: {
+      onReady: () => console.log('Brick listo'),
+      onError: err => { console.error(err); showMsg('error', 'Error al cargar el formulario') },
+      onSubmit: async (cardFormData) => {
+        try {
+          const res = await api.post('/pagos/procesar', {
+            ...cardFormData,
+            monto: parseInt(monto),
+            alumno_id: alumnoId,
+            email: cardFormData.payer.email
+          })
+          if (res.data.status === 'approved') {
+            await cargar()
+            setPaso('exito')
+          } else if (res.data.status === 'pending') {
+            showMsg('warn', 'Pago pendiente de acreditación')
+          } else {
+            showMsg('error', 'Pago rechazado. Intentá con otra tarjeta.')
+          }
+        } catch (err) {
+          showMsg('error', err.response?.data?.error || 'Error al procesar el pago')
+        }
       }
-    })
-  }
-
-  const iniciarPago = async () => {
-    const n = parseInt(monto)
-    if (!n || n <= 0 || !alumnoId) return
-    try {
-      const res = await api.post('/pagos/preferencia', { monto: n, alumno_id: alumnoId })
-      setPreferenceId(res.data.preference_id)
-      setPublicKey(res.data.public_key)
-      setPaso('pago')
-    } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Error al iniciar el pago')
     }
-  }
+  })
+}
+
+const iniciarPago = async () => {
+  const n = parseInt(monto)
+  if (!n || n <= 0 || !alumnoId) return
+  setPublicKey('TEST-d6a03f1a-d496-476c-beac-2ff87d8c947a')
+  setPaso('pago')
+}
 
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 

@@ -50,6 +50,7 @@ const crearPreferencia = async (req, res) => {
 };
 
 const procesarPago = async (req, res) => {
+   console.log('Body recibido:', JSON.stringify(req.body, null, 2));
   const { token, payment_method_id, issuer_id, installments, monto, alumno_id, email } = req.body;
   const padreId = req.padre.id;
 

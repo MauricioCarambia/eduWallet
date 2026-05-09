@@ -18,26 +18,19 @@ const crearPreferencia = async (req, res) => {
     const alumno = alumnoRes.rows[0];
 
     const preference = new Preference(client);
-    const result = await preference.create({
-      body: {
-        items: [{
-          id: `recarga_${alumno_id}`,
-          title: `Recarga EduWallet — ${alumno.nombre}`,
-          quantity: 1,
-          unit_price: Number(monto),
-          currency_id: 'ARS',
-        }],
-        payer: { name: padre.nombre, email: padre.email },
-        back_urls: {
-          success: `${process.env.PADRES_URL}/recargar?status=success&alumno=${alumno_id}&monto=${monto}`,
-          failure: `${process.env.PADRES_URL}/recargar?status=failure`,
-          pending: `${process.env.PADRES_URL}/recargar?status=pending`,
-        },
-        auto_return: 'approved',
-        external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
-        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
-      }
-    });
+const result = await payment.create({
+  body: {
+    transaction_amount: Number(monto),
+    token,
+    description: `Recarga EduWallet alumno ${alumno_id}`,
+    installments: Number(installments),
+    payment_method_id,
+    issuer_id,
+    payer: { email },
+    external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
+    notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
+  }
+});
 
     res.json({
       preference_id: result.id,
@@ -72,7 +65,7 @@ const procesarPago = async (req, res) => {
         issuer_id,
         payer: { email },
         external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
-        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
+      notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
       }
     });
 

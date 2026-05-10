@@ -42,6 +42,12 @@ export default function Recargar() {
     showMsg('warn', 'Pago pendiente de acreditación')
   }
 }, [])
+useEffect(() => {
+  if (paso === 'pago') {
+    setBrickListo(false)
+    setTimeout(() => iniciarBrick(), 300)
+  }
+}, [paso])
 
   const cargar = async () => {
     try {

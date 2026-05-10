@@ -48,25 +48,16 @@ const crearPreferencia = async (req, res) => {
 };
 
 const procesarPago = async (req, res) => {
-  console.log("Body recibido:", JSON.stringify(req.body, null, 2));
-  const {
-    token,
-    payment_method_id,
-    issuer_id,
-    installments,
-    monto,
-    alumno_id,
-    email,
-  } = req.body;
+  console.log('Body recibido:', JSON.stringify(req.body, null, 2));
+  const { token, payment_method_id, issuer_id, installments, monto, alumno_id, email, payer } = req.body;
   const padreId = req.padre.id;
 
   try {
     const vinculo = await pool.query(
-      "SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2",
-      [padreId, alumno_id],
+      'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
+      [padreId, alumno_id]
     );
-    if (vinculo.rows.length === 0)
-      return res.status(403).json({ error: "Sin acceso a este alumno" });
+    if (vinculo.rows.length === 0) return res.status(403).json({ error: 'Sin acceso a este alumno' });
 
     const payment = new Payment(client);
     const result = await payment.create({
@@ -74,50 +65,40 @@ const procesarPago = async (req, res) => {
         transaction_amount: Number(monto),
         token,
         description: `Recarga EduWallet alumno ${alumno_id}`,
-        installments: Number(installments),
+        installments: Number(installments) || 1,
         payment_method_id,
         issuer_id,
-        payer: { email },
+        payer: {
+          email: payer?.email || email,
+          identification: payer?.identification
+        },
         external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
         notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
-      },
+      }
     });
 
-    if (result.status === "approved") {
+    if (result.status === 'approved') {
       const existe = await pool.query(
-        "SELECT id FROM transacciones WHERE descripcion = $1",
-        [`MP:${result.id}`],
+        'SELECT id FROM transacciones WHERE descripcion = $1',
+        [`MP:${result.id}`]
       );
       if (existe.rows.length === 0) {
-        await pool.query(
-          "UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2",
-          [monto, alumno_id],
-        );
+        await pool.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2', [monto, alumno_id]);
         await pool.query(
           `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion)
            VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
-          [alumno_id, monto, `MP:${result.id}`],
+          [alumno_id, monto, `MP:${result.id}`]
         );
       }
-      const alumno = await pool.query(
-        "SELECT saldo FROM alumnos WHERE id = $1",
-        [alumno_id],
-      );
-      return res.json({
-        status: "approved",
-        saldo: alumno.rows[0].saldo,
-        payment_id: result.id,
-      });
+      const alumno = await pool.query('SELECT saldo FROM alumnos WHERE id = $1', [alumno_id]);
+      return res.json({ status: 'approved', saldo: alumno.rows[0].saldo, payment_id: result.id });
     }
 
-    if (result.status === "in_process") {
-      return res.json({ status: "pending" });
-    }
-
+    if (result.status === 'in_process') return res.json({ status: 'pending' });
     res.json({ status: result.status, detail: result.status_detail });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al procesar el pago" });
+    console.error('Error procesarPago:', err);
+    res.status(500).json({ error: 'Error al procesar el pago' });
   }
 };
 

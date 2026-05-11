@@ -7,43 +7,43 @@ const client = new MercadoPagoConfig({
 });
 
 const crearPreferencia = async (req, res) => {
+  console.log('Creando preferencia:', req.body)
   const { monto, alumno_id } = req.body;
   const padreId = req.padre.id;
   try {
-    const padreRes = await pool.query("SELECT * FROM padres WHERE id = $1", [
-      padreId,
-    ]);
-    const alumnoRes = await pool.query("SELECT * FROM alumnos WHERE id = $1", [
-      alumno_id,
-    ]);
-    if (alumnoRes.rows.length === 0)
-      return res.status(404).json({ error: "Alumno no encontrado" });
+    const padreRes = await pool.query('SELECT * FROM padres WHERE id = $1', [padreId]);
+    const alumnoRes = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
+    if (alumnoRes.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
 
     const padre = padreRes.rows[0];
     const alumno = alumnoRes.rows[0];
 
     const preference = new Preference(client);
-    const result = await payment.create({
+    const result = await preference.create({
       body: {
-        transaction_amount: Number(monto),
-        token,
-        description: `Recarga EduWallet alumno ${alumno_id}`,
-        installments: Number(installments),
-        payment_method_id,
-        issuer_id,
-        payer: { email },
+        items: [{
+          id: `recarga_${alumno_id}`,
+          title: `Recarga EduWallet — ${alumno.nombre}`,
+          quantity: 1,
+          unit_price: Number(monto),
+          currency_id: 'ARS',
+        }],
+        payer: { name: padre.nombre, email: padre.email },
+        back_urls: {
+          success: `${process.env.PADRES_URL}/recargar?status=success&alumno=${alumno_id}&monto=${monto}`,
+          failure: `${process.env.PADRES_URL}/recargar?status=failure`,
+          pending: `${process.env.PADRES_URL}/recargar?status=pending`,
+        },
+        auto_return: 'approved',
         external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
         notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
-      },
+      }
     });
 
-    res.json({
-      preference_id: result.id,
-      public_key: process.env.MP_PUBLIC_KEY,
-    });
+    res.json({ init_point: result.init_point, preference_id: result.id });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al crear preferencia de pago" });
+    console.error('Error crearPreferencia:', JSON.stringify(err))
+    res.status(500).json({ error: 'Error al crear preferencia de pago' });
   }
 };
 

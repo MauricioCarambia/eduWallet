@@ -12,6 +12,7 @@ const cajasRoutes = require('./routes/cajas');
 const auditoriaRoutes = require('./routes/auditoria');
 const padresRoutes = require('./routes/padres');
 const pagosRoutes = require('./routes/pagos');
+const configuracionRoutes = require('./routes/configuracion');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,7 @@ app.use('/api/cajas', cajasRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
 app.use('/api/padres', padresRoutes);
 app.use('/api/pagos', pagosRoutes);
+app.use('/api/configuracion', configuracionRoutes);
 
 
 app.get('/', (req, res) => {

@@ -1,4 +1,5 @@
 const pool = require('../db/conexion');
+const { enviarEmailSaldoBajo, enviarEmailCompra } = require('../services/emailService');
 
 const getTransacciones = async (req, res) => {
   try {
@@ -102,6 +103,38 @@ const cobrar = async (req, res) => {
     await client.query('COMMIT');
 
     const alumnoActualizado = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
+    // notificar al padre por email
+try {
+  const padresRes = await pool.query(
+    `SELECT p.nombre, p.email FROM padres p
+     JOIN padres_alumnos pa ON pa.padre_id = p.id
+     WHERE pa.alumno_id = $1`,
+    [alumno_id]
+  );
+  const alumnoActualizado = alumnoActualizado_rows[0]; // ya lo tenés
+  for (const padre of padresRes.rows) {
+    await enviarEmailCompra({
+      nombrePadre: padre.nombre,
+      emailPadre: padre.email,
+      nombreAlumno: a.nombre,
+      descripcion: desc,
+      monto: total,
+      saldo: alumnoActualizado.saldo,
+      lugar
+    });
+    if (parseFloat(alumnoActualizado.saldo) < 200) {
+      await enviarEmailSaldoBajo({
+        nombrePadre: padre.nombre,
+        emailPadre: padre.email,
+        nombreAlumno: a.nombre,
+        saldo: alumnoActualizado.saldo,
+        curso: a.curso
+      });
+    }
+  }
+} catch (emailErr) {
+  console.error('Error enviando email:', emailErr.message);
+}
     res.json({ transaccion: tx.rows[0], alumno: alumnoActualizado.rows[0] });
 
   } catch (err) {

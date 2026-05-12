@@ -167,11 +167,12 @@ export default function Venta() {
       );
       actualizarVentas(totalDesc);
       showMsg("ok", `✓ Cobrado ${fmt(totalDesc)} a ${alumno.nombre}`);
-      setUltimaVenta({
-        id: res.data.transaccion.id,
-        desc: carrito.map((i) => i.nombre).join(", "),
-        monto: totalDesc,
-      });
+     setUltimaVenta({ 
+  id: res.data.transaccion.id, 
+  desc: carrito.map(i => i.nombre).join(', '), 
+  monto: totalDesc,
+  items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty }))
+})
       setCarrito([]);
       setAlumno(null);
       setDescPct(0);
@@ -184,19 +185,25 @@ export default function Venta() {
   };
 
   const anularUltimaVenta = async () => {
-    if (!ultimaVenta) return;
-    if (!confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return;
-    try {
-      const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`);
-      setAlumnos((prev) =>
-        prev.map((a) => (a.id === res.data.alumno.id ? res.data.alumno : a)),
-      );
-      setUltimaVenta(null);
-      showMsg("ok", `✓ Venta anulada. Se devolvieron ${fmt(res.data.monto)}`);
-    } catch (err) {
-      showMsg("error", err.response?.data?.error || "Error al anular");
-    }
-  };
+  if (!ultimaVenta) return
+  if (!confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return
+  try {
+    const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`)
+    // actualizar alumno
+    setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
+    // devolver stock
+    setProductos(prev => prev.map(p => {
+      const item = ultimaVenta.items?.find(i => i.nombre === p.nombre)
+      return item ? { ...p, stock: p.stock + item.qty } : p
+    }))
+    // restar de caja
+    actualizarVentas(-ultimaVenta.monto)
+    setUltimaVenta(null)
+    showMsg('ok', `✓ Venta anulada. Se devolvieron ${fmt(res.data.monto)}`)
+  } catch (err) {
+    showMsg('error', err.response?.data?.error || 'Error al anular')
+  }
+}
 
   if (cargando)
     return (

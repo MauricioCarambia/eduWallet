@@ -130,7 +130,6 @@ const anularVenta = async (req, res) => {
 
     const t = tx.rows[0];
 
-    // verificar que sea reciente (menos de 24hs)
     const hace24hs = new Date(Date.now() - 24 * 60 * 60 * 1000);
     if (new Date(t.fecha) < hace24hs) {
       await client.query('ROLLBACK');
@@ -142,6 +141,26 @@ const anularVenta = async (req, res) => {
       'UPDATE alumnos SET saldo = saldo + $1, gasto_hoy = GREATEST(0, gasto_hoy - $1) WHERE id = $2',
       [t.monto, t.alumno_id]
     );
+
+    // devolver stock — parsear descripción para obtener productos
+    const items = t.descripcion.split(', ')
+    for (const item of items) {
+      const matchQty = item.match(/×(\d+)$/)
+      const qty = matchQty ? parseInt(matchQty[1]) : 1
+      const nombre = item.replace(/ ×\d+$/, '').trim()
+      await client.query(
+        `UPDATE productos SET stock = stock + $1
+         WHERE nombre = $2 AND local = $3`,
+        [qty, nombre, t.lugar]
+      )
+    }
+
+    // restar de la caja activa del mismo local
+    await client.query(
+      `UPDATE cajas SET ventas = GREATEST(0, ventas - $1), tx_count = GREATEST(0, tx_count - 1)
+       WHERE local = $2 AND abierta = true AND empleado_id = $3`,
+      [t.monto, t.lugar, t.empleado_id]
+    )
 
     // registrar anulación
     await client.query(

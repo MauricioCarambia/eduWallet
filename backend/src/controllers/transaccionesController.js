@@ -112,5 +112,60 @@ const cobrar = async (req, res) => {
     client.release();
   }
 };
+const anularVenta = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-module.exports = { getTransacciones, getTransaccionesAlumno, cobrar };
+    const tx = await client.query(
+      'SELECT * FROM transacciones WHERE id = $1 AND tipo = $2',
+      [id, 'compra']
+    );
+
+    if (tx.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Transacción no encontrada' });
+    }
+
+    const t = tx.rows[0];
+
+    // verificar que sea reciente (menos de 24hs)
+    const hace24hs = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    if (new Date(t.fecha) < hace24hs) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Solo se pueden anular ventas de las últimas 24 horas' });
+    }
+
+    // devolver saldo al alumno
+    await client.query(
+      'UPDATE alumnos SET saldo = saldo + $1, gasto_hoy = GREATEST(0, gasto_hoy - $1) WHERE id = $2',
+      [t.monto, t.alumno_id]
+    );
+
+    // registrar anulación
+    await client.query(
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion)
+       VALUES ($1, $2, $3, 'anulacion', $4, $5)`,
+      [t.alumno_id, t.empleado_id, t.monto, t.lugar, `Anulación de venta #${id}: ${t.descripcion}`]
+    );
+
+    // marcar la venta original como anulada
+    await client.query(
+      `UPDATE transacciones SET descripcion = '[ANULADA] ' || descripcion WHERE id = $1`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+
+    const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [t.alumno_id]);
+    res.json({ mensaje: 'Venta anulada correctamente', alumno: alumno.rows[0], monto: t.monto });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Error al anular la venta' });
+  } finally {
+    client.release();
+  }
+};
+module.exports = { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta };

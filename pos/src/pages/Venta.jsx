@@ -25,6 +25,7 @@ export default function Venta() {
   const busqRef = useRef(null);
   const [busqAlumno, setBusqAlumno] = useState("");
   const [showSugerencias, setShowSugerencias] = useState(false);
+  const [ultimaVenta, setUltimaVenta] = useState(null);
 
   const showMsg = (tipo, texto) => {
     setMsg({ tipo, texto });
@@ -166,6 +167,11 @@ export default function Venta() {
       );
       actualizarVentas(totalDesc);
       showMsg("ok", `✓ Cobrado ${fmt(totalDesc)} a ${alumno.nombre}`);
+      setUltimaVenta({
+        id: res.data.transaccion.id,
+        desc: carrito.map((i) => i.nombre).join(", "),
+        monto: totalDesc,
+      });
       setCarrito([]);
       setAlumno(null);
       setDescPct(0);
@@ -174,6 +180,21 @@ export default function Venta() {
       showMsg("error", err.response?.data?.error || "Error al cobrar");
     } finally {
       setProcesando(false);
+    }
+  };
+
+  const anularUltimaVenta = async () => {
+    if (!ultimaVenta) return;
+    if (!confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return;
+    try {
+      const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`);
+      setAlumnos((prev) =>
+        prev.map((a) => (a.id === res.data.alumno.id ? res.data.alumno : a)),
+      );
+      setUltimaVenta(null);
+      showMsg("ok", `✓ Venta anulada. Se devolvieron ${fmt(res.data.monto)}`);
+    } catch (err) {
+      showMsg("error", err.response?.data?.error || "Error al anular");
     }
   };
 
@@ -532,7 +553,58 @@ export default function Venta() {
           {msg.texto}
         </div>
       )}
-
+      {ultimaVenta && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 80,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
+            padding: "10px 16px",
+            borderRadius: 10,
+            background: "white",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            whiteSpace: "nowrap",
+            border: "1px solid #F0F0F0",
+          }}
+        >
+          <span style={{ fontSize: 13, color: "#666" }}>
+            Última venta: <b>{fmt(ultimaVenta.monto)}</b>
+          </span>
+          <button
+            onClick={anularUltimaVenta}
+            style={{
+              padding: "5px 12px",
+              border: "none",
+              borderRadius: 7,
+              background: "#FEF2F2",
+              color: "#DC2626",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Anular
+          </button>
+          <button
+            onClick={() => setUltimaVenta(null)}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 18,
+              color: "#999",
+              cursor: "pointer",
+              padding: "0 2px",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* productos */}
       <div
         style={{

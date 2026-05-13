@@ -9,6 +9,7 @@ import Reportes from './pages/Reportes'
 import Auditoria from './pages/Auditoria'
 import Configuracion from './pages/Configuracion'
 import Layout from './components/Layout'
+import Padres from './pages/Padres'
 
 function PrivateRoute({ children }) {
   const { sesion, cargando } = useAuth()
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/" element={sesion ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
       <Route path="/alumnos" element={<PrivateRoute><Layout><Alumnos /></Layout></PrivateRoute>} />
+      <Route path="/padres" element={<PrivateRoute><Layout><Padres /></Layout></PrivateRoute>} />
       <Route path="/empleados" element={<PrivateRoute><Layout><Empleados /></Layout></PrivateRoute>} />
       <Route path="/cajas" element={<PrivateRoute><Layout><Cajas /></Layout></PrivateRoute>} />
       <Route path="/reportes" element={<PrivateRoute><Layout><Reportes /></Layout></PrivateRoute>} />

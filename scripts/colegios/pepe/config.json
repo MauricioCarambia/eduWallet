@@ -1,0 +1,9 @@
+{
+  "nombre": "pepe",
+  "adminUsuario": "admin",
+  "backendUrl": "eduwallet-production.up.railway.app",
+  "adminUrl": "https://edu-wallet-tkw2.vercel.app/",
+  "padresUrl": "https://edu-wallet-efzx.vercel.app/",
+  "jwtSecret": "2b4abea97cbbf7402dbbcda951ddfe2a94cccb0f11b527dd673391ebf5fa5658",
+  "creado": "2026-05-13T17:04:09.273Z"
+}

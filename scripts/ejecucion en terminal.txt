@@ -1,0 +1,9 @@
+Paso 4 — Proceso completo para un nuevo colegio
+Con esto el proceso para agregar un nuevo colegio es:
+
+Crear proyecto en Railway — nuevo proyecto, agregar PostgreSQL, copiar DATABASE_URL
+Crear 3 proyectos en Vercel — admin, pos, padres del repositorio eduWallet
+Ejecutar el script — node setup-colegio.js
+Ejecutar setup.sql en Railway
+Cargar las variables en Railway y Vercel
+Entregar GUIA_ENTREGA.md al colegio

@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useState, useEffect } from 'react'
 
 const NAV = [
   { path: '/inicio', label: 'Inicio', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
@@ -11,8 +12,27 @@ const NAV = [
 export default function Layout({ children }) {
   const { padre, logout } = useAuth()
   const navigate = useNavigate()
-
   const handleLogout = () => { logout(); navigate('/') }
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+const [mostrarInstalar, setMostrarInstalar] = useState(false)
+
+useEffect(() => {
+  const handler = (e) => {
+    e.preventDefault()
+    setDeferredPrompt(e)
+    setMostrarInstalar(true)
+  }
+  window.addEventListener('beforeinstallprompt', handler)
+  return () => window.removeEventListener('beforeinstallprompt', handler)
+}, [])
+
+const instalarApp = async () => {
+  if (!deferredPrompt) return
+  deferredPrompt.prompt()
+  const { outcome } = await deferredPrompt.userChoice
+  if (outcome === 'accepted') setMostrarInstalar(false)
+  setDeferredPrompt(null)
+}
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8F9FA', paddingBottom: 70 }}>
@@ -29,7 +49,23 @@ export default function Layout({ children }) {
           <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #F0F0F0' }}>Salir</button>
         </div>
       </div>
-
+{mostrarInstalar && (
+  <div style={{ background: '#111', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      </div>
+      <div>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>Instalá EduWallet</p>
+        <p style={{ margin: 0, fontSize: 11, color: '#aaa' }}>Agregala a tu pantalla de inicio</p>
+      </div>
+    </div>
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'white', color: '#111', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Instalar</button>
+      <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 18, cursor: 'pointer' }}>×</button>
+    </div>
+  </div>
+)}
       {/* contenido */}
       <main style={{ padding: '16px' }}>
         {children}

@@ -26,6 +26,11 @@ export default function Venta() {
   const [busqAlumno, setBusqAlumno] = useState("");
   const [showSugerencias, setShowSugerencias] = useState(false);
   const [ultimaVenta, setUltimaVenta] = useState(null);
+  const [modoEscaneo, setModoEscaneo] = useState("manual"); // 'manual' | 'qr' | 'nfc'
+  const [escaneandoQR, setEscaneandoQR] = useState(false);
+  const [errorQR, setErrorQR] = useState(null);
+  const videoRef = useRef(null);
+  const scannerRef = useRef(null);
 
   const showMsg = (tipo, texto) => {
     setMsg({ tipo, texto });
@@ -167,12 +172,12 @@ export default function Venta() {
       );
       actualizarVentas(totalDesc);
       showMsg("ok", `✓ Cobrado ${fmt(totalDesc)} a ${alumno.nombre}`);
-     setUltimaVenta({ 
-  id: res.data.transaccion.id, 
-  desc: carrito.map(i => i.nombre).join(', '), 
-  monto: totalDesc,
-  items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty }))
-})
+      setUltimaVenta({
+        id: res.data.transaccion.id,
+        desc: carrito.map((i) => i.nombre).join(", "),
+        monto: totalDesc,
+        items: carrito.map((i) => ({ nombre: i.nombre, qty: i.qty })),
+      });
       setCarrito([]);
       setAlumno(null);
       setDescPct(0);
@@ -185,25 +190,101 @@ export default function Venta() {
   };
 
   const anularUltimaVenta = async () => {
-  if (!ultimaVenta) return
-  if (!confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return
-  try {
-    const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`)
-    // actualizar alumno
-    setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
-    // devolver stock
-    setProductos(prev => prev.map(p => {
-      const item = ultimaVenta.items?.find(i => i.nombre === p.nombre)
-      return item ? { ...p, stock: p.stock + item.qty } : p
-    }))
-    // restar de caja
-    actualizarVentas(-ultimaVenta.monto)
-    setUltimaVenta(null)
-    showMsg('ok', `✓ Venta anulada. Se devolvieron ${fmt(res.data.monto)}`)
-  } catch (err) {
-    showMsg('error', err.response?.data?.error || 'Error al anular')
-  }
-}
+    if (!ultimaVenta) return;
+    if (!confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return;
+    try {
+      const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`);
+      // actualizar alumno
+      setAlumnos((prev) =>
+        prev.map((a) => (a.id === res.data.alumno.id ? res.data.alumno : a)),
+      );
+      // devolver stock
+      setProductos((prev) =>
+        prev.map((p) => {
+          const item = ultimaVenta.items?.find((i) => i.nombre === p.nombre);
+          return item ? { ...p, stock: p.stock + item.qty } : p;
+        }),
+      );
+      // restar de caja
+      actualizarVentas(-ultimaVenta.monto);
+      setUltimaVenta(null);
+      showMsg("ok", `✓ Venta anulada. Se devolvieron ${fmt(res.data.monto)}`);
+    } catch (err) {
+      showMsg("error", err.response?.data?.error || "Error al anular");
+    }
+  };
+  const buscarPorCodigo = (codigo) => {
+    const alumnoEncontrado = alumnos.find((a) => a.qr === codigo.trim());
+    if (alumnoEncontrado) {
+      setAlumno(alumnoEncontrado);
+      setModoEscaneo("manual");
+      setEscaneandoQR(false);
+      showMsg("ok", `✓ ${alumnoEncontrado.nombre}`);
+    } else {
+      showMsg("error", `Código no reconocido: ${codigo}`);
+    }
+  };
+
+  const iniciarQR = async () => {
+    setEscaneandoQR(true);
+    setErrorQR(null);
+    try {
+      const { BrowserQRCodeReader } = await import("@zxing/browser");
+      const reader = new BrowserQRCodeReader();
+      scannerRef.current = reader;
+
+      const devices = await BrowserQRCodeReader.listVideoInputDevices();
+      if (devices.length === 0) {
+        setErrorQR("No se encontró cámara");
+        setEscaneandoQR(false);
+        return;
+      }
+
+      const deviceId = devices[devices.length - 1].deviceId;
+      await reader.decodeFromVideoDevice(
+        deviceId,
+        videoRef.current,
+        (result, err) => {
+          if (result) {
+            buscarPorCodigo(result.getText());
+            detenerQR();
+          }
+        },
+      );
+    } catch (err) {
+      setErrorQR("Error al acceder a la cámara");
+      setEscaneandoQR(false);
+    }
+  };
+
+  const detenerQR = () => {
+    if (scannerRef.current) {
+      scannerRef.current.reset();
+      scannerRef.current = null;
+    }
+    setEscaneandoQR(false);
+  };
+
+  const iniciarNFC = async () => {
+    if (!("NDEFReader" in window)) {
+      showMsg("error", "NFC no disponible en este dispositivo");
+      return;
+    }
+    try {
+      setModoEscaneo("nfc");
+      const ndef = new window.NDEFReader();
+      await ndef.scan();
+      showMsg("ok", "NFC activo — acercá la tarjeta");
+      ndef.onreading = ({ serialNumber }) => {
+        const codigo = "NFC-" + serialNumber.replace(/:/g, "").toUpperCase();
+        buscarPorCodigo(codigo);
+        setModoEscaneo("manual");
+      };
+    } catch (err) {
+      showMsg("error", "Error al activar NFC: " + err.message);
+      setModoEscaneo("manual");
+    }
+  };
 
   if (cargando)
     return (
@@ -932,28 +1013,82 @@ export default function Venta() {
                   : "📲 Acercar tarjeta NFC / QR"}
               </button>
               <div id="alumno-search">
-                <div style={{ position: "relative" }}>
-                  <input
-                    placeholder="🔍 Buscar alumno por nombre..."
-                    value={busqAlumno}
-                    onChange={(e) => {
-                      setBusqAlumno(e.target.value);
-                      setShowSugerencias(true);
-                    }}
-                    onFocus={() => setShowSugerencias(true)}
-                    style={{
-                      width: "100%",
-                      fontSize: 13,
-                      padding: "10px 12px",
-                    }}
-                  />
-                  {showSugerencias && busqAlumno.length > 1 && (
+                {/* selector de método */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  {[
+                    {
+                      id: "manual",
+                      label: "🔍 Nombre",
+                      title: "Buscar por nombre",
+                    },
+                    {
+                      id: "qr",
+                      label: "📷 QR",
+                      title: "Escanear QR con cámara",
+                    },
+                    { id: "nfc", label: "📶 NFC", title: "Leer tarjeta NFC" },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      title={m.title}
+                      onClick={() => {
+                        if (m.id === "qr") {
+                          iniciarQR();
+                          setModoEscaneo("qr");
+                        } else if (m.id === "nfc") iniciarNFC();
+                        else {
+                          detenerQR();
+                          setModoEscaneo("manual");
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "8px",
+                        border: `1.5px solid ${modoEscaneo === m.id ? "#111" : "#F0F0F0"}`,
+                        borderRadius: 9,
+                        background: modoEscaneo === m.id ? "#111" : "white",
+                        color: modoEscaneo === m.id ? "white" : "#666",
+                        fontSize: 12,
+                        fontWeight: modoEscaneo === m.id ? 600 : 400,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* lector QR USB — campo oculto que captura el input */}
+                <input
+                  placeholder="Escaneá el QR con lector USB o buscá por nombre..."
+                  value={busqAlumno}
+                  onChange={(e) => {
+                    setBusqAlumno(e.target.value);
+                    setShowSugerencias(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && busqAlumno.startsWith("QR-")) {
+                      buscarPorCodigo(busqAlumno);
+                      setBusqAlumno("");
+                      setShowSugerencias(false);
+                    }
+                  }}
+                  onFocus={() => setShowSugerencias(true)}
+                  style={{
+                    width: "100%",
+                    fontSize: 13,
+                    padding: "10px 12px",
+                    marginBottom: 6,
+                  }}
+                  autoFocus
+                />
+
+                {/* sugerencias por nombre */}
+                {showSugerencias &&
+                  busqAlumno.length > 1 &&
+                  !busqAlumno.startsWith("QR-") && (
                     <div
                       style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
                         background: "white",
                         border: "1px solid #F0F0F0",
                         borderRadius: 10,
@@ -961,6 +1096,7 @@ export default function Venta() {
                         zIndex: 50,
                         maxHeight: 200,
                         overflowY: "auto",
+                        marginBottom: 6,
                       }}
                     >
                       {alumnos
@@ -1013,7 +1149,7 @@ export default function Venta() {
                                 .map((n) => n[0])
                                 .join("")}
                             </div>
-                            <div>
+                            <div style={{ flex: 1 }}>
                               <p
                                 style={{
                                   margin: 0,
@@ -1035,7 +1171,6 @@ export default function Venta() {
                             </div>
                             <span
                               style={{
-                                marginLeft: "auto",
                                 fontSize: 13,
                                 fontWeight: 600,
                                 color:
@@ -1068,7 +1203,99 @@ export default function Venta() {
                       )}
                     </div>
                   )}
-                </div>
+
+                {/* visor de cámara QR */}
+                {escaneandoQR && (
+                  <div style={{ position: "relative", marginBottom: 6 }}>
+                    <video
+                      ref={videoRef}
+                      style={{
+                        width: "100%",
+                        borderRadius: 10,
+                        maxHeight: 200,
+                        objectFit: "cover",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        border: "2px solid #111",
+                        borderRadius: 10,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          width: 100,
+                          height: 100,
+                          border: "2px solid white",
+                          borderRadius: 8,
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={detenerQR}
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        background: "rgba(0,0,0,0.6)",
+                        border: "none",
+                        borderRadius: 6,
+                        color: "white",
+                        fontSize: 12,
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+
+                {errorQR && (
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "#DC2626",
+                      margin: "0 0 6px",
+                    }}
+                  >
+                    {errorQR}
+                  </p>
+                )}
+
+                {modoEscaneo === "nfc" && (
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      background: "#F0FDF4",
+                      borderRadius: 8,
+                      fontSize: 13,
+                      color: "#16A34A",
+                      marginBottom: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#16A34A",
+                        animation: "pulse 1s infinite",
+                      }}
+                    />
+                    NFC activo — acercá la tarjeta del alumno
+                  </div>
+                )}
               </div>
             </div>
           )}

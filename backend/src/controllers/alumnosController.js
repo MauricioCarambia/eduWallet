@@ -1,6 +1,7 @@
 const pool = require("../db/conexion");
 const { registrar } = require("./auditoriaController");
 const { enviarEmailRecarga } = require("../services/emailService");
+const QRCode = require('qrcode');
 
 const getAlumnos = async (req, res) => {
   try {
@@ -170,12 +171,30 @@ const getGastoSemanal = async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 };
+const getQR = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [id]);
+    if (alumno.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
 
+    const qrData = alumno.rows[0].qr;
+    const qrImage = await QRCode.toDataURL(qrData, {
+      width: 300,
+      margin: 2,
+      color: { dark: '#000000', light: '#FFFFFF' }
+    });
+
+    res.json({ qr: qrImage, codigo: qrData });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
 module.exports = {
   getAlumnos,
   getAlumno,
   crearAlumno,
   actualizarAlumno,
+  getQR,
   toggleAlumno,
   recargarSaldo,
   eliminarAlumno,

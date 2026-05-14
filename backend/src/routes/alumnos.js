@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, recargarSaldo, eliminarAlumno, getGastoSemanal } = require('../controllers/alumnosController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
 const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, recargarSaldo, eliminarAlumno, getGastoSemanal, getQR } = require('../controllers/alumnosController');
 

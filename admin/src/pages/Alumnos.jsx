@@ -2,16 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 
 const fmt = (n) => `$${Number(n).toLocaleString("es-AR")}`;
-const [qrModal, setQrModal] = useState(null);
 
-const verQR = async (alumno) => {
-  try {
-    const res = await api.get(`/alumnos/${alumno.id}/qr`);
-    setQrModal({ alumno, qr: res.data.qr, codigo: res.data.codigo });
-  } catch (err) {
-    showMsg("error", "Error al obtener QR");
-  }
-};
 
 function Modal({ title, onClose, children }) {
   return (
@@ -133,6 +124,16 @@ export default function Alumnos() {
     setMsg({ tipo, texto });
     setTimeout(() => setMsg(null), 3000);
   };
+  const [qrModal, setQrModal] = useState(null);
+
+const verQR = async (alumno) => {
+  try {
+    const res = await api.get(`/alumnos/${alumno.id}/qr`);
+    setQrModal({ alumno, qr: res.data.qr, codigo: res.data.codigo });
+  } catch (err) {
+    showMsg("error", "Error al obtener QR");
+  }
+};
 
   useEffect(() => {
     cargar();

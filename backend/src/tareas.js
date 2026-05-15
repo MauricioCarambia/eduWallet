@@ -24,4 +24,12 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
+cron.schedule('0 3 * * *', async () => {
+  try {
+    await hacerBackup(true) // true = enviar por email
+    console.log('Backup diario completado y enviado por email')
+  } catch (err) {
+    console.error('Error en backup diario:', err.message)
+  }
+})
 console.log('Tareas programadas activas');

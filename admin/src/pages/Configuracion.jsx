@@ -1,6 +1,38 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 
+const [haciendoBackup, setHaciendoBackup] = useState(false)
+
+const descargarBackup = async () => {
+  setHaciendoBackup(true)
+  try {
+    const res = await api.get('/backup/descargar', { responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `eduwallet-backup-${new Date().toISOString().slice(0, 10)}.sql`
+    a.click()
+    URL.revokeObjectURL(url)
+    showMsg('ok', 'Backup descargado correctamente')
+  } catch (err) {
+    showMsg('error', 'Error al descargar backup')
+  } finally {
+    setHaciendoBackup(false)
+  }
+}
+
+const enviarBackupEmail = async () => {
+  setHaciendoBackup(true)
+  try {
+    await api.post('/backup/email')
+    showMsg('ok', 'Backup enviado por email correctamente')
+  } catch (err) {
+    showMsg('error', err.response?.data?.error || 'Error al enviar backup')
+  } finally {
+    setHaciendoBackup(false)
+  }
+}
+
 function Campo({ label, hint, children }) {
   return (
     <div style={{ marginBottom: 16 }}>
@@ -162,6 +194,25 @@ export default function Configuracion() {
           </select>
         </Campo>
       </Section>
+      
+      <Section title="Backup de base de datos">
+  <p style={{ fontSize: 13, color: '#666', margin: '0 0 14px' }}>
+    El sistema hace un backup automático todos los días a las 3am y lo envía al email del administrador. También podés hacerlo manualmente ahora.
+  </p>
+  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <button onClick={descargarBackup} disabled={haciendoBackup} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: '#111', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar backup
+    </button>
+    <button onClick={enviarBackupEmail} disabled={haciendoBackup} style={{ padding: '8px 16px', border: '1px solid #F0F0F0', borderRadius: 8, background: 'white', fontSize: 13, cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Enviar por email
+    </button>
+  </div>
+  <p style={{ margin: '10px 0 0', fontSize: 12, color: '#999' }}>
+    El backup se envía al email de administración configurado arriba.
+  </p>
+</Section>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button onClick={guardar} style={{ padding: '10px 24px', border: 'none', borderRadius: 10, background: '#111', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>

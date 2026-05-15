@@ -1,37 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 
-const [haciendoBackup, setHaciendoBackup] = useState(false)
 
-const descargarBackup = async () => {
-  setHaciendoBackup(true)
-  try {
-    const res = await api.get('/backup/descargar', { responseType: 'blob' })
-    const url = URL.createObjectURL(res.data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `eduwallet-backup-${new Date().toISOString().slice(0, 10)}.sql`
-    a.click()
-    URL.revokeObjectURL(url)
-    showMsg('ok', 'Backup descargado correctamente')
-  } catch (err) {
-    showMsg('error', 'Error al descargar backup')
-  } finally {
-    setHaciendoBackup(false)
-  }
-}
-
-const enviarBackupEmail = async () => {
-  setHaciendoBackup(true)
-  try {
-    await api.post('/backup/email')
-    showMsg('ok', 'Backup enviado por email correctamente')
-  } catch (err) {
-    showMsg('error', err.response?.data?.error || 'Error al enviar backup')
-  } finally {
-    setHaciendoBackup(false)
-  }
-}
 
 function Campo({ label, hint, children }) {
   return (
@@ -64,6 +34,38 @@ export default function Configuracion() {
   const [cargando, setCargando] = useState(true)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
+
+  const [haciendoBackup, setHaciendoBackup] = useState(false)
+
+const descargarBackup = async () => {
+  setHaciendoBackup(true)
+  try {
+    const res = await api.get('/backup/descargar', { responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `eduwallet-backup-${new Date().toISOString().slice(0, 10)}.sql`
+    a.click()
+    URL.revokeObjectURL(url)
+    showMsg('ok', 'Backup descargado correctamente')
+  } catch (err) {
+    showMsg('error', 'Error al descargar backup')
+  } finally {
+    setHaciendoBackup(false)
+  }
+}
+
+const enviarBackupEmail = async () => {
+  setHaciendoBackup(true)
+  try {
+    await api.post('/backup/email')
+    showMsg('ok', 'Backup enviado por email correctamente')
+  } catch (err) {
+    showMsg('error', err.response?.data?.error || 'Error al enviar backup')
+  } finally {
+    setHaciendoBackup(false)
+  }
+}
 
   useEffect(() => { cargar() }, [])
 

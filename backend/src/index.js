@@ -15,6 +15,7 @@ const pagosRoutes = require('./routes/pagos');
 const configuracionRoutes = require('./routes/configuracion');
 const adminPadresRoutes = require('./routes/adminPadres');
 const backupRoutes = require('./routes/backup');
+const mensajesRoutes = require('./routes/mensajes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,6 +34,7 @@ app.use('/api/pagos', pagosRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use('/api/admin/padres', adminPadresRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/mensajes', mensajesRoutes);
 
 
 app.get('/', (req, res) => {

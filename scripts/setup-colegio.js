@@ -31,6 +31,7 @@ async function main() {
   const adminUrl = await preguntar('🌐 URL del admin en Vercel (ej: https://mi-colegio-admin.vercel.app): ');
   const padresUrl = await preguntar('🌐 URL del portal de padres en Vercel (ej: https://mi-colegio-padres.vercel.app): ');
   const dbUrl = await preguntar('🗄️  DATABASE_URL de Railway: ');
+  const resendApiKey = await preguntar('📧 API Key de Resend (re_...): ');
 
   log('\n⏳ Configurando el sistema...', 'yellow');
 
@@ -178,12 +179,14 @@ INSERT INTO configuracion (nombre_colegio) VALUES ('${nombre}');
   fs.writeFileSync(path.join(dir, 'setup.sql'), sql);
 
   // generar archivo de variables de entorno
-  const envBackend = `
+ const envBackend = `
 DATABASE_URL=${dbUrl}
 JWT_SECRET=${jwtSecret}
 PORT=3001
 BACKEND_URL=${backendUrl}
 PADRES_URL=${padresUrl}
+RESEND_API_KEY=${resendApiKey}
+FROM_EMAIL=onboarding@resend.dev
 `.trim();
 
   const envAdmin = `VITE_API_URL=${backendUrl}/api`.trim();

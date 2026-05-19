@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../../../pos/src/api/axios'
+import api from '../api/axios'
 
 export default function Mensajes() {
   const [padres, setPadres] = useState([])

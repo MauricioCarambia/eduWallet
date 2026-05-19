@@ -5,12 +5,69 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+:root {
+  --brand: #1E3A5F;
+  --accent: #3B82F6;
+
+  --bg: #F0F4F8;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F8FAFC;
+  --bg-input: #FFFFFF;
+
+  --text: #1E3A5F;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+
+  --green: #059669;
+  --green-bg: #ECFDF5;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --amber: #D97706;
+  --amber-bg: #FFFBEB;
+
+  --shadow: 0 1px 3px rgba(30,58,95,0.08);
+  --shadow-md: 0 4px 12px rgba(30,58,95,0.1);
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+
+[data-theme="dark"] {
+  --brand: #93C5FD;
+  --accent: #60A5FA;
+
+  --bg: #0F172A;
+  --bg-card: #1E293B;
+  --bg-hover: #263348;
+  --bg-input: #1E293B;
+
+  --text: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #475569;
+
+  --border: #2D3F55;
+  --border-light: #243347;
+
+  --green: #34D399;
+  --green-bg: #064E3B44;
+  --red: #F87171;
+  --red-bg: #450A0A44;
+  --amber: #FBBF24;
+  --amber-bg: #451A0344;
+
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #F8F9FA;
-  color: #111;
+  background: var(--bg);
+  color: var(--text);
   font-size: 15px;
   line-height: 1.5;
+  transition: background .2s, color .2s;
   user-select: none;
 }
 
@@ -18,25 +75,21 @@ input, select {
   font-family: inherit;
   font-size: 14px;
   padding: 10px 14px;
-  border: 1.5px solid #E5E7EB;
-  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
   outline: none;
-  background: white;
-  color: #111;
+  background: var(--bg-input);
+  color: var(--text);
   transition: border-color .2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-input:focus, select:focus {
-  border-color: #111;
-}
+input:focus, select:focus { border-color: var(--accent); }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  transition: opacity .15s, transform .1s;
-}
+button { font-family: inherit; cursor: pointer; transition: opacity .15s, transform .1s; }
+button:active { opacity: 0.85; transform: scale(0.98); }
 
-button:active {
-  opacity: 0.85;
-  transform: scale(0.98);
-}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }

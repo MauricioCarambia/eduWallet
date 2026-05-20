@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
 
 export default function Registro() {
@@ -8,6 +9,7 @@ export default function Registro() {
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const { login } = useAuth()
+  const { dark, toggle } = useTheme()
   const navigate = useNavigate()
 
   const handleRegistro = async () => {
@@ -27,29 +29,36 @@ export default function Registro() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#F8F9FA' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', position: 'relative' }}>
+      <button onClick={toggle} style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        {dark
+          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        }
+      </button>
+
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>EduWallet</h1>
-          <p style={{ color: '#999', fontSize: 14 }}>Creá tu cuenta</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Creá tu cuenta</p>
         </div>
 
-        <div style={{ background: 'white', borderRadius: 20, padding: '1.5rem', border: '1px solid #F0F0F0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          {[['Nombre completo', 'nombre', 'text', 'Ej: María García'], ['Email', 'email', 'email', 'tu@email.com'], ['Contraseña', 'password', 'password', 'Mínimo 6 caracteres'], ['Confirmar contraseña', 'confirmar', 'password', '••••••••']].map(([label, key, type, ph]) => (
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
+          {[['Nombre completo', 'nombre', 'text', 'María García'], ['Email', 'email', 'email', 'tu@email.com'], ['Contraseña', 'password', 'password', 'Mínimo 6 caracteres'], ['Confirmar contraseña', 'confirmar', 'password', '••••••••']].map(([label, key, type, ph]) => (
             <div key={key} style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#555', marginBottom: 5 }}>{label}</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</label>
               <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} />
             </div>
           ))}
-          {error && <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-          <button onClick={handleRegistro} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: '#111', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1 }}>
+          {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
+          <button onClick={handleRegistro} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: '#1E3A5F', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: '0 2px 8px rgba(30,58,95,0.3)', marginBottom: 14 }}>
             {cargando ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
-          <p style={{ textAlign: 'center', fontSize: 13, color: '#666', marginTop: 14 }}>
-            ¿Ya tenés cuenta? <Link to="/" style={{ color: '#111', fontWeight: 500 }}>Iniciá sesión</Link>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+            ¿Ya tenés cuenta? <Link to="/" style={{ color: '#1E3A5F', fontWeight: 600, textDecoration: 'none' }}>Iniciá sesión</Link>
           </p>
         </div>
       </div>

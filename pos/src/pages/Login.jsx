@@ -41,7 +41,7 @@ export default function Login() {
 
       <div style={{ width: '100%', maxWidth: 360 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet POS</h1>
@@ -58,7 +58,7 @@ export default function Login() {
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>PIN</label>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
               {[0,1,2,3].map(i => (
-                <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: pin.length > i ? '#1E3A5F' : 'var(--border)', transition: 'background .2s' }} />
+                <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: pin.length > i ? 'var(--brand)' : 'var(--border)', transition: 'background .2s' }} />
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -74,7 +74,7 @@ export default function Login() {
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
 
           <button onClick={handleLogin} disabled={cargando || !usuario || !pin}
-            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: '#1E3A5F', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !usuario || !pin ? 0.5 : 1, boxShadow: '0 2px 8px rgba(30,58,95,0.3)' }}>
+            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
             {cargando ? 'Ingresando...' : 'Ingresar'}
           </button>
         </div>

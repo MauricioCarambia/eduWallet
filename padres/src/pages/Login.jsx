@@ -38,7 +38,7 @@ export default function Login() {
 
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet</h1>
@@ -55,11 +55,11 @@ export default function Login() {
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleLogin()} />
           </div>
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>{error}</div>}
-          <button onClick={handleLogin} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: '#1E3A5F', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: '0 2px 8px rgba(30,58,95,0.3)', marginBottom: 14 }}>
+          <button onClick={handleLogin} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: 'var(--shadow-md)', marginBottom: 14 }}>
             {cargando ? 'Ingresando...' : 'Ingresar'}
           </button>
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-            ¿No tenés cuenta? <Link to="/registro" style={{ color: '#1E3A5F', fontWeight: 600, textDecoration: 'none' }}>Registrate</Link>
+            ¿No tenés cuenta? <Link to="/registro" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Registrate</Link>
           </p>
         </div>
       </div>

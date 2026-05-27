@@ -23,7 +23,6 @@ export default function Recargar() {
     const paymentId = searchParams.get('payment_id')
     const alumno = searchParams.get('alumno')
     const montoParam = searchParams.get('monto')
-
     if (status === 'success' && paymentId) {
       verificarPago(paymentId, alumno, montoParam)
     } else if (status === 'failure') {
@@ -48,13 +47,8 @@ export default function Recargar() {
   const verificarPago = async (paymentId, alumnoId, monto) => {
     try {
       const res = await api.get(`/pagos/verificar?payment_id=${paymentId}&alumno_id=${alumnoId}&monto=${monto}`)
-      if (res.data.status === 'approved') {
-        setPaso('exito')
-        cargar()
-      }
-    } catch (err) {
-      console.error(err)
-    }
+      if (res.data.status === 'approved') { setPaso('exito'); cargar() }
+    } catch (err) { console.error(err) }
   }
 
   const iniciarPago = async () => {
@@ -72,18 +66,18 @@ export default function Recargar() {
 
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
-  if (cargando) return <div style={{ color: '#999', padding: '1rem' }}>Cargando...</div>
-  if (alumnos.length === 0) return <div style={{ color: '#999', padding: '1rem' }}>No tenés alumnos vinculados</div>
+  if (cargando) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>Cargando...</div>
+  if (alumnos.length === 0) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
 
   if (paso === 'exito') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--green-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 8 }}>¡Recarga exitosa!</h2>
-      <p style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>El saldo fue acreditado correctamente.</p>
-      <p style={{ fontSize: 28, fontWeight: 700, color: '#16A34A', marginBottom: 24 }}>{fmt(alumnoActual?.saldo || 0)}</p>
-      <button onClick={() => { setPaso('monto'); setMonto('') }} style={{ padding: '12px 28px', border: 'none', borderRadius: 10, background: '#111', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+      <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 8, color: 'var(--text)' }}>¡Recarga exitosa!</h2>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>El saldo fue acreditado correctamente.</p>
+      <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--green)', marginBottom: 24 }}>{fmt(alumnoActual?.saldo || 0)}</p>
+      <button onClick={() => { setPaso('monto'); setMonto('') }} style={{ padding: '12px 28px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
         Volver
       </button>
     </div>
@@ -91,61 +85,59 @@ export default function Recargar() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 16px' }}>Recargar saldo</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 16px', color: 'var(--text)' }}>Recargar saldo</h1>
 
-      {/* selector alumno */}
       {alumnos.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
           {alumnos.map(a => (
-            <button key={a.id} onClick={() => setAlumnoId(a.id)} style={{ padding: '6px 14px', border: `1.5px solid ${alumnoId === a.id ? '#111' : '#F0F0F0'}`, borderRadius: 20, background: alumnoId === a.id ? '#111' : 'white', color: alumnoId === a.id ? 'white' : '#666', fontSize: 13, fontWeight: alumnoId === a.id ? 500 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>{a.nombre.split(' ')[0]}</button>
+            <button key={a.id} onClick={() => setAlumnoId(a.id)} style={{ padding: '6px 14px', border: `1.5px solid ${alumnoId === a.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: alumnoId === a.id ? 'var(--brand)' : 'var(--bg-card)', color: alumnoId === a.id ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: alumnoId === a.id ? 500 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {a.nombre.split(' ')[0]}
+            </button>
           ))}
         </div>
       )}
 
-      {/* saldo actual */}
       {alumnoActual && (
-        <div style={{ background: parseFloat(alumnoActual.saldo) < 200 ? '#FEF2F2' : '#F0FDF4', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: 20, border: `1px solid ${parseFloat(alumnoActual.saldo) < 200 ? '#FECACA' : '#BBF7D0'}` }}>
-          <p style={{ margin: '0 0 4px', fontSize: 13, color: '#666' }}>Saldo de {alumnoActual.nombre.split(' ')[0]}</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: parseFloat(alumnoActual.saldo) < 200 ? '#DC2626' : '#16A34A' }}>{fmt(alumnoActual.saldo)}</p>
+        <div style={{ background: parseFloat(alumnoActual.saldo) < 200 ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: 20, border: `1px solid ${parseFloat(alumnoActual.saldo) < 200 ? 'var(--red)' : 'var(--green)'}`, opacity: 0.9 }}>
+          <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-secondary)' }}>Saldo de {alumnoActual.nombre.split(' ')[0]}</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: parseFloat(alumnoActual.saldo) < 200 ? 'var(--red)' : 'var(--green)' }}>{fmt(alumnoActual.saldo)}</p>
           {parseFloat(alumnoActual.saldo) < 200 && (
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#DC2626' }}>Saldo bajo — recargá para evitar inconvenientes</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--red)' }}>Saldo bajo — recargá para evitar inconvenientes</p>
           )}
         </div>
       )}
 
       {msg && (
-        <div style={{ padding: '12px 16px', borderRadius: 10, fontSize: 14, marginBottom: 16, background: msg.tipo === 'ok' ? '#F0FDF4' : msg.tipo === 'warn' ? '#FFF7ED' : '#FEF2F2', color: msg.tipo === 'ok' ? '#16A34A' : msg.tipo === 'warn' ? '#D97706' : '#DC2626', fontWeight: 500 }}>
+        <div style={{ padding: '12px 16px', borderRadius: 10, fontSize: 14, marginBottom: 16, fontWeight: 500, background: msg.tipo === 'ok' ? 'var(--green-bg)' : msg.tipo === 'warn' ? 'var(--amber-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : msg.tipo === 'warn' ? 'var(--amber)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : msg.tipo === 'warn' ? 'var(--amber)' : 'var(--red)'}` }}>
           {msg.texto}
         </div>
       )}
 
-      <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', border: '1px solid #F0F0F0' }}>
-        <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 500 }}>¿Cuánto querés cargar?</p>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+        <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>¿Cuánto querés cargar?</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           {[500, 1000, 2000, 5000].map(n => (
-            <button key={n} onClick={() => setMonto(String(n))} style={{ padding: '16px', border: `2px solid ${monto == n ? '#111' : '#F0F0F0'}`, borderRadius: 14, background: monto == n ? '#111' : 'white', color: monto == n ? 'white' : '#666', fontSize: 18, fontWeight: monto == n ? 700 : 400, cursor: 'pointer', transition: 'all .15s' }}>
+            <button key={n} onClick={() => setMonto(String(n))} style={{ padding: '16px', border: `2px solid ${monto == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 14, background: monto == n ? 'var(--brand)' : 'var(--bg-card)', color: monto == n ? 'white' : 'var(--text-secondary)', fontSize: 18, fontWeight: monto == n ? 700 : 400, cursor: 'pointer', transition: 'all .15s' }}>
               {fmt(n)}
             </button>
           ))}
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#555', marginBottom: 6 }}>Otro monto</label>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Otro monto</label>
           <input type="number" placeholder="Ingresá el monto" value={monto} onChange={e => setMonto(e.target.value)} />
         </div>
 
         {monto && parseInt(monto) > 0 && alumnoActual && (
-          <div style={{ padding: '10px 14px', background: '#F8F9FA', borderRadius: 10, marginBottom: 16, fontSize: 13, color: '#666' }}>
-            Nuevo saldo estimado: <b style={{ color: '#111', fontSize: 15 }}>{fmt(parseFloat(alumnoActual.saldo) + parseInt(monto))}</b>
+          <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            Nuevo saldo estimado: <b style={{ color: 'var(--text)', fontSize: 15 }}>{fmt(parseFloat(alumnoActual.saldo) + parseInt(monto))}</b>
           </div>
         )}
 
         <button onClick={iniciarPago} disabled={!monto || parseInt(monto) <= 0 || procesando}
-          style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 14, background: !monto || parseInt(monto) <= 0 ? '#F0F0F0' : '#009EE3', color: !monto || parseInt(monto) <= 0 ? '#999' : 'white', fontSize: 16, fontWeight: 700, cursor: !monto || parseInt(monto) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity .15s' }}>
-          {procesando ? (
-            'Redirigiendo a Mercado Pago...'
-          ) : (
+          style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 14, background: !monto || parseInt(monto) <= 0 ? 'var(--bg)' : '#009EE3', color: !monto || parseInt(monto) <= 0 ? 'var(--text-tertiary)' : 'white', fontSize: 16, fontWeight: 700, cursor: !monto || parseInt(monto) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity .15s' }}>
+          {procesando ? 'Redirigiendo a Mercado Pago...' : (
             <>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
               Pagar con Mercado Pago
@@ -154,10 +146,10 @@ export default function Recargar() {
         </button>
 
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <span style={{ fontSize: 12, color: '#999' }}>Pago seguro con Mercado Pago</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Pago seguro con Mercado Pago</span>
         </div>
-        <p style={{ fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 6 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 6 }}>
           Aceptamos tarjeta de crédito, débito, transferencia y saldo MP
         </p>
       </div>

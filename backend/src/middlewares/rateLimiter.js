@@ -27,4 +27,13 @@ const registroPadresLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter };
+// Recuperación de contraseña — 5 solicitudes por hora por IP (evitar spam de emails)
+const recuperacionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiadas solicitudes de recuperación. Intentá de nuevo en una hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter };

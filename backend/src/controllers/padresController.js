@@ -1,6 +1,8 @@
 const pool = require('../db/conexion');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { enviarEmailRecuperacion } = require('../services/emailService');
 require('dotenv').config();
 
 const registro = async (req, res) => {
@@ -149,4 +151,69 @@ const actualizarLimite = async (req, res) => {
   }
 };
 
-module.exports = { registro, login, getAlumnos, vincularAlumno, recargarSaldo, toggleBloqueo, actualizarLimite };
+const solicitarRecuperacion = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requerido' });
+  try {
+    const resultado = await pool.query('SELECT * FROM padres WHERE email = $1 AND activo = true', [email]);
+
+    // Siempre respondemos OK para no revelar si el email existe o no
+    if (resultado.rows.length === 0) {
+      return res.json({ mensaje: 'Si el email existe, recibirás un enlace en minutos.' });
+    }
+
+    const padre = resultado.rows[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await pool.query(
+      'UPDATE padres SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3',
+      [token, expiry, padre.id]
+    );
+
+    const linkReset = `${process.env.PADRES_URL}/resetear-password?token=${token}`;
+
+    await enviarEmailRecuperacion({
+      nombrePadre: padre.nombre,
+      emailPadre: padre.email,
+      linkReset
+    });
+
+    res.json({ mensaje: 'Si el email existe, recibirás un enlace en minutos.' });
+  } catch (err) {
+    console.error('Error solicitarRecuperacion:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const resetearPassword = async (req, res) => {
+  const { token, nuevaPassword } = req.body;
+  if (!token || !nuevaPassword) return res.status(400).json({ error: 'Datos incompletos' });
+  if (nuevaPassword.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+  try {
+    const resultado = await pool.query(
+      'SELECT * FROM padres WHERE reset_token = $1 AND reset_token_expiry > NOW()',
+      [token]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(400).json({ error: 'El enlace es inválido o ya expiró. Solicitá uno nuevo.' });
+    }
+
+    const padre = resultado.rows[0];
+    const hash = await bcrypt.hash(nuevaPassword, 10);
+
+    await pool.query(
+      'UPDATE padres SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2',
+      [hash, padre.id]
+    );
+
+    res.json({ mensaje: 'Contraseña actualizada correctamente. Ya podés iniciar sesión.' });
+  } catch (err) {
+    console.error('Error resetearPassword:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = { registro, login, getAlumnos, vincularAlumno, recargarSaldo, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };

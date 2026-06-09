@@ -126,6 +126,25 @@ const enviarEmailBackup = async ({ sql, nombre }) => {
   }
 };
 
+const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) => {
+  const nombreColegio = await getNombreColegio();
+  const html = baseHTML(`
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
+    <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en EduWallet.</p>
+    <a href="${linkReset}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
+      Restablecer contraseña
+    </a>
+    <p style="font-size: 12px; color: #999; margin: 0 0 8px;">Este enlace expira en <b>1 hora</b>.</p>
+    <p style="font-size: 12px; color: #999; margin: 0;">Si no solicitaste este cambio, podés ignorar este email. Tu contraseña no será modificada.</p>
+  `, nombreColegio);
+
+  await enviarEmail({
+    to: emailPadre,
+    subject: `Restablecer contraseña — ${nombreColegio}`,
+    html
+  });
+};
+
 const enviarMensajeAdmin = async ({ asunto, mensaje, destinatarios }) => {
   const nombreColegio = await getNombreColegio();
   const html = baseHTML(`
@@ -153,5 +172,6 @@ module.exports = {
   enviarEmailRecarga,
   enviarEmailCompra,
   enviarEmailBackup,
-  enviarMensajeAdmin
+  enviarMensajeAdmin,
+  enviarEmailRecuperacion
 };

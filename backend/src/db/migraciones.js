@@ -110,9 +110,11 @@ const migrar = async () => {
     }
     console.log('✅ Índices creados');
 
-    // ─── 5. Actualizar tablas.js: agregar columnas faltantes si no existen ────
+    // ─── 5. Columnas opcionales / nuevas ─────────────────────────────────────
     const columnas = [
-      { tabla: 'alumnos', columna: 'deuda', definicion: 'DECIMAL(10,2) DEFAULT 0' },
+      { tabla: 'alumnos', columna: 'deuda',              definicion: 'DECIMAL(10,2) DEFAULT 0' },
+      { tabla: 'padres',  columna: 'reset_token',        definicion: 'VARCHAR(200)' },
+      { tabla: 'padres',  columna: 'reset_token_expiry', definicion: 'TIMESTAMP' },
     ];
 
     for (const { tabla, columna, definicion } of columnas) {

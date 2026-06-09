@@ -11,12 +11,29 @@ const getConfiguracion = async (req, res) => {
   }
 };
 
+// Endpoint público — solo devuelve nombre y logo para los layouts
+const getBranding = async (req, res) => {
+  try {
+    const resultado = await pool.query('SELECT nombre_colegio, logo FROM configuracion LIMIT 1');
+    res.json(resultado.rows[0] || { nombre_colegio: 'EduWallet', logo: null });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 const actualizarConfiguracion = async (req, res) => {
   const {
     nombre_colegio, direccion, telefono, email_admin,
     email_smtp, email_smtp_pass, email_smtp_host, email_smtp_port,
     umbral_saldo_bajo, umbral_stock_bajo, moneda
   } = req.body;
+
+  const { logo } = req.body;
+
+  // Validar tamaño del logo si viene (base64 ~200KB máx)
+  if (logo && logo.length > 300000) {
+    return res.status(400).json({ error: 'El logo es demasiado grande. Máximo 200KB.' });
+  }
 
   try {
     const existe = await pool.query('SELECT id FROM configuracion LIMIT 1');
@@ -26,11 +43,11 @@ const actualizarConfiguracion = async (req, res) => {
         `INSERT INTO configuracion (
           nombre_colegio, direccion, telefono, email_admin,
           email_smtp, email_smtp_pass, email_smtp_host, email_smtp_port,
-          umbral_saldo_bajo, umbral_stock_bajo, moneda
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          umbral_saldo_bajo, umbral_stock_bajo, moneda, logo
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [nombre_colegio, direccion, telefono, email_admin,
           email_smtp, email_smtp_pass, email_smtp_host, email_smtp_port,
-          umbral_saldo_bajo, umbral_stock_bajo, moneda]
+          umbral_saldo_bajo, umbral_stock_bajo, moneda, logo || null]
       );
     } else {
       const id = existe.rows[0].id;
@@ -45,10 +62,11 @@ const actualizarConfiguracion = async (req, res) => {
           umbral_saldo_bajo, umbral_stock_bajo, moneda, id]
       );
       if (email_smtp_pass) {
-        await pool.query(
-          'UPDATE configuracion SET email_smtp_pass = $1 WHERE id = $2',
-          [email_smtp_pass, id]
-        );
+        await pool.query('UPDATE configuracion SET email_smtp_pass = $1 WHERE id = $2', [email_smtp_pass, id]);
+      }
+      // Logo: actualizar siempre (null = borrar, string = actualizar)
+      if (logo !== undefined) {
+        await pool.query('UPDATE configuracion SET logo = $1 WHERE id = $2', [logo || null, id]);
       }
     }
     res.json({ mensaje: 'Configuración guardada correctamente' });
@@ -74,4 +92,4 @@ const testEmail = async (req, res) => {
   }
 };
 
-module.exports = { getConfiguracion, actualizarConfiguracion, testEmail };
+module.exports = { getConfiguracion, getBranding, actualizarConfiguracion, testEmail };

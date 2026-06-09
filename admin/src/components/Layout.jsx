@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import api from '../api/axios'
 
 const NAV = [
   { path: '/dashboard', label: 'Dashboard', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
@@ -21,6 +22,11 @@ export default function Layout({ children }) {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [branding, setBranding] = useState({ nombre_colegio: 'EduWallet', logo: null })
+
+  useEffect(() => {
+    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+  }, [])
 
   const handleLogout = () => { logout(); navigate('/') }
 
@@ -39,11 +45,14 @@ export default function Layout({ children }) {
         <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: branding.logo ? 'white' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                {branding.logo
+                  ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                }
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'white' }}>EduWallet</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'white', lineHeight: 1.2 }}>{branding.nombre_colegio || 'EduWallet'}</p>
                 <p style={{ margin: 0, fontSize: 10, color: sidebarText }}>Administración</p>
               </div>
             </div>

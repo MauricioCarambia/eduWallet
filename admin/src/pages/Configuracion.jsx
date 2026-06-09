@@ -24,7 +24,8 @@ export default function Configuracion() {
   const [config, setConfig] = useState({
     nombre_colegio: '', direccion: '', telefono: '', email_admin: '',
     email_smtp: '', email_smtp_pass: '', email_smtp_host: 'smtp.gmail.com',
-    email_smtp_port: 587, umbral_saldo_bajo: 200, umbral_stock_bajo: 3, moneda: 'ARS'
+    email_smtp_port: 587, umbral_saldo_bajo: 200, umbral_stock_bajo: 3, moneda: 'ARS',
+    logo: null
   })
   const [msg, setMsg] = useState(null)
   const [testEmail, setTestEmail] = useState('')
@@ -84,6 +85,30 @@ export default function Configuracion() {
 
   const set = (key, val) => setConfig(p => ({ ...p, [key]: val }))
 
+  const onLogo = (e) => {
+    const archivo = e.target.files[0]
+    if (!archivo) return
+    if (archivo.size > 1024 * 1024) { showMsg('error', 'El archivo no debe superar 1MB'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      // Comprimir redimensionando a máx 200x200 con canvas
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 200
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width  = Math.round(img.width  * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        const base64 = canvas.toDataURL('image/png', 0.85)
+        set('logo', base64)
+      }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(archivo)
+    e.target.value = ''
+  }
+
   if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
 
   return (
@@ -94,6 +119,37 @@ export default function Configuracion() {
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+
+      <Section title="Logo del colegio">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          {/* preview */}
+          <div style={{ width: 96, height: 96, borderRadius: 16, border: '2px dashed var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+            {config.logo
+              ? <img src={config.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              : <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            }
+          </div>
+          <div>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text)' }}>
+              {config.logo ? 'Logo cargado correctamente' : 'Sin logo configurado'}
+            </p>
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-tertiary)' }}>
+              Se mostrará en los 3 portales y en los emails. Máx 1MB · Se redimensiona a 200×200px.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <label style={{ padding: '7px 14px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                {config.logo ? 'Cambiar logo' : 'Subir logo'}
+                <input type="file" accept="image/*" onChange={onLogo} style={{ display: 'none' }} />
+              </label>
+              {config.logo && (
+                <button onClick={() => set('logo', null)} style={{ padding: '7px 14px', border: '1.5px solid var(--red-bg)', borderRadius: 'var(--radius)', background: 'var(--red-bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--red)' }}>
+                  Quitar logo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Section>
 
       <Section title="Datos del colegio">
         <Campo label="Nombre del colegio">

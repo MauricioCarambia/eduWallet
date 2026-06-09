@@ -5,10 +5,16 @@ require('dotenv').config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
-const getNombreColegio = async () => {
-  const res = await pool.query('SELECT nombre_colegio FROM configuracion LIMIT 1');
-  return res.rows[0]?.nombre_colegio || 'EduWallet';
+const getBrandingDB = async () => {
+  const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion LIMIT 1');
+  return {
+    nombre: res.rows[0]?.nombre_colegio || 'EduWallet',
+    logo:   res.rows[0]?.logo || null
+  };
 };
+
+// Compatibilidad con código que ya usa getNombreColegio
+const getNombreColegio = async () => (await getBrandingDB()).nombre;
 
 const enviarEmail = async ({ to, subject, html }) => {
   try {
@@ -19,11 +25,14 @@ const enviarEmail = async ({ to, subject, html }) => {
   }
 };
 
-const baseHTML = (contenido, nombreColegio) => `
+const baseHTML = (contenido, nombreColegio, logo) => `
   <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-    <div style="background: #111; padding: 16px 24px; border-radius: 12px 12px 0 0;">
-      <h1 style="color: white; margin: 0; font-size: 20px;">${nombreColegio}</h1>
-      <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema EduWallet</p>
+    <div style="background: #111; padding: 16px 24px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 14px;">
+      ${logo ? `<img src="${logo}" alt="${nombreColegio}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;flex-shrink:0;" />` : ''}
+      <div>
+        <h1 style="color: white; margin: 0; font-size: 20px;">${nombreColegio}</h1>
+        <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema EduWallet</p>
+      </div>
     </div>
     <div style="background: white; border: 1px solid #eee; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;">
       ${contenido}
@@ -35,7 +44,7 @@ const baseHTML = (contenido, nombreColegio) => `
 `;
 
 const enviarEmailSaldoBajo = async ({ nombrePadre, emailPadre, nombreAlumno, saldo, curso }) => {
-  const nombreColegio = await getNombreColegio();
+  const { nombre: nombreColegio, logo } = await getBrandingDB();
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${nombreAlumno}</b> (${curso}) está por debajo de $200.</p>
@@ -44,7 +53,7 @@ const enviarEmailSaldoBajo = async ({ nombrePadre, emailPadre, nombreAlumno, sal
       <p style="margin: 0; font-size: 32px; font-weight: 700; color: #DC2626;">$${Number(saldo).toLocaleString('es-AR')}</p>
     </div>
     <p style="font-size: 13px; color: #666; margin: 0;">Por favor recargá el saldo para evitar inconvenientes.</p>
-  `, nombreColegio);
+  `, nombreColegio, logo);
 
   await enviarEmail({
     to: emailPadre,
@@ -54,7 +63,7 @@ const enviarEmailSaldoBajo = async ({ nombrePadre, emailPadre, nombreAlumno, sal
 };
 
 const enviarEmailRecarga = async ({ nombrePadre, emailPadre, nombreAlumno, monto, nuevoSaldo }) => {
-  const nombreColegio = await getNombreColegio();
+  const { nombre: nombreColegio, logo } = await getBrandingDB();
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">La recarga para <b>${nombreAlumno}</b> fue acreditada correctamente.</p>
@@ -63,7 +72,7 @@ const enviarEmailRecarga = async ({ nombrePadre, emailPadre, nombreAlumno, monto
       <p style="margin: 0; font-size: 32px; font-weight: 700; color: #16A34A;">+$${Number(monto).toLocaleString('es-AR')}</p>
       <p style="margin: 8px 0 0; font-size: 13px; color: #666;">Nuevo saldo: <b>$${Number(nuevoSaldo).toLocaleString('es-AR')}</b></p>
     </div>
-  `, nombreColegio);
+  `, nombreColegio, logo);
 
   await enviarEmail({
     to: emailPadre,
@@ -73,7 +82,7 @@ const enviarEmailRecarga = async ({ nombrePadre, emailPadre, nombreAlumno, monto
 };
 
 const enviarEmailCompra = async ({ nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar }) => {
-  const nombreColegio = await getNombreColegio();
+  const { nombre: nombreColegio, logo } = await getBrandingDB();
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;"><b>${nombreAlumno}</b> realizó una compra en el ${lugar}.</p>
@@ -84,7 +93,7 @@ const enviarEmailCompra = async ({ nombrePadre, emailPadre, nombreAlumno, descri
       <p style="margin: 6px 0 0; font-size: 13px; color: #666;">Saldo restante: <b>$${Number(saldo).toLocaleString('es-AR')}</b></p>
     </div>
     ${parseFloat(saldo) < 200 ? `<div style="background: #FEF2F2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #DC2626;">⚠ Saldo bajo — por favor recargá.</div>` : ''}
-  `, nombreColegio);
+  `, nombreColegio, logo);
 
   await enviarEmail({
     to: emailPadre,
@@ -114,7 +123,7 @@ const enviarEmailBackup = async ({ sql, nombre }) => {
         <div style="background: #F0FDF4; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #166534;">
           ✓ El archivo SQL adjunto contiene todos los datos del sistema.
         </div>
-      `, nombreColegio),
+      `, nombreColegio, config.rows[0]?.logo || null),
       attachments: [{
         filename: nombre,
         content: Buffer.from(sql).toString('base64'),
@@ -127,7 +136,7 @@ const enviarEmailBackup = async ({ sql, nombre }) => {
 };
 
 const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) => {
-  const nombreColegio = await getNombreColegio();
+  const { nombre: nombreColegio, logo } = await getBrandingDB();
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en EduWallet.</p>
@@ -136,7 +145,7 @@ const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) =
     </a>
     <p style="font-size: 12px; color: #999; margin: 0 0 8px;">Este enlace expira en <b>1 hora</b>.</p>
     <p style="font-size: 12px; color: #999; margin: 0;">Si no solicitaste este cambio, podés ignorar este email. Tu contraseña no será modificada.</p>
-  `, nombreColegio);
+  `, nombreColegio, logo);
 
   await enviarEmail({
     to: emailPadre,
@@ -146,10 +155,10 @@ const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) =
 };
 
 const enviarMensajeAdmin = async ({ asunto, mensaje, destinatarios }) => {
-  const nombreColegio = await getNombreColegio();
+  const { nombre: nombreColegio, logo } = await getBrandingDB();
   const html = baseHTML(`
     <p style="color: #111; margin: 0 0 20px; font-size: 15px; white-space: pre-line;">${mensaje}</p>
-  `, nombreColegio);
+  `, nombreColegio, logo);
 
   let enviados = 0;
   let errores = 0;

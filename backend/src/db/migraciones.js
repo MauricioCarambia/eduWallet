@@ -113,8 +113,9 @@ const migrar = async () => {
     // ─── 5. Columnas opcionales / nuevas ─────────────────────────────────────
     const columnas = [
       { tabla: 'alumnos', columna: 'deuda',              definicion: 'DECIMAL(10,2) DEFAULT 0' },
-      { tabla: 'padres',  columna: 'reset_token',        definicion: 'VARCHAR(200)' },
-      { tabla: 'padres',  columna: 'reset_token_expiry', definicion: 'TIMESTAMP' },
+      { tabla: 'padres',        columna: 'reset_token',        definicion: 'VARCHAR(200)' },
+      { tabla: 'padres',        columna: 'reset_token_expiry', definicion: 'TIMESTAMP' },
+      { tabla: 'configuracion', columna: 'logo',               definicion: 'TEXT' },
     ];
 
     for (const { tabla, columna, definicion } of columnas) {

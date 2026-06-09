@@ -16,6 +16,11 @@ export default function Layout({ children }) {
   const navigate = useNavigate()
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [mostrarInstalar, setMostrarInstalar] = useState(false)
+  const [branding, setBranding] = useState({ nombre_colegio: 'EduWallet', logo: null })
+
+  useEffect(() => {
+    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const handler = e => { e.preventDefault(); setDeferredPrompt(e); setMostrarInstalar(true) }
@@ -40,11 +45,14 @@ export default function Layout({ children }) {
       {mostrarInstalar && (
         <div style={{ background: '#1E3A5F', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'white' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              {branding.logo
+                ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              }
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>Instalá EduWallet</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>Instalá {branding.nombre_colegio || 'EduWallet'}</p>
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Agregala a tu pantalla de inicio</p>
             </div>
           </div>
@@ -58,10 +66,13 @@ export default function Layout({ children }) {
       {/* header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: branding.logo ? 'transparent' : '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            {branding.logo
+              ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            }
           </div>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>EduWallet</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{branding.nombre_colegio || 'EduWallet'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{padre?.nombre?.split(' ')[0]}</span>

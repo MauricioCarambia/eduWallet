@@ -35,6 +35,28 @@ function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
 }
 
 const FORM_VACIO = { nombre: '', curso: '', saldo: '0', limite_diario: '500', tutor: '', tutor_tel: '', alergias: 'Ninguna' }
+const CSV_COLUMNAS = ['nombre', 'curso', 'saldo', 'limite_diario', 'tutor', 'tutor_tel', 'alergias']
+const CSV_PLANTILLA = 'nombre,curso,saldo,limite_diario,tutor,tutor_tel,alergias\nJuan Pérez,1A,500,1000,María Pérez,11-1234-5678,Ninguna\nAna García,2B,0,500,Carlos García,,Maní'
+
+const parsearCSV = (texto) => {
+  const lineas = texto.trim().split('\n').filter(l => l.trim())
+  if (lineas.length < 2) return { filas: [], errores: ['El archivo debe tener encabezado y al menos una fila de datos'] }
+
+  const encabezado = lineas[0].split(',').map(c => c.trim().toLowerCase())
+  const errores = []
+  const filas = []
+
+  for (let i = 1; i < lineas.length; i++) {
+    const valores = lineas[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+    const fila = {}
+    CSV_COLUMNAS.forEach((col, idx) => { fila[col] = valores[idx] || '' })
+    if (!fila.nombre) { errores.push(`Fila ${i + 1}: nombre vacío`); continue }
+    if (!fila.curso)  { errores.push(`Fila ${i + 1}: curso vacío`); continue }
+    filas.push(fila)
+  }
+
+  return { filas, errores }
+}
 
 export default function Alumnos() {
   const [alumnos, setAlumnos] = useState([])
@@ -48,6 +70,11 @@ export default function Alumnos() {
   const [montoRecarga, setMontoRecarga] = useState('')
   const [msg, setMsg] = useState(null)
   const [qrModal, setQrModal] = useState(null)
+  // importación
+  const [csvFilas, setCsvFilas] = useState([])
+  const [csvErrores, setCsvErrores] = useState([])
+  const [importando, setImportando] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
@@ -120,6 +147,45 @@ export default function Alumnos() {
     } catch { showMsg('error', 'Error al obtener QR') }
   }
 
+  const onArchivoCSV = (e) => {
+    const archivo = e.target.files[0]
+    if (!archivo) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const { filas, errores } = parsearCSV(ev.target.result)
+      setCsvFilas(filas)
+      setCsvErrores(errores)
+      setImportResult(null)
+    }
+    reader.readAsText(archivo, 'UTF-8')
+    e.target.value = ''
+  }
+
+  const descargarPlantilla = () => {
+    const blob = new Blob(['﻿' + CSV_PLANTILLA], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'plantilla_alumnos.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const confirmarImportacion = async () => {
+    if (!csvFilas.length) return
+    setImportando(true)
+    try {
+      const res = await api.post('/alumnos/importar', { filas: csvFilas })
+      setImportResult(res.data)
+      if (res.data.creados > 0) {
+        const aRes = await api.get('/alumnos')
+        setAlumnos(aRes.data)
+        showMsg('ok', `${res.data.creados} alumnos importados correctamente`)
+      }
+      setCsvFilas([])
+    } catch { showMsg('error', 'Error al importar') }
+    finally { setImportando(false) }
+  }
+
+  const cerrarImportacion = () => { setModal(null); setCsvFilas([]); setCsvErrores([]); setImportResult(null) }
+
   const historialAlumno = seleccionado ? txs.filter(t => t.alumno_id === seleccionado.id) : []
 
   if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
@@ -133,7 +199,13 @@ export default function Alumnos() {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Alumnos</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{alumnos.length} alumnos registrados</p>
         </div>
-        <Btn onClick={() => { setForm(FORM_VACIO); setModal('nuevo') }}>+ Nuevo alumno</Btn>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { setCsvFilas([]); setCsvErrores([]); setImportResult(null); setModal('importar') }} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar CSV
+          </button>
+          <Btn onClick={() => { setForm(FORM_VACIO); setModal('nuevo') }}>+ Nuevo alumno</Btn>
+        </div>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -265,6 +337,98 @@ export default function Alumnos() {
             <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-secondary)' }}>Código: <b style={{ color: 'var(--text)' }}>{qrModal.codigo}</b></p>
             <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-tertiary)' }}>{qrModal.alumno.curso}</p>
             <Btn onClick={() => { const a = document.createElement('a'); a.href = qrModal.qr; a.download = `QR-${qrModal.alumno.nombre}.png`; a.click() }}>Descargar QR</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'importar' && (
+        <Modal title="Importar alumnos desde CSV" onClose={cerrarImportacion}>
+          {/* Instrucciones y plantilla */}
+          <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: 16, border: '1px solid var(--border)' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Formato requerido</p>
+            <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>El CSV debe tener estos encabezados en la primera fila:</p>
+            <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
+              nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias
+            </code>
+            <button onClick={descargarPlantilla} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+              Descargar plantilla de ejemplo
+            </button>
+          </div>
+
+          {/* Upload */}
+          {!importResult && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Seleccioná el archivo CSV</label>
+              <input type="file" accept=".csv,text/csv" onChange={onArchivoCSV} style={{ fontSize: 13 }} />
+            </div>
+          )}
+
+          {/* Errores de parseo */}
+          {csvErrores.length > 0 && (
+            <div style={{ background: 'var(--red-bg)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, borderLeft: '3px solid var(--red)' }}>
+              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>Errores en el archivo ({csvErrores.length})</p>
+              {csvErrores.map((e, i) => <p key={i} style={{ margin: '2px 0', fontSize: 12, color: 'var(--red)' }}>• {e}</p>)}
+            </div>
+          )}
+
+          {/* Preview */}
+          {csvFilas.length > 0 && !importResult && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{csvFilas.length} alumnos listos para importar</p>
+                {csvFilas.length > 5 && <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>Mostrando primeros 5</p>}
+              </div>
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                      {['Nombre', 'Curso', 'Saldo', 'Límite/día', 'Tutor'].map(h => (
+                        <th key={h} style={{ padding: '7px 10px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvFilas.slice(0, 5).map((f, i) => (
+                      <tr key={i} style={{ borderBottom: i < 4 && i < csvFilas.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                        <td style={{ padding: '7px 10px', color: 'var(--text)', fontWeight: 500 }}>{f.nombre}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.curso}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>${f.saldo || 0}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>${f.limite_diario || 500}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.tutor || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* Resultado */}
+          {importResult && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ background: 'var(--green-bg)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: importResult.errores > 0 ? 10 : 0, borderLeft: '3px solid var(--green)' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--green)' }}>✓ {importResult.creados} alumnos importados correctamente</p>
+              </div>
+              {importResult.errores > 0 && (
+                <div style={{ background: 'var(--red-bg)', borderRadius: 'var(--radius)', padding: '10px 14px', borderLeft: '3px solid var(--red)' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>⚠ {importResult.errores} filas con errores</p>
+                  {importResult.detalle_errores.map((e, i) => (
+                    <p key={i} style={{ margin: '2px 0', fontSize: 12, color: 'var(--red)' }}>• Fila {e.fila}: {e.error}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button onClick={cerrarImportacion} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>
+              {importResult ? 'Cerrar' : 'Cancelar'}
+            </button>
+            {csvFilas.length > 0 && !importResult && (
+              <Btn onClick={confirmarImportacion} disabled={importando}>
+                {importando ? 'Importando...' : `Importar ${csvFilas.length} alumnos`}
+              </Btn>
+            )}
           </div>
         </Modal>
       )}

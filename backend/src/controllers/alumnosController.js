@@ -189,6 +189,68 @@ const getQR = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+const importarAlumnos = async (req, res) => {
+  const { filas } = req.body; // array de objetos ya parseados en el frontend
+  if (!Array.isArray(filas) || filas.length === 0) {
+    return res.status(400).json({ error: 'No se recibieron filas para importar' });
+  }
+  if (filas.length > 500) {
+    return res.status(400).json({ error: 'Máximo 500 alumnos por importación' });
+  }
+
+  const client = await pool.connect();
+  const creados = [];
+  const errores = [];
+
+  try {
+    await client.query('BEGIN');
+
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i];
+      const fila = i + 2; // fila real en el CSV (1 = encabezado)
+
+      if (!f.nombre?.trim()) { errores.push({ fila, error: 'Nombre requerido' }); continue; }
+      if (!f.curso?.trim())  { errores.push({ fila, error: `Fila ${fila}: curso requerido` }); continue; }
+
+      const nombre     = f.nombre.trim();
+      const curso      = f.curso.trim();
+      const saldo      = Math.max(0, parseFloat(f.saldo) || 0);
+      const limiteDiario = Math.max(1, parseFloat(f.limite_diario) || 500);
+      const tutor      = f.tutor?.trim() || null;
+      const tutorTel   = f.tutor_tel?.trim() || null;
+      const alergias   = f.alergias?.trim() || 'Ninguna';
+      const qr         = 'QR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+
+      try {
+        const res = await client.query(
+          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, nombre`,
+          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr]
+        );
+        creados.push(res.rows[0]);
+      } catch (err) {
+        errores.push({ fila, error: `${nombre}: ${err.message}` });
+      }
+    }
+
+    await client.query('COMMIT');
+    await registrar(req.empleado?.id, 'Importación masiva', `${creados.length} alumnos importados`);
+
+    res.json({
+      creados: creados.length,
+      errores: errores.length,
+      detalle_errores: errores,
+      alumnos: creados
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error importarAlumnos:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getAlumnos,
   getAlumno,
@@ -199,4 +261,5 @@ module.exports = {
   recargarSaldo,
   eliminarAlumno,
   getGastoSemanal,
+  importarAlumnos,
 };

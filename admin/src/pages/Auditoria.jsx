@@ -1,22 +1,43 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 
-export default function Auditoria() {
-  const [logs, setLogs] = useState([])
-  const [empleados, setEmpleados] = useState([])
-  const [cargando, setCargando] = useState(true)
-  const [filtroEmpleado, setFiltroEmpleado] = useState('Todos')
-  const [filtroAccion, setFiltroAccion] = useState('Todos')
-  const [busq, setBusq] = useState('')
+const LIMIT = 50
 
-  useEffect(() => { cargar() }, [])
+export default function Auditoria() {
+  const [logs, setLogs]           = useState([])
+  const [total, setTotal]         = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage]           = useState(1)
+  const [empleados, setEmpleados] = useState([])
+  const [cargando, setCargando]   = useState(true)
+  const [filtroEmpleado, setFiltroEmpleado] = useState('Todos')
+  const [filtroAccion, setFiltroAccion]     = useState('Todos')
+  const [busq, setBusq]           = useState('')
+
+  useEffect(() => { cargarEmpleados() }, [])
+  useEffect(() => { cargar() }, [page])
+
+  const cargarEmpleados = async () => {
+    try {
+      const eRes = await api.get('/empleados')
+      setEmpleados(eRes.data)
+    } catch (err) { console.error(err) }
+  }
 
   const cargar = async () => {
+    setCargando(true)
     try {
-      const [lRes, eRes] = await Promise.all([api.get('/auditoria'), api.get('/empleados')])
-      setLogs(lRes.data); setEmpleados(eRes.data)
+      const res = await api.get(`/auditoria?page=${page}&limit=${LIMIT}`)
+      setLogs(res.data.data)
+      setTotal(res.data.total)
+      setTotalPages(res.data.pages)
     } catch (err) { console.error(err) }
     finally { setCargando(false) }
+  }
+
+  const irPagina = (p) => {
+    if (p < 1 || p > totalPages) return
+    setPage(p)
   }
 
   const acciones = ['Todos', ...new Set(logs.map(l => l.accion))]
@@ -38,19 +59,17 @@ export default function Auditoria() {
     return { bg: 'var(--bg)', color: 'var(--text-secondary)' }
   }
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
-
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Auditoría</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{logs.length} eventos registrados</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{total} eventos registrados en total</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total eventos', value: logs.length },
-          { label: 'Hoy', value: logs.filter(l => l.fecha?.slice(0, 10) === new Date().toISOString().slice(0, 10)).length },
+          { label: 'Total eventos', value: total },
+          { label: 'Esta página', value: logs.length },
           { label: 'Empleados activos', value: empleados.filter(e => e.activo).length },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
@@ -61,7 +80,7 @@ export default function Auditoria() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <input placeholder="Buscar..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
+        <input placeholder="Buscar en esta página..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
         <select value={filtroEmpleado} onChange={e => setFiltroEmpleado(e.target.value)} style={{ minWidth: 160 }}>
           {empleadosNombres.map(e => <option key={e}>{e}</option>)}
         </select>
@@ -71,7 +90,9 @@ export default function Auditoria() {
       </div>
 
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-        {filtrados.length === 0 ? (
+        {cargando ? (
+          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Cargando...</p>
+        ) : filtrados.length === 0 ? (
           <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin registros</p>
         ) : filtrados.map((l, i) => {
           const c = colorAccion(l.accion)
@@ -92,6 +113,57 @@ export default function Auditoria() {
           )
         })}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 }}>
+          <button
+            onClick={() => irPagina(1)}
+            disabled={page === 1}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+          >«</button>
+          <button
+            onClick={() => irPagina(page - 1)}
+            disabled={page === 1}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+          >‹</button>
+
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            let p
+            if (totalPages <= 7) {
+              p = i + 1
+            } else if (page <= 4) {
+              p = i + 1
+            } else if (page >= totalPages - 3) {
+              p = totalPages - 6 + i
+            } else {
+              p = page - 3 + i
+            }
+            return (
+              <button
+                key={p}
+                onClick={() => irPagina(p)}
+                style={{ padding: '6px 11px', border: `1.5px solid ${p === page ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: p === page ? 'var(--brand)' : 'var(--bg-card)', color: p === page ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: p === page ? 700 : 400, cursor: 'pointer' }}
+              >{p}</button>
+            )
+          })}
+
+          <button
+            onClick={() => irPagina(page + 1)}
+            disabled={page === totalPages}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+          >›</button>
+          <button
+            onClick={() => irPagina(totalPages)}
+            disabled={page === totalPages}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+          >»</button>
+
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>
+            Página {page} de {totalPages} · {total} eventos
+          </span>
+        </div>
+      )}
     </div>
   )
 }

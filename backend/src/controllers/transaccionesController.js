@@ -3,15 +3,51 @@ const { enviarEmailSaldoBajo, enviarEmailCompra } = require('../services/emailSe
 
 const getTransacciones = async (req, res) => {
   try {
-    const resultado = await pool.query(
-      `SELECT t.*, a.nombre as alumno_nombre, e.nombre as empleado_nombre
-       FROM transacciones t
-       LEFT JOIN alumnos a ON t.alumno_id = a.id
-       LEFT JOIN empleados e ON t.empleado_id = e.id
-       ORDER BY t.fecha DESC`
-    );
-    res.json(resultado.rows);
+    const { desde, hasta, tipo, lugar, page = 1, limit = 500 } = req.query;
+
+    const condiciones = [];
+    const valores = [];
+
+    if (desde) { valores.push(desde); condiciones.push(`t.fecha::date >= $${valores.length}`); }
+    if (hasta) { valores.push(hasta); condiciones.push(`t.fecha::date <= $${valores.length}`); }
+    if (tipo)  { valores.push(tipo);  condiciones.push(`t.tipo = $${valores.length}`); }
+    if (lugar) { valores.push(lugar); condiciones.push(`t.lugar = $${valores.length}`); }
+
+    const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+    const limitNum  = Math.min(Math.max(parseInt(limit) || 500, 1), 2000);
+    const offset    = (Math.max(parseInt(page) || 1, 1) - 1) * limitNum;
+
+    valores.push(limitNum, offset);
+    const pLimit  = valores.length - 1;
+    const pOffset = valores.length;
+
+    const [dataRes, countRes] = await Promise.all([
+      pool.query(
+        `SELECT t.*, a.nombre as alumno_nombre, e.nombre as empleado_nombre
+         FROM transacciones t
+         LEFT JOIN alumnos a ON t.alumno_id = a.id
+         LEFT JOIN empleados e ON t.empleado_id = e.id
+         ${where}
+         ORDER BY t.fecha DESC
+         LIMIT $${pLimit} OFFSET $${pOffset}`,
+        valores
+      ),
+      pool.query(
+        `SELECT COUNT(*) FROM transacciones t ${where}`,
+        valores.slice(0, -2)
+      )
+    ]);
+
+    res.json({
+      data:    dataRes.rows,
+      total:   parseInt(countRes.rows[0].count),
+      page:    parseInt(page),
+      limit:   limitNum,
+      pages:   Math.ceil(parseInt(countRes.rows[0].count) / limitNum)
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -102,40 +138,42 @@ const cobrar = async (req, res) => {
 
     await client.query('COMMIT');
 
-    const alumnoActualizado = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
+    const alumnoActualizadoRes = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
+    const alumnoActualizado = alumnoActualizadoRes.rows[0];
+
     // notificar al padre por email
-try {
-  const padresRes = await pool.query(
-    `SELECT p.nombre, p.email FROM padres p
-     JOIN padres_alumnos pa ON pa.padre_id = p.id
-     WHERE pa.alumno_id = $1`,
-    [alumno_id]
-  );
-  const alumnoActualizado = alumnoActualizado_rows[0]; // ya lo tenés
-  for (const padre of padresRes.rows) {
-    await enviarEmailCompra({
-      nombrePadre: padre.nombre,
-      emailPadre: padre.email,
-      nombreAlumno: a.nombre,
-      descripcion: desc,
-      monto: total,
-      saldo: alumnoActualizado.saldo,
-      lugar
-    });
-    if (parseFloat(alumnoActualizado.saldo) < 200) {
-      await enviarEmailSaldoBajo({
-        nombrePadre: padre.nombre,
-        emailPadre: padre.email,
-        nombreAlumno: a.nombre,
-        saldo: alumnoActualizado.saldo,
-        curso: a.curso
-      });
+    try {
+      const padresRes = await pool.query(
+        `SELECT p.nombre, p.email FROM padres p
+         JOIN padres_alumnos pa ON pa.padre_id = p.id
+         WHERE pa.alumno_id = $1`,
+        [alumno_id]
+      );
+      for (const padre of padresRes.rows) {
+        await enviarEmailCompra({
+          nombrePadre: padre.nombre,
+          emailPadre: padre.email,
+          nombreAlumno: a.nombre,
+          descripcion: desc,
+          monto: total,
+          saldo: alumnoActualizado.saldo,
+          lugar
+        });
+        if (parseFloat(alumnoActualizado.saldo) < 200) {
+          await enviarEmailSaldoBajo({
+            nombrePadre: padre.nombre,
+            emailPadre: padre.email,
+            nombreAlumno: a.nombre,
+            saldo: alumnoActualizado.saldo,
+            curso: a.curso
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.error('Error enviando email:', emailErr.message);
     }
-  }
-} catch (emailErr) {
-  console.error('Error enviando email:', emailErr.message);
-}
-    res.json({ transaccion: tx.rows[0], alumno: alumnoActualizado.rows[0] });
+
+    res.json({ transaccion: tx.rows[0], alumno: alumnoActualizado });
 
   } catch (err) {
     await client.query('ROLLBACK');

@@ -2,14 +2,29 @@ const pool = require('../db/conexion');
 
 const getAuditoria = async (req, res) => {
   try {
-    const resultado = await pool.query(`
-      SELECT a.*, e.nombre as empleado_nombre
-      FROM auditoria a
-      LEFT JOIN empleados e ON a.empleado_id = e.id
-      ORDER BY a.fecha DESC
-      LIMIT 200
-    `);
-    res.json(resultado.rows);
+    const { page = 1, limit = 50 } = req.query;
+    const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+    const offset   = (Math.max(parseInt(page) || 1, 1) - 1) * limitNum;
+
+    const [dataRes, countRes] = await Promise.all([
+      pool.query(
+        `SELECT a.*, e.nombre as empleado_nombre
+         FROM auditoria a
+         LEFT JOIN empleados e ON a.empleado_id = e.id
+         ORDER BY a.fecha DESC
+         LIMIT $1 OFFSET $2`,
+        [limitNum, offset]
+      ),
+      pool.query('SELECT COUNT(*) FROM auditoria')
+    ]);
+
+    res.json({
+      data:  dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      page:  parseInt(page),
+      limit: limitNum,
+      pages: Math.ceil(parseInt(countRes.rows[0].count) / limitNum)
+    });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

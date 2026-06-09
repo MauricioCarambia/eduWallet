@@ -43,8 +43,6 @@ export default function Reportes() {
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
-  useEffect(() => { cargar() }, [])
-
   // cuando cambia periodo rápido, actualizar fechas
   useEffect(() => {
     if (modo !== 'rapido') return
@@ -53,24 +51,31 @@ export default function Reportes() {
     setFechaHasta(hoy())
   }, [periodoRapido, modo])
 
+  // recargar del backend cuando cambian fechas o local
+  useEffect(() => { cargar() }, [fechaDesde, fechaHasta, filtroLocal])
+
   const cargar = async () => {
+    setCargando(true)
     try {
-      const [tRes, aRes] = await Promise.all([api.get('/transacciones'), api.get('/alumnos')])
-      setTxs(tRes.data); setAlumnos(aRes.data)
+      const params = new URLSearchParams({ desde: fechaDesde, hasta: fechaHasta, limit: 2000 })
+      if (filtroLocal !== 'Todos') params.set('lugar', filtroLocal)
+      const [tRes, aRes] = await Promise.all([
+        api.get(`/transacciones?${params}`),
+        api.get('/alumnos')
+      ])
+      setTxs(tRes.data.data ?? tRes.data)
+      setAlumnos(aRes.data)
     } catch (err) { console.error(err) }
     finally { setCargando(false) }
   }
 
-  // filtrar txs por rango de fechas + local
+  // filtrar txs por curso (local y fechas ya vienen filtrados del backend)
   const txsFiltradas = useMemo(() => {
     return txs.filter(t => {
-      const fecha = t.fecha?.slice(0, 10)
-      if (!fecha) return false
-      if (fecha < fechaDesde || fecha > fechaHasta) return false
       if (filtroLocal !== 'Todos' && t.lugar !== filtroLocal) return false
       return true
     })
-  }, [txs, fechaDesde, fechaHasta, filtroLocal])
+  }, [txs, filtroLocal])
 
   const compras = txsFiltradas.filter(t => t.tipo === 'compra')
   const recargas = txsFiltradas.filter(t => t.tipo === 'recarga')
@@ -259,7 +264,7 @@ export default function Reportes() {
             </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <button onClick={() => { setModo('rapido'); setPeriodoRapido('semana'); setFiltroLocal('Todos'); setFiltroCurso('Todos') }}
+            <button onClick={() => { setModo('rapido'); setPeriodoRapido('semana'); setFiltroLocal('Todos'); setFiltroCurso('Todos'); setFechaDesde(haceN(6)); setFechaHasta(hoy()) }}
               style={{ padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
               Limpiar filtros
             </button>

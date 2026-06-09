@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin } = require('../controllers/empleadosController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
+const { loginEmpleadosLimiter } = require('../middlewares/rateLimiter');
 
-router.post('/login', login);
+router.post('/login', loginEmpleadosLimiter, login);
 router.get('/', verificarToken, soloAdmin, getEmpleados);
 router.post('/', verificarToken, soloAdmin, crearEmpleado);
 router.patch('/:id/toggle', verificarToken, soloAdmin, toggleEmpleado);

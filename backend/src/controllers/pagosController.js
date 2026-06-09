@@ -36,7 +36,7 @@ const crearPreferencia = async (req, res) => {
         },
         auto_return: 'approved',
         external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
-        notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
+        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
       }
     });
 
@@ -73,7 +73,7 @@ const procesarPago = async (req, res) => {
           identification: payer?.identification
         },
         external_reference: `${padreId}_${alumno_id}_${monto}_${Date.now()}`,
-        notification_url: `https://eduwallet-production.up.railway.app/api/pagos/webhook`,
+        notification_url: `${process.env.BACKEND_URL}/api/pagos/webhook`,
       }
     });
 

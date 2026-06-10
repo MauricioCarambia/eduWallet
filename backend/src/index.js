@@ -19,6 +19,8 @@ const configuracionRoutes = require('./routes/configuracion');
 const adminPadresRoutes = require('./routes/adminPadres');
 const backupRoutes = require('./routes/backup');
 const mensajesRoutes = require('./routes/mensajes');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./docs/swagger');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -70,6 +72,10 @@ app.use('/api/admin/padres', adminPadresRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/mensajes', mensajesRoutes);
 
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'EduWallet API Docs',
+}));
+app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
 
 app.get('/', (req, res) => {
   res.json({ mensaje: 'EduWallet API funcionando correctamente' });

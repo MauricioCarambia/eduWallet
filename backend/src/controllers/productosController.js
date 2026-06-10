@@ -53,4 +53,22 @@ const eliminarProducto = async (req, res) => {
   }
 };
 
-module.exports = { getProductos, crearProducto, actualizarStock, eliminarProducto };
+// Productos con stock por debajo (o igual) del umbral configurado
+const getStockBajo = async (req, res) => {
+  try {
+    const config = await pool.query('SELECT umbral_stock_bajo FROM configuracion LIMIT 1');
+    const umbral = config.rows[0]?.umbral_stock_bajo ?? 5;
+    const resultado = await pool.query(
+      `SELECT id, nombre, stock, categoria, local
+       FROM productos
+       WHERE activo = true AND stock <= $1
+       ORDER BY stock ASC, nombre`,
+      [umbral]
+    );
+    res.json({ umbral, productos: resultado.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = { getProductos, crearProducto, actualizarStock, eliminarProducto, getStockBajo };

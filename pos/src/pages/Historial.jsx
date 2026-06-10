@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { SkeletonTable } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
@@ -38,7 +39,7 @@ export default function Historial() {
 
   const totalFiltrado = txsFiltradas.reduce((s, t) => s + parseFloat(t.monto), 0)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={8} cols={4} />
 
   return (
     <div>

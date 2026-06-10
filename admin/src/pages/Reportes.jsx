@@ -3,6 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts'
+import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
@@ -324,7 +325,7 @@ export default function Reportes() {
     } catch { showMsg('error', 'Error en recarga masiva') }
   }
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <div><SkeletonCards count={4} /><SkeletonTable rows={6} cols={4} /></div>
 
   const diasTotal = Math.round((new Date(fechaHasta) - new Date(fechaDesde)) / (1000 * 60 * 60 * 24)) + 1
   const labelRango = modo === 'rapido'

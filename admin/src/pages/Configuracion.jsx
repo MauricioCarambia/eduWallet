@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonLine, SkeletonCard } from '../components/Skeleton'
 
 function Campo({ label, hint, children }) {
   return (
@@ -109,7 +110,7 @@ export default function Configuracion() {
     e.target.value = ''
   }
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <div style={{ display: 'grid', gap: 16 }}><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
 
   return (
     <div>

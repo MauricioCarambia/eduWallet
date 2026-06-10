@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -83,7 +84,7 @@ export default function Productos() {
   const prodsFiltrados = productos.filter(p => p.local === local && p.nombre.toLowerCase().includes(busq.toLowerCase()))
   const stockBajo = productos.filter(p => p.stock <= 3)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={6} cols={4} />
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import api from '../api/axios'
 import { pushSoportado, obtenerSuscripcionActual, activarPush } from '../utils/push'
 
@@ -84,7 +85,7 @@ export default function Inicio() {
     a.curso.toLowerCase().includes(busqAlumno.toLowerCase())
   )
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>Cargando...</div>
+  if (cargando) return <div><SkeletonCards count={2} /><SkeletonTable rows={5} cols={3} /></div>
 
   return (
     <div>

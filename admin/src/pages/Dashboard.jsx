@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import api from '../api/axios'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -82,7 +83,7 @@ export default function Dashboard() {
   )
   const topProds = Object.entries(rankProds).sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)', padding: '2rem' }}>Cargando...</div>
+  if (cargando) return <div><SkeletonCards count={4} /><SkeletonTable rows={6} cols={4} /></div>
 
   return (
     <div>

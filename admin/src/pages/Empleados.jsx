@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -79,7 +80,7 @@ export default function Empleados() {
   const cajasEmpleado = seleccionado ? cajas.filter(c => c.empleado_id === seleccionado.id) : []
   const totalVentas = cajasEmpleado.reduce((s, c) => s + parseFloat(c.ventas || 0), 0)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={8} cols={4} />
 
   return (
     <div>

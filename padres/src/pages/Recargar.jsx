@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
+import { SkeletonCards } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -81,7 +82,7 @@ export default function Recargar() {
 
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>Cargando...</div>
+  if (cargando) return <div style={{ padding: '1rem' }}><SkeletonCards count={2} /></div>
   if (alumnos.length === 0) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
 
   if (paso === 'exito') return (

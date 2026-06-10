@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const pct2 = (a, b) => b ? Math.min(Math.round(a / b * 100), 100) : 0
@@ -48,7 +49,7 @@ export default function Control() {
 
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={5} cols={3} />
   if (alumnos.length === 0) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
 
   return (

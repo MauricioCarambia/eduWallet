@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const LIMIT = 50
 
@@ -91,7 +92,7 @@ export default function Auditoria() {
 
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         {cargando ? (
-          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Cargando...</p>
+          <SkeletonTable rows={8} cols={4} />
         ) : filtrados.length === 0 ? (
           <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin registros</p>
         ) : filtrados.map((l, i) => {

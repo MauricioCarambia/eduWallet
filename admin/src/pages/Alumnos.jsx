@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -188,7 +189,7 @@ export default function Alumnos() {
 
   const historialAlumno = seleccionado ? txs.filter(t => t.alumno_id === seleccionado.id) : []
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={8} cols={5} />
 
   const btnStyle = (color, textColor) => ({ padding: '4px 10px', border: 'none', borderRadius: 6, background: color, color: textColor, fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' })
 

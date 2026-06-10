@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 export default function Mensajes() {
   const [padres, setPadres] = useState([])
@@ -37,7 +38,7 @@ export default function Mensajes() {
     finally { setEnviando(false) }
   }
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={6} cols={3} />
 
   return (
     <div>

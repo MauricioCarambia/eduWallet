@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -62,7 +63,7 @@ export default function Cajas() {
     return t.lugar === seleccionada.local && fecha >= inicio && fecha <= fin
   }) : []
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={6} cols={4} />
 
   const filtroBtn = (label, active, onClick) => (
     <button onClick={onClick} style={{ padding: '5px 12px', border: `1.5px solid ${active ? '#1E3A5F' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: active ? '#1E3A5F' : 'var(--bg-card)', color: active ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer' }}>{label}</button>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -74,7 +75,7 @@ export default function Padres() {
 
   const filtrados = padres.filter(p => p.nombre.toLowerCase().includes(busq.toLowerCase()) || p.email.toLowerCase().includes(busq.toLowerCase()))
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={8} cols={4} />
 
   return (
     <div>

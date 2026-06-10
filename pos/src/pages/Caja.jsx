@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { SkeletonTable } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
@@ -47,7 +48,7 @@ export default function Caja() {
 
   const totalEfectivo = parseFloat(caja?.fondo || 0) + parseFloat(caja?.ventas || 0)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)' }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={6} cols={3} />
 
   return (
     <div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -41,7 +42,7 @@ export default function Historial() {
   const totalRecargado = txs.filter(t => t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
-  if (cargando) return <div style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>Cargando...</div>
+  if (cargando) return <SkeletonTable rows={6} cols={3} />
   if (alumnos.length === 0) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
 
   return (

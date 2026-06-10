@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { SkeletonCards } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
@@ -164,7 +165,7 @@ export default function Venta() {
     } catch (err) { showMsg('error', 'Error al activar NFC: ' + err.message); setModoEscaneo('manual') }
   }
 
-  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh', color: 'var(--text-tertiary)', fontSize: 14 }}>Cargando...</div>
+  if (cargando) return <div style={{ padding: '1rem' }}><SkeletonCards count={6} /></div>
 
   // pantalla abrir caja
   if (!caja) return (

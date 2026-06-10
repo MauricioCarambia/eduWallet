@@ -1,6 +1,20 @@
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const pool = require("../db/conexion");
+const { enviarPush } = require("../services/pushService");
 require("dotenv").config();
+
+// Notifica al padre que su recarga por Mercado Pago fue acreditada
+const notificarRecargaMP = async (padreId, alumnoId, monto) => {
+  try {
+    const alumno = await pool.query('SELECT nombre, saldo FROM alumnos WHERE id = $1', [alumnoId]);
+    if (alumno.rows.length === 0) return;
+    await enviarPush(padreId, {
+      title: `Recarga acreditada — ${alumno.rows[0].nombre}`,
+      body: `+$${Number(monto).toLocaleString('es-AR')} · Nuevo saldo: $${Number(alumno.rows[0].saldo).toLocaleString('es-AR')}`,
+      url: '/inicio'
+    });
+  } catch (err) { console.error('Error notificarRecargaMP:', err.message); }
+};
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -117,6 +131,7 @@ const procesarPago = async (req, res) => {
         );
       }
       const alumno = await pool.query('SELECT saldo FROM alumnos WHERE id = $1', [alumno_id]);
+      await notificarRecargaMP(padreId, alumno_id, monto);
       return res.json({ status: 'approved', saldo: alumno.rows[0].saldo, payment_id: result.id });
     }
 
@@ -179,6 +194,7 @@ const webhook = async (req, res) => {
        VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
       [alumnoId, monto, `MP:${data.id}`],
     );
+    await notificarRecargaMP(padreId, alumnoId, monto);
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
@@ -222,6 +238,7 @@ const verificarPago = async (req, res) => {
          VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
         [alumno_id, monto, `MP:${payment_id}`],
       );
+      await notificarRecargaMP(req.padre.id, alumno_id, monto);
     }
     const alumno = await pool.query("SELECT saldo FROM alumnos WHERE id = $1", [
       alumno_id,

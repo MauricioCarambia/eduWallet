@@ -1,5 +1,6 @@
 const pool = require('../db/conexion');
 const { enviarEmailSaldoBajo, enviarEmailCompra } = require('../services/emailService');
+const { enviarPush } = require('../services/pushService');
 
 const getTransacciones = async (req, res) => {
   try {
@@ -144,7 +145,7 @@ const cobrar = async (req, res) => {
     // notificar al padre por email
     try {
       const padresRes = await pool.query(
-        `SELECT p.nombre, p.email FROM padres p
+        `SELECT p.id, p.nombre, p.email FROM padres p
          JOIN padres_alumnos pa ON pa.padre_id = p.id
          WHERE pa.alumno_id = $1`,
         [alumno_id]
@@ -159,6 +160,11 @@ const cobrar = async (req, res) => {
           saldo: alumnoActualizado.saldo,
           lugar
         });
+        await enviarPush(padre.id, {
+          title: `Compra de ${a.nombre}`,
+          body: `${desc} — $${Number(total).toLocaleString('es-AR')} en ${lugar}. Saldo: $${Number(alumnoActualizado.saldo).toLocaleString('es-AR')}`,
+          url: '/historial'
+        });
         if (parseFloat(alumnoActualizado.saldo) < 200) {
           await enviarEmailSaldoBajo({
             nombrePadre: padre.nombre,
@@ -166,6 +172,11 @@ const cobrar = async (req, res) => {
             nombreAlumno: a.nombre,
             saldo: alumnoActualizado.saldo,
             curso: a.curso
+          });
+          await enviarPush(padre.id, {
+            title: `⚠ Saldo bajo de ${a.nombre}`,
+            body: `El saldo es de $${Number(alumnoActualizado.saldo).toLocaleString('es-AR')}. Recargá para evitar inconvenientes.`,
+            url: '/recargar'
           });
         }
       }

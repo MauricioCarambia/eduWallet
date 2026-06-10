@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { pushSoportado, obtenerSuscripcionActual, activarPush } from '../utils/push'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -14,10 +15,40 @@ export default function Inicio() {
   const [todosAlumnos, setTodosAlumnos] = useState([])
   const [busqAlumno, setBusqAlumno] = useState('')
   const [msg, setMsg] = useState(null)
+  const [mostrarPush, setMostrarPush] = useState(false)
+  const [activandoPush, setActivandoPush] = useState(false)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
+
+  useEffect(() => {
+    (async () => {
+      if (!pushSoportado()) return
+      if (Notification.permission === 'denied') return
+      if (localStorage.getItem('push_descartado') === '1') return
+      const sub = await obtenerSuscripcionActual()
+      if (!sub) setMostrarPush(true)
+    })()
+  }, [])
+
+  const habilitarPush = async () => {
+    setActivandoPush(true)
+    try {
+      await activarPush()
+      setMostrarPush(false)
+      showMsg('ok', 'Notificaciones activadas correctamente')
+    } catch (err) {
+      showMsg('error', err.message || 'No se pudieron activar las notificaciones')
+    } finally {
+      setActivandoPush(false)
+    }
+  }
+
+  const descartarPush = () => {
+    localStorage.setItem('push_descartado', '1')
+    setMostrarPush(false)
+  }
 
   const cargar = async () => {
     try {
@@ -67,6 +98,26 @@ export default function Inicio() {
       {msg && (
         <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
           {msg.texto}
+        </div>
+      )}
+
+      {mostrarPush && (
+        <div style={{ background: 'var(--bg-card)', borderRadius: 14, padding: '14px 16px', marginBottom: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--brand-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Activar notificaciones</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Enterate al instante de recargas, compras y saldo bajo.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <button onClick={habilitarPush} disabled={activandoPush} style={{ padding: '6px 12px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', opacity: activandoPush ? 0.7 : 1 }}>
+              {activandoPush ? 'Activando...' : 'Activar'}
+            </button>
+            <button onClick={descartarPush} style={{ padding: '4px 12px', border: 'none', background: 'none', color: 'var(--text-tertiary)', fontSize: 11, cursor: 'pointer' }}>
+              Ahora no
+            </button>
+          </div>
         </div>
       )}
 

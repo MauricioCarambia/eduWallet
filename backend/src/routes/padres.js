@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { registro, login, getAlumnos, vincularAlumno, recargarSaldo, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
+const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
 
@@ -13,5 +14,10 @@ router.post('/alumnos/vincular', verificarPadre, vincularAlumno);
 router.post('/alumnos/recargar', verificarPadre, recargarSaldo);
 router.patch('/alumnos/:alumno_id/toggle', verificarPadre, toggleBloqueo);
 router.patch('/alumnos/:alumno_id/limite', verificarPadre, actualizarLimite);
+
+// notificaciones push
+router.get('/push/clave-publica', getClavePublica);
+router.post('/push/suscribir', verificarPadre, suscribir);
+router.post('/push/desuscribir', verificarPadre, desuscribir);
 
 module.exports = router;

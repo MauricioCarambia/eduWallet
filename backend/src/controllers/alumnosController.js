@@ -1,6 +1,7 @@
 const pool = require("../db/conexion");
 const { registrar } = require("./auditoriaController");
 const { enviarEmailRecarga } = require("../services/emailService");
+const { enviarPush } = require("../services/pushService");
 const QRCode = require('qrcode');
 
 const getAlumnos = async (req, res) => {
@@ -97,7 +98,7 @@ const recargarSaldo = async (req, res) => {
     );
     try {
       const padresRes = await pool.query(
-        `SELECT p.nombre, p.email FROM padres p
+        `SELECT p.id, p.nombre, p.email FROM padres p
      JOIN padres_alumnos pa ON pa.padre_id = p.id
      WHERE pa.alumno_id = $1`,
         [id],
@@ -113,6 +114,11 @@ const recargarSaldo = async (req, res) => {
           nombreAlumno: alumnoActualizado.rows[0].nombre,
           monto,
           nuevoSaldo: alumnoActualizado.rows[0].saldo,
+        });
+        await enviarPush(padre.id, {
+          title: `Recarga acreditada — ${alumnoActualizado.rows[0].nombre}`,
+          body: `+$${Number(monto).toLocaleString('es-AR')} · Nuevo saldo: $${Number(alumnoActualizado.rows[0].saldo).toLocaleString('es-AR')}`,
+          url: '/inicio'
         });
       }
     } catch (emailErr) {

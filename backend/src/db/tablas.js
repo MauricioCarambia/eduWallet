@@ -98,6 +98,15 @@ const crearTablas = async () => {
         logo             TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id        SERIAL PRIMARY KEY,
+        padre_id  INTEGER NOT NULL REFERENCES padres(id) ON DELETE CASCADE,
+        endpoint  TEXT NOT NULL UNIQUE,
+        p256dh    VARCHAR(200) NOT NULL,
+        auth      VARCHAR(100) NOT NULL,
+        creado_en TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS pagos (
         id                 SERIAL PRIMARY KEY,
         padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
@@ -127,6 +136,7 @@ const crearTablas = async () => {
       CREATE INDEX IF NOT EXISTS idx_pagos_padre_id          ON pagos (padre_id);
       CREATE INDEX IF NOT EXISTS idx_pagos_alumno_id         ON pagos (alumno_id);
       CREATE INDEX IF NOT EXISTS idx_pagos_estado            ON pagos (estado);
+      CREATE INDEX IF NOT EXISTS idx_push_subs_padre_id      ON push_subscriptions (padre_id);
     `);
 
     console.log('Tablas e índices creados correctamente');

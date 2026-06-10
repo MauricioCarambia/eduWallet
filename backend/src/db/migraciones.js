@@ -174,7 +174,22 @@ const migrar = async () => {
     `);
     console.log('✅ Tabla pagos verificada');
 
-    // ─── 8. Quitar columna "deuda" (no usada) ────────────────────────────────
+    // ─── 8. Tabla push_subscriptions (notificaciones push PWA) ──────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id        SERIAL PRIMARY KEY,
+        padre_id  INTEGER NOT NULL REFERENCES padres(id) ON DELETE CASCADE,
+        endpoint  TEXT NOT NULL UNIQUE,
+        p256dh    VARCHAR(200) NOT NULL,
+        auth      VARCHAR(100) NOT NULL,
+        creado_en TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_push_subs_padre_id ON push_subscriptions (padre_id);
+    `);
+    console.log('✅ Tabla push_subscriptions verificada');
+
+    // ─── 9. Quitar columna "deuda" (no usada) ────────────────────────────────
     await client.query(`
       ALTER TABLE alumnos DROP CONSTRAINT IF EXISTS chk_alumnos_deuda_nn;
       ALTER TABLE alumnos DROP COLUMN IF EXISTS deuda;

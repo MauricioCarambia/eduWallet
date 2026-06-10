@@ -122,7 +122,9 @@ const migrar = async () => {
       await client.query(`
         DO $$
         BEGIN
-          IF NOT EXISTS (
+          IF EXISTS (
+            SELECT 1 FROM information_schema.tables WHERE table_name = '${tabla}'
+          ) AND NOT EXISTS (
             SELECT 1 FROM information_schema.columns
             WHERE table_name = '${tabla}' AND column_name = '${columna}'
           ) THEN
@@ -132,6 +134,26 @@ const migrar = async () => {
       `);
     }
     console.log('✅ Columnas opcionales verificadas');
+
+    // ─── 6. Tabla configuracion (si no existe) ───────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS configuracion (
+        id                SERIAL PRIMARY KEY,
+        nombre_colegio    VARCHAR(150) DEFAULT 'EduWallet',
+        direccion         VARCHAR(200),
+        telefono          VARCHAR(50),
+        email_admin       VARCHAR(150),
+        email_smtp        VARCHAR(150),
+        email_smtp_pass   VARCHAR(200),
+        email_smtp_host   VARCHAR(100) DEFAULT 'smtp.gmail.com',
+        email_smtp_port   INTEGER DEFAULT 587,
+        umbral_saldo_bajo DECIMAL(10,2) DEFAULT 200,
+        umbral_stock_bajo INTEGER DEFAULT 3,
+        moneda            VARCHAR(10) DEFAULT 'ARS',
+        logo              TEXT
+      );
+    `);
+    console.log('✅ Tabla configuracion verificada');
 
     console.log('\n✅ Migraciones completadas exitosamente.');
   } catch (err) {

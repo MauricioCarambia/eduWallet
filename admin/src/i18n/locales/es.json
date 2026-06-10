@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "alumnos": "Alumnos",
+    "empleados": "Empleados",
+    "padres": "Padres",
+    "cajas": "Cajas",
+    "reportes": "Reportes",
+    "mensajes": "Mensajes",
+    "auditoria": "Auditoría",
+    "configuracion": "Configuración"
+  },
+  "common": {
+    "administracion": "Administración",
+    "salir": "Salir",
+    "modo_claro": "Modo claro",
+    "modo_oscuro": "Modo oscuro",
+    "cargando": "Cargando...",
+    "guardar": "Guardar",
+    "cancelar": "Cancelar",
+    "buscar": "Buscar",
+    "error": "Ocurrió un error"
+  },
+  "login": {
+    "subtitulo": "Panel de Administración",
+    "usuario": "Usuario",
+    "usuario_placeholder": "Ingresá tu usuario",
+    "pin": "PIN",
+    "ingresar": "Ingresar",
+    "ingresando": "Ingresando...",
+    "error_acceso": "Acceso restringido a administradores",
+    "error_login": "Error al iniciar sesión"
+  }
+}

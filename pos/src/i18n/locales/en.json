@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "venta": "Sale",
+    "productos": "Products",
+    "caja": "Register",
+    "historial": "History"
+  },
+  "common": {
+    "punto_venta": "Point of Sale",
+    "salir": "Log out",
+    "sin_caja_abierta": "No register open",
+    "alertas_stock": "Low stock alerts",
+    "sin_alertas": "No alerts — all stock is OK.",
+    "sin_stock": "Out of stock",
+    "stock": "Stock",
+    "cargando": "Loading..."
+  },
+  "login": {
+    "subtitulo": "Point of Sale",
+    "usuario": "Username",
+    "usuario_placeholder": "username",
+    "pin": "PIN",
+    "ingresar": "Log in",
+    "ingresando": "Logging in...",
+    "error_login": "Error logging in"
+  }
+}

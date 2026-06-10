@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "venta": "Venta",
+    "productos": "Productos",
+    "caja": "Caja",
+    "historial": "Historial"
+  },
+  "common": {
+    "punto_venta": "Punto de Venta",
+    "salir": "Salir",
+    "sin_caja_abierta": "Sin caja abierta",
+    "alertas_stock": "Alertas de stock bajo",
+    "sin_alertas": "Sin alertas — todo el stock está OK.",
+    "sin_stock": "Sin stock",
+    "stock": "Stock",
+    "cargando": "Cargando..."
+  },
+  "login": {
+    "subtitulo": "Punto de Venta",
+    "usuario": "Usuario",
+    "usuario_placeholder": "usuario",
+    "pin": "PIN",
+    "ingresar": "Ingresar",
+    "ingresando": "Ingresando...",
+    "error_login": "Error al iniciar sesión"
+  }
+}

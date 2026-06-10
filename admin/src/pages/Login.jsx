@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
@@ -11,6 +12,7 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
   const { login } = useAuth()
   const { dark, toggle } = useTheme()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleLogin = async () => {
@@ -19,13 +21,13 @@ export default function Login() {
     try {
       const res = await api.post('/empleados/login', { usuario, pin })
       if (res.data.empleado.rol !== 'admin') {
-        setError('Acceso restringido a administradores')
+        setError(t('login.error_acceso'))
         setCargando(false); return
       }
       login(res.data.empleado, res.data.token)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión')
+      setError(err.response?.data?.error || t('login.error_login'))
     } finally {
       setCargando(false)
     }
@@ -49,21 +51,21 @@ export default function Login() {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Panel de Administración</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('login.subtitulo')}</p>
         </div>
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '2rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Usuario</label>
-            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder="Ingresá tu usuario" onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.usuario')}</label>
+            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>PIN</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.pin')}</label>
             <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder="••••" onKeyDown={e => e.key === 'Enter' && handleLogin()} />
           </div>
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>{error}</div>}
           <button onClick={handleLogin} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: '#1E3A5F', color: 'white', fontSize: 14, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: '0 2px 8px rgba(30,58,95,0.3)' }}>
-            {cargando ? 'Ingresando...' : 'Ingresar'}
+            {cargando ? t('login.ingresando') : t('login.ingresar')}
           </button>
         </div>
       </div>

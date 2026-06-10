@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "alumnos": "Students",
+    "empleados": "Staff",
+    "padres": "Parents",
+    "cajas": "Registers",
+    "reportes": "Reports",
+    "mensajes": "Messages",
+    "auditoria": "Audit log",
+    "configuracion": "Settings"
+  },
+  "common": {
+    "administracion": "Administration",
+    "salir": "Log out",
+    "modo_claro": "Light mode",
+    "modo_oscuro": "Dark mode",
+    "cargando": "Loading...",
+    "guardar": "Save",
+    "cancelar": "Cancel",
+    "buscar": "Search",
+    "error": "Something went wrong"
+  },
+  "login": {
+    "subtitulo": "Admin Panel",
+    "usuario": "Username",
+    "usuario_placeholder": "Enter your username",
+    "pin": "PIN",
+    "ingresar": "Log in",
+    "ingresando": "Logging in...",
+    "error_acceso": "Access restricted to administrators",
+    "error_login": "Error logging in"
+  }
+}

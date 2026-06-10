@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
@@ -11,6 +12,7 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
   const { login } = useAuth()
   const { dark, toggle } = useTheme()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleLogin = async () => {
@@ -21,7 +23,7 @@ export default function Login() {
       login(res.data.empleado, res.data.token)
       navigate('/venta')
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión')
+      setError(err.response?.data?.error || t('login.error_login'))
     } finally {
       setCargando(false)
     }
@@ -45,17 +47,17 @@ export default function Login() {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet POS</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Punto de Venta</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('login.subtitulo')}</p>
         </div>
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '1.5rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Usuario</label>
-            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder="usuario" autoFocus />
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.usuario')}</label>
+            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} autoFocus />
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>PIN</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.pin')}</label>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
               {[0,1,2,3].map(i => (
                 <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: pin.length > i ? 'var(--brand)' : 'var(--border)', transition: 'background .2s' }} />
@@ -75,7 +77,7 @@ export default function Login() {
 
           <button onClick={handleLogin} disabled={cargando || !usuario || !pin}
             style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
-            {cargando ? 'Ingresando...' : 'Ingresar'}
+            {cargando ? t('login.ingresando') : t('login.ingresar')}
           </button>
         </div>
       </div>

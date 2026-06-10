@@ -38,7 +38,6 @@ const migrar = async () => {
       { tabla: 'alumnos',       nombre: 'chk_alumnos_saldo_nn',         expr: 'saldo >= 0' },
       { tabla: 'alumnos',       nombre: 'chk_alumnos_gasto_nn',         expr: 'gasto_hoy >= 0' },
       { tabla: 'alumnos',       nombre: 'chk_alumnos_limite_pos',       expr: 'limite_diario > 0' },
-      { tabla: 'alumnos',       nombre: 'chk_alumnos_deuda_nn',         expr: 'deuda >= 0' },
       { tabla: 'productos',     nombre: 'chk_productos_precio_pos',     expr: 'precio > 0' },
       { tabla: 'productos',     nombre: 'chk_productos_stock_nn',       expr: 'stock >= 0' },
       { tabla: 'transacciones', nombre: 'chk_transacciones_monto_pos',  expr: 'monto > 0' },
@@ -112,7 +111,6 @@ const migrar = async () => {
 
     // ─── 5. Columnas opcionales / nuevas ─────────────────────────────────────
     const columnas = [
-      { tabla: 'alumnos', columna: 'deuda',              definicion: 'DECIMAL(10,2) DEFAULT 0' },
       { tabla: 'padres',        columna: 'reset_token',        definicion: 'VARCHAR(200)' },
       { tabla: 'padres',        columna: 'reset_token_expiry', definicion: 'TIMESTAMP' },
       { tabla: 'configuracion', columna: 'logo',               definicion: 'TEXT' },
@@ -175,6 +173,13 @@ const migrar = async () => {
       CREATE INDEX IF NOT EXISTS idx_pagos_estado    ON pagos (estado);
     `);
     console.log('✅ Tabla pagos verificada');
+
+    // ─── 8. Quitar columna "deuda" (no usada) ────────────────────────────────
+    await client.query(`
+      ALTER TABLE alumnos DROP CONSTRAINT IF EXISTS chk_alumnos_deuda_nn;
+      ALTER TABLE alumnos DROP COLUMN IF EXISTS deuda;
+    `);
+    console.log('✅ Columna deuda eliminada (no se usaba)');
 
     console.log('\n✅ Migraciones completadas exitosamente.');
   } catch (err) {

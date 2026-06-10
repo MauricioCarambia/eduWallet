@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS alumnos (
   alergias VARCHAR(100) DEFAULT 'Ninguna',
   tutor VARCHAR(100),
   tutor_tel VARCHAR(50),
-  deuda DECIMAL(10,2) DEFAULT 0,
   creado_en TIMESTAMP DEFAULT NOW()
 );
 

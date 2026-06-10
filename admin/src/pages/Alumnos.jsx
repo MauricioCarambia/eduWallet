@@ -115,6 +115,16 @@ export default function Alumnos() {
     } catch { showMsg('error', 'Error al actualizar') }
   }
 
+  const regenerarCodigo = async () => {
+    if (!confirm('¿Regenerar el código de vinculación? El código anterior dejará de funcionar.')) return
+    try {
+      const res = await api.patch(`/alumnos/${seleccionado.id}/codigo-vinculacion`)
+      setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
+      setSeleccionado(res.data)
+      showMsg('ok', 'Código regenerado')
+    } catch { showMsg('error', 'Error al regenerar el código') }
+  }
+
   const eliminar = async id => {
     if (!confirm('¿Eliminar este alumno?')) return
     try {
@@ -277,6 +287,15 @@ export default function Alumnos() {
               <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
             </Campo>
           ))}
+          {modal === 'editar' && seleccionado && (
+            <Campo label="Código de vinculación">
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input type="text" readOnly value={seleccionado.codigo_vinculacion || ''} style={{ fontFamily: 'monospace', letterSpacing: 1, fontWeight: 600 }} />
+                <button onClick={regenerarCodigo} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Regenerar</button>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Compartí este código con la familia para vincular su cuenta a este alumno.</p>
+            </Campo>
+          )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
             <Btn onClick={modal === 'nuevo' ? guardarNuevo : guardarEditar}>{modal === 'nuevo' ? 'Registrar' : 'Guardar'}</Btn>

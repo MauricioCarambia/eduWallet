@@ -11,6 +11,9 @@ const verificarToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.tipo === 'padre') {
+      return res.status(403).json({ error: 'Acceso restringido.' });
+    }
     req.empleado = decoded;
     next();
   } catch (err) {

@@ -196,6 +196,35 @@ const migrar = async () => {
     `);
     console.log('✅ Columna deuda eliminada (no se usaba)');
 
+    // ─── 10. Código de vinculación padre-alumno ──────────────────────────────
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'alumnos' AND column_name = 'codigo_vinculacion'
+        ) THEN
+          ALTER TABLE alumnos ADD COLUMN codigo_vinculacion VARCHAR(10) UNIQUE;
+        END IF;
+      END $$;
+    `);
+    const sinCodigo = await client.query(`SELECT id FROM alumnos WHERE codigo_vinculacion IS NULL`);
+    const generarCodigo = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+    for (const { id } of sinCodigo.rows) {
+      let codigo;
+      let asignado = false;
+      while (!asignado) {
+        codigo = generarCodigo();
+        try {
+          await client.query('UPDATE alumnos SET codigo_vinculacion = $1 WHERE id = $2', [codigo, id]);
+          asignado = true;
+        } catch (err) {
+          if (err.code !== '23505') throw err; // colisión de UNIQUE, reintentar
+        }
+      }
+    }
+    console.log('✅ Códigos de vinculación generados');
+
     console.log('\n✅ Migraciones completadas exitosamente.');
   } catch (err) {
     console.error('\n❌ Error en migración:', err.message);

@@ -13,8 +13,8 @@ export default function Inicio() {
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [modalVincular, setModalVincular] = useState(false)
-  const [todosAlumnos, setTodosAlumnos] = useState([])
-  const [busqAlumno, setBusqAlumno] = useState('')
+  const [codigoVinculacion, setCodigoVinculacion] = useState('')
+  const [vinculando, setVinculando] = useState(false)
   const [msg, setMsg] = useState(null)
   const [mostrarPush, setMostrarPush] = useState(false)
   const [activandoPush, setActivandoPush] = useState(false)
@@ -62,28 +62,22 @@ export default function Inicio() {
     }
   }
 
-  const buscarAlumnos = async () => {
+  const vincular = async (e) => {
+    e.preventDefault()
+    if (!codigoVinculacion.trim()) return
+    setVinculando(true)
     try {
-      const res = await api.get('/alumnos')
-      setTodosAlumnos(res.data)
-    } catch (err) { console.error(err) }
-  }
-
-  const vincular = async (alumno_id) => {
-    try {
-      await api.post('/padres/alumnos/vincular', { alumno_id, relacion: 'tutor' })
-      showMsg('ok', 'Alumno vinculado correctamente')
+      const res = await api.post('/padres/alumnos/vincular', { codigo_vinculacion: codigoVinculacion.trim(), relacion: 'tutor' })
+      showMsg('ok', res.data.mensaje || 'Alumno vinculado correctamente')
       setModalVincular(false)
+      setCodigoVinculacion('')
       cargar()
     } catch (err) {
       showMsg('error', err.response?.data?.error || 'Error al vincular')
+    } finally {
+      setVinculando(false)
     }
   }
-
-  const alumnosFiltrados = todosAlumnos.filter(a =>
-    a.nombre.toLowerCase().includes(busqAlumno.toLowerCase()) ||
-    a.curso.toLowerCase().includes(busqAlumno.toLowerCase())
-  )
 
   if (cargando) return <div><SkeletonCards count={2} /><SkeletonTable rows={5} cols={3} /></div>
 
@@ -129,7 +123,7 @@ export default function Inicio() {
           </div>
           <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text)' }}>Sin alumnos vinculados</p>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Vinculá a tu hijo/a para ver su saldo y movimientos</p>
-          <button onClick={() => { setModalVincular(true); buscarAlumnos() }} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+          <button onClick={() => setModalVincular(true)} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
             + Vincular alumno
           </button>
         </div>
@@ -181,7 +175,7 @@ export default function Inicio() {
               </div>
             ))}
           </div>
-          <button onClick={() => { setModalVincular(true); buscarAlumnos() }} style={{ width: '100%', padding: '12px', border: '1.5px dashed var(--border)', borderRadius: 12, background: 'var(--bg-card)', fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <button onClick={() => setModalVincular(true)} style={{ width: '100%', padding: '12px', border: '1.5px dashed var(--border)', borderRadius: 12, background: 'var(--bg-card)', fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer' }}>
             + Vincular otro alumno
           </button>
         </>
@@ -192,29 +186,24 @@ export default function Inicio() {
           <div style={{ background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Vincular alumno</h2>
-              <button onClick={() => setModalVincular(false)} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+              <button onClick={() => { setModalVincular(false); setCodigoVinculacion('') }} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
             </div>
-            <input placeholder="Buscar por nombre o curso..." value={busqAlumno} onChange={e => setBusqAlumno(e.target.value)} style={{ marginBottom: 12 }} autoFocus />
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {alumnosFiltrados.map(a => {
-                const yaVinculado = alumnos.some(x => x.id === a.id)
-                return (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
-                      {a.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{a.nombre}</p>
-                      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{a.curso}</p>
-                    </div>
-                    <button onClick={() => !yaVinculado && vincular(a.id)} disabled={yaVinculado}
-                      style={{ padding: '6px 14px', border: 'none', borderRadius: 8, background: yaVinculado ? 'var(--bg)' : 'var(--brand)', color: yaVinculado ? 'var(--text-tertiary)' : 'white', fontSize: 12, fontWeight: 500, cursor: yaVinculado ? 'not-allowed' : 'pointer' }}>
-                      {yaVinculado ? 'Vinculado' : 'Vincular'}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
+              Pedí el código de vinculación del alumno en la administración del colegio e ingresalo a continuación.
+            </p>
+            <form onSubmit={vincular}>
+              <input
+                placeholder="Código de vinculación"
+                value={codigoVinculacion}
+                onChange={e => setCodigoVinculacion(e.target.value.toUpperCase())}
+                style={{ marginBottom: 12, fontFamily: 'monospace', letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}
+                autoFocus
+              />
+              <button type="submit" disabled={vinculando || !codigoVinculacion.trim()}
+                style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: vinculando || !codigoVinculacion.trim() ? 'not-allowed' : 'pointer', opacity: vinculando || !codigoVinculacion.trim() ? 0.7 : 1 }}>
+                {vinculando ? 'Vinculando...' : 'Vincular'}
+              </button>
+            </form>
           </div>
         </div>
       )}

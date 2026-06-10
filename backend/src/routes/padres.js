@@ -134,9 +134,9 @@ router.get('/alumnos', verificarPadre, getAlumnos);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [alumno_id]
+ *             required: [codigo_vinculacion]
  *             properties:
- *               alumno_id: { type: integer }
+ *               codigo_vinculacion: { type: string, example: "A1B2C3D4" }
  *               relacion: { type: string, example: "tutor" }
  *     responses:
  *       200:

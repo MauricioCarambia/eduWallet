@@ -22,6 +22,7 @@ const crearTablas = async () => {
         gasto_hoy    DECIMAL(10,2)  DEFAULT 0  CHECK (gasto_hoy >= 0),
         activo       BOOLEAN        DEFAULT true,
         qr           VARCHAR(50)    UNIQUE,
+        codigo_vinculacion VARCHAR(10) UNIQUE,
         alergias     VARCHAR(100)   DEFAULT 'Ninguna',
         tutor        VARCHAR(100),
         tutor_tel    VARCHAR(50),

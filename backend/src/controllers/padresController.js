@@ -61,24 +61,31 @@ const getAlumnos = async (req, res) => {
 
 const vincularAlumno = async (req, res) => {
   const padreId = req.padre.id;
-  const { alumno_id, relacion } = req.body;
+  const { codigo_vinculacion, relacion } = req.body;
+  if (!codigo_vinculacion?.trim()) {
+    return res.status(400).json({ error: 'Código de vinculación requerido' });
+  }
   try {
-    const alumno = await pool.query('SELECT id FROM alumnos WHERE id = $1', [alumno_id]);
+    const alumno = await pool.query(
+      'SELECT id, nombre, curso FROM alumnos WHERE codigo_vinculacion = $1',
+      [codigo_vinculacion.trim().toUpperCase()]
+    );
     if (alumno.rows.length === 0) {
-      return res.status(404).json({ error: 'Alumno no encontrado' });
+      return res.status(404).json({ error: 'Código de vinculación inválido' });
     }
+    const alumnoId = alumno.rows[0].id;
     const existe = await pool.query(
       'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
-      [padreId, alumno_id]
+      [padreId, alumnoId]
     );
     if (existe.rows.length > 0) {
       return res.status(400).json({ error: 'Ya está vinculado a este alumno' });
     }
     await pool.query(
       'INSERT INTO padres_alumnos (padre_id, alumno_id, relacion) VALUES ($1, $2, $3)',
-      [padreId, alumno_id, relacion || 'tutor']
+      [padreId, alumnoId, relacion || 'tutor']
     );
-    res.json({ mensaje: 'Alumno vinculado correctamente' });
+    res.json({ mensaje: 'Alumno vinculado correctamente', alumno: alumno.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

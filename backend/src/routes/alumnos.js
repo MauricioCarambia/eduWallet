@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, recargarSaldo, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos } = require('../controllers/alumnosController');
+const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, recargarSaldo, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion } = require('../controllers/alumnosController');
 
 /**
  * @swagger
@@ -191,5 +191,26 @@ router.get('/:id/gasto-semanal', verificarToken, getGastoSemanal);
  *         description: Imagen QR (data URL)
  */
 router.get('/:id/qr', verificarToken, getQR);
+
+/**
+ * @swagger
+ * /alumnos/{id}/codigo-vinculacion:
+ *   patch:
+ *     summary: Regenerar el código de vinculación de un alumno
+ *     tags: [Alumnos]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Alumno con el código regenerado
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Alumno' }
+ */
+router.patch('/:id/codigo-vinculacion', verificarToken, soloAdmin, regenerarCodigoVinculacion);
 
 module.exports = router;

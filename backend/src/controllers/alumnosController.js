@@ -4,6 +4,8 @@ const { enviarEmailRecarga } = require("../services/emailService");
 const { enviarPush } = require("../services/pushService");
 const QRCode = require('qrcode');
 
+const generarCodigoVinculacion = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+
 const getAlumnos = async (req, res) => {
   try {
     const resultado = await pool.query("SELECT * FROM alumnos ORDER BY nombre");
@@ -33,9 +35,10 @@ const crearAlumno = async (req, res) => {
     req.body;
   try {
     const qr = "QR-" + Date.now();
+    const codigoVinculacion = generarCodigoVinculacion();
     const resultado = await pool.query(
-      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         nombre,
@@ -46,6 +49,7 @@ const crearAlumno = async (req, res) => {
         tutor_tel,
         alergias || "Ninguna",
         qr,
+        codigoVinculacion,
       ],
     );
     await registrar(req.empleado?.id, "Nuevo alumno", nombre);
@@ -195,6 +199,30 @@ const getQR = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+const regenerarCodigoVinculacion = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let codigo;
+    let actualizado;
+    while (!actualizado) {
+      codigo = generarCodigoVinculacion();
+      try {
+        actualizado = await pool.query(
+          'UPDATE alumnos SET codigo_vinculacion = $1 WHERE id = $2 RETURNING *',
+          [codigo, id]
+        );
+      } catch (err) {
+        if (err.code !== '23505') throw err; // colisión de UNIQUE, reintentar
+      }
+    }
+    if (actualizado.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
+    await registrar(req.empleado?.id, 'Código de vinculación regenerado', actualizado.rows[0].nombre);
+    res.json(actualizado.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 const importarAlumnos = async (req, res) => {
   const { filas } = req.body; // array de objetos ya parseados en el frontend
   if (!Array.isArray(filas) || filas.length === 0) {
@@ -226,12 +254,13 @@ const importarAlumnos = async (req, res) => {
       const tutorTel   = f.tutor_tel?.trim() || null;
       const alergias   = f.alergias?.trim() || 'Ninguna';
       const qr         = 'QR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+      const codigoVinculacion = generarCodigoVinculacion();
 
       try {
         const res = await client.query(
-          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, nombre`,
-          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr]
+          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nombre`,
+          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion]
         );
         creados.push(res.rows[0]);
       } catch (err) {
@@ -268,4 +297,5 @@ module.exports = {
   eliminarAlumno,
   getGastoSemanal,
   importarAlumnos,
+  regenerarCodigoVinculacion,
 };

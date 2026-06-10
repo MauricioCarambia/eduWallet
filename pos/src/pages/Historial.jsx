@@ -19,7 +19,7 @@ export default function Historial() {
   useEffect(() => { cargar() }, [])
 
   const cargar = async () => {
-    try { const tRes = await api.get('/transacciones'); setTxs(tRes.data) }
+    try { const tRes = await api.get('/transacciones'); setTxs(tRes.data.data ?? tRes.data) }
     catch (err) { console.error(err) } finally { setCargando(false) }
   }
 

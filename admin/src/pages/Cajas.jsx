@@ -33,7 +33,7 @@ export default function Cajas() {
   const cargar = async () => {
     try {
       const [cRes, tRes] = await Promise.all([api.get('/cajas'), api.get('/transacciones')])
-      setCajas(cRes.data); setTxs(tRes.data)
+      setCajas(cRes.data); setTxs(tRes.data.data ?? tRes.data)
     } catch (err) { console.error(err) }
     finally { setCargando(false) }
   }

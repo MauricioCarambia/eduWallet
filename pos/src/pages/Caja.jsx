@@ -22,7 +22,7 @@ export default function Caja() {
   const cargar = async () => {
     try {
       const [tRes, cRes] = await Promise.all([api.get('/transacciones'), api.get('/cajas')])
-      setTxs(tRes.data)
+      setTxs(tRes.data.data ?? tRes.data)
       setMisCajas(cRes.data.filter(c => c.empleado_id === sesion.id))
     } catch (err) { console.error(err) } finally { setCargando(false) }
   }

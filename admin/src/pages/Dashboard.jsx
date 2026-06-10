@@ -43,7 +43,7 @@ export default function Dashboard() {
           api.get('/alumnos'),
           api.get('/cajas'),
         ])
-        setTransacciones(txRes.data)
+        setTransacciones(txRes.data.data ?? txRes.data)
         setAlumnos(alumRes.data)
         setCajas(cajaRes.data)
       } catch (err) {

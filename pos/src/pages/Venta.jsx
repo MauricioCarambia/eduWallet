@@ -52,7 +52,8 @@ export default function Venta() {
     try {
       const res = await api.get('/transacciones')
       const hoy = new Date().toISOString().slice(0, 10)
-      setTxsHoy(res.data.filter(t => t.fecha?.slice(0, 10) === hoy && t.lugar === local && t.tipo === 'compra'))
+      const data = res.data.data ?? res.data
+      setTxsHoy(data.filter(t => t.fecha?.slice(0, 10) === hoy && t.lugar === local && t.tipo === 'compra'))
     } catch (err) { console.error(err) }
   }
 

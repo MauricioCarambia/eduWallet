@@ -83,7 +83,7 @@ export default function Alumnos() {
   const cargar = async () => {
     try {
       const [aRes, tRes] = await Promise.all([api.get('/alumnos'), api.get('/transacciones')])
-      setAlumnos(aRes.data); setTxs(tRes.data)
+      setAlumnos(aRes.data); setTxs(tRes.data.data ?? tRes.data)
     } catch (err) { console.error(err) }
     finally { setCargando(false) }
   }
@@ -135,7 +135,7 @@ export default function Alumnos() {
     try {
       const res = await api.post(`/alumnos/${seleccionado.id}/recargar`, { monto: n, empleado_id: 1, descripcion: 'Recarga desde admin' })
       setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
-      const tRes = await api.get('/transacciones'); setTxs(tRes.data)
+      const tRes = await api.get('/transacciones'); setTxs(tRes.data.data ?? tRes.data)
       showMsg('ok', `Recarga de ${fmt(n)} aplicada`); cerrarModal()
     } catch { showMsg('error', 'Error al recargar') }
   }

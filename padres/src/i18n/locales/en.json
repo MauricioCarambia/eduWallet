@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "inicio": "Home",
+    "historial": "History",
+    "recargar": "Top up",
+    "control": "Controls"
+  },
+  "common": {
+    "salir": "Log out",
+    "cargando": "Loading...",
+    "guardar": "Save",
+    "cancelar": "Cancel",
+    "aceptar": "OK",
+    "error": "Something went wrong",
+    "buscar": "Search"
+  },
+  "pwa": {
+    "instalar_titulo": "Install {{nombre}}",
+    "instalar_subtitulo": "Add it to your home screen",
+    "instalar_boton": "Install"
+  },
+  "login": {
+    "titulo": "Log in",
+    "subtitulo": "Sign in to manage your kids' balance",
+    "email": "Email",
+    "password": "Password",
+    "ingresar": "Log in",
+    "ingresando": "Logging in...",
+    "olvidaste": "Forgot your password?",
+    "sin_cuenta": "Don't have an account?",
+    "registrate": "Sign up"
+  },
+  "registro": {
+    "titulo": "Create your account",
+    "subtitulo": "Sign up to manage the school balance",
+    "nombre": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "confirmar_password": "Confirm password",
+    "crear": "Create account",
+    "creando": "Creating account...",
+    "ya_tenes_cuenta": "Already have an account?",
+    "iniciar_sesion": "Log in",
+    "completar_campos": "Please fill in all fields",
+    "passwords_no_coinciden": "Passwords don't match",
+    "password_min": "Password must be at least 6 characters",
+    "error": "Error signing up"
+  }
+}

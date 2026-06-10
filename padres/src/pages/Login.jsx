@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
@@ -11,6 +12,7 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
   const { login } = useAuth()
   const { dark, toggle } = useTheme()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleLogin = async () => {
@@ -21,7 +23,7 @@ export default function Login() {
       login(res.data.padre, res.data.token)
       navigate('/inicio')
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión')
+      setError(err.response?.data?.error || t('common.error'))
     } finally {
       setCargando(false)
     }
@@ -42,27 +44,27 @@ export default function Login() {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Portal de Padres</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('login.subtitulo')}</p>
         </div>
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Email</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.email')}</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
           </div>
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Contraseña</label>
-              <Link to="/olvide-password" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>¿Olvidaste tu contraseña?</Link>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.password')}</label>
+              <Link to="/olvide-password" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>{t('login.olvidaste')}</Link>
             </div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleLogin()} />
           </div>
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>{error}</div>}
           <button onClick={handleLogin} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: 'var(--shadow-md)', marginBottom: 14 }}>
-            {cargando ? 'Ingresando...' : 'Ingresar'}
+            {cargando ? t('login.ingresando') : t('login.ingresar')}
           </button>
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-            ¿No tenés cuenta? <Link to="/registro" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Registrate</Link>
+            {t('login.sin_cuenta')} <Link to="/registro" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t('login.registrate')}</Link>
           </p>
         </div>
       </div>

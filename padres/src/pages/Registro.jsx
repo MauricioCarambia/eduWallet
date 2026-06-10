@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
@@ -10,19 +11,20 @@ export default function Registro() {
   const [cargando, setCargando] = useState(false)
   const { login } = useAuth()
   const { dark, toggle } = useTheme()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleRegistro = async () => {
-    if (!form.nombre || !form.email || !form.password) { setError('Completá todos los campos'); return }
-    if (form.password !== form.confirmar) { setError('Las contraseñas no coinciden'); return }
-    if (form.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (!form.nombre || !form.email || !form.password) { setError(t('registro.completar_campos')); return }
+    if (form.password !== form.confirmar) { setError(t('registro.passwords_no_coinciden')); return }
+    if (form.password.length < 6) { setError(t('registro.password_min')); return }
     setCargando(true); setError('')
     try {
       const res = await api.post('/padres/registro', { nombre: form.nombre, email: form.email, password: form.password })
       login(res.data.padre, res.data.token)
       navigate('/inicio')
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al registrarse')
+      setError(err.response?.data?.error || t('registro.error'))
     } finally {
       setCargando(false)
     }
@@ -43,15 +45,15 @@ export default function Registro() {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>EduWallet</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Creá tu cuenta</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('registro.titulo')}</p>
         </div>
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           {[
-            ['Nombre completo', 'nombre', 'text', 'María García'],
-            ['Email', 'email', 'email', 'tu@email.com'],
-            ['Contraseña', 'password', 'password', 'Mínimo 6 caracteres'],
-            ['Confirmar contraseña', 'confirmar', 'password', '••••••••']
+            [t('registro.nombre'), 'nombre', 'text', 'María García'],
+            [t('registro.email'), 'email', 'email', 'tu@email.com'],
+            [t('registro.password'), 'password', 'password', '••••••••'],
+            [t('registro.confirmar_password'), 'confirmar', 'password', '••••••••']
           ].map(([label, key, type, ph]) => (
             <div key={key} style={{ marginBottom: 14 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</label>
@@ -60,10 +62,10 @@ export default function Registro() {
           ))}
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
           <button onClick={handleRegistro} disabled={cargando} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando ? 0.7 : 1, boxShadow: 'var(--shadow-md)', marginBottom: 14 }}>
-            {cargando ? 'Creando cuenta...' : 'Crear cuenta'}
+            {cargando ? t('registro.creando') : t('registro.crear')}
           </button>
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-            ¿Ya tenés cuenta? <Link to="/" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Iniciá sesión</Link>
+            {t('registro.ya_tenes_cuenta')} <Link to="/" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t('registro.iniciar_sesion')}</Link>
           </p>
         </div>
       </div>

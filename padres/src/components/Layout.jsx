@@ -2,18 +2,20 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
 
 const NAV = [
-  { path: '/inicio', label: 'Inicio', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-  { path: '/historial', label: 'Historial', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
-  { path: '/recargar', label: 'Recargar', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
-  { path: '/control', label: 'Control', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg> },
+  { path: '/inicio', key: 'inicio', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+  { path: '/historial', key: 'historial', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+  { path: '/recargar', key: 'recargar', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
+  { path: '/control', key: 'control', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg> },
 ]
 
 export default function Layout({ children }) {
   const { padre, logout } = useAuth()
   const { dark, toggle } = useTheme()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [mostrarInstalar, setMostrarInstalar] = useState(false)
@@ -39,6 +41,11 @@ export default function Layout({ children }) {
 
   const handleLogout = () => { logout(); navigate('/') }
 
+  const cambiarIdioma = () => {
+    const nuevo = i18n.language?.startsWith('en') ? 'es' : 'en'
+    i18n.changeLanguage(nuevo)
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 72 }}>
 
@@ -53,12 +60,12 @@ export default function Layout({ children }) {
               }
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>Instalá {branding.nombre_colegio || 'EduWallet'}</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Agregala a tu pantalla de inicio</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'EduWallet' })}</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{t('pwa.instalar_subtitulo')}</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'white', color: '#1E3A5F', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Instalar</button>
+            <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'white', color: '#1E3A5F', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{t('pwa.instalar_boton')}</button>
             <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer' }}>×</button>
           </div>
         </div>
@@ -83,7 +90,10 @@ export default function Layout({ children }) {
               : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             }
           </button>
-          <button onClick={handleLogout} style={{ fontSize: 12, padding: '5px 10px', border: '1.5px solid var(--border)', borderRadius: 7, background: 'var(--bg-card)', color: 'var(--text-secondary)', cursor: 'pointer' }}>Salir</button>
+          <button onClick={cambiarIdioma} title="Idioma / Language" style={{ width: 32, height: 32, border: '1.5px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+            {i18n.language?.startsWith('en') ? 'EN' : 'ES'}
+          </button>
+          <button onClick={handleLogout} style={{ fontSize: 12, padding: '5px 10px', border: '1.5px solid var(--border)', borderRadius: 7, background: 'var(--bg-card)', color: 'var(--text-secondary)', cursor: 'pointer' }}>{t('common.salir')}</button>
         </div>
       </div>
 
@@ -104,7 +114,7 @@ export default function Layout({ children }) {
             transition: 'color .15s'
           })}>
             {item.icon}
-            {item.label}
+            {t(`nav.${item.key}`)}
           </NavLink>
         ))}
       </div>

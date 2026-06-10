@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "inicio": "Inicio",
+    "historial": "Historial",
+    "recargar": "Recargar",
+    "control": "Control"
+  },
+  "common": {
+    "salir": "Salir",
+    "cargando": "Cargando...",
+    "guardar": "Guardar",
+    "cancelar": "Cancelar",
+    "aceptar": "Aceptar",
+    "error": "Ocurrió un error",
+    "buscar": "Buscar"
+  },
+  "pwa": {
+    "instalar_titulo": "Instalá {{nombre}}",
+    "instalar_subtitulo": "Agregala a tu pantalla de inicio",
+    "instalar_boton": "Instalar"
+  },
+  "login": {
+    "titulo": "Iniciar sesión",
+    "subtitulo": "Accedé para administrar el saldo de tus hijos",
+    "email": "Email",
+    "password": "Contraseña",
+    "ingresar": "Ingresar",
+    "ingresando": "Ingresando...",
+    "olvidaste": "¿Olvidaste tu contraseña?",
+    "sin_cuenta": "¿No tenés cuenta?",
+    "registrate": "Registrate"
+  },
+  "registro": {
+    "titulo": "Creá tu cuenta",
+    "subtitulo": "Registrate para gestionar el saldo escolar",
+    "nombre": "Nombre completo",
+    "email": "Email",
+    "password": "Contraseña",
+    "confirmar_password": "Confirmar contraseña",
+    "crear": "Crear cuenta",
+    "creando": "Creando cuenta...",
+    "ya_tenes_cuenta": "¿Ya tenés cuenta?",
+    "iniciar_sesion": "Iniciá sesión",
+    "completar_campos": "Completá todos los campos",
+    "passwords_no_coinciden": "Las contraseñas no coinciden",
+    "password_min": "La contraseña debe tener al menos 6 caracteres",
+    "error": "Error al registrarse"
+  }
+}

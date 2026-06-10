@@ -155,6 +155,27 @@ const migrar = async () => {
     `);
     console.log('✅ Tabla configuracion verificada');
 
+    // ─── 7. Tabla pagos (historial de recargas con estados) ─────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pagos (
+        id                 SERIAL PRIMARY KEY,
+        padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
+        alumno_id          INTEGER NOT NULL REFERENCES alumnos(id) ON DELETE CASCADE,
+        monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
+        estado             VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'acreditado', 'rechazado')),
+        mp_payment_id      VARCHAR(50),
+        external_reference VARCHAR(100),
+        detalle            VARCHAR(100),
+        creado_en          TIMESTAMP DEFAULT NOW(),
+        actualizado_en     TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pagos_padre_id  ON pagos (padre_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_alumno_id ON pagos (alumno_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_estado    ON pagos (estado);
+    `);
+    console.log('✅ Tabla pagos verificada');
+
     console.log('\n✅ Migraciones completadas exitosamente.');
   } catch (err) {
     console.error('\n❌ Error en migración:', err.message);

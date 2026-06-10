@@ -95,7 +95,21 @@ const crearTablas = async () => {
         email_admin      VARCHAR(150),
         umbral_saldo_bajo  DECIMAL(10,2) DEFAULT 200 CHECK (umbral_saldo_bajo >= 0),
         umbral_stock_bajo  INTEGER       DEFAULT 5   CHECK (umbral_stock_bajo >= 0),
-        moneda           VARCHAR(10)  DEFAULT 'ARS'
+        moneda           VARCHAR(10)  DEFAULT 'ARS',
+        logo             TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS pagos (
+        id                 SERIAL PRIMARY KEY,
+        padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
+        alumno_id          INTEGER NOT NULL REFERENCES alumnos(id) ON DELETE CASCADE,
+        monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
+        estado             VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'acreditado', 'rechazado')),
+        mp_payment_id      VARCHAR(50),
+        external_reference VARCHAR(100),
+        detalle            VARCHAR(100),
+        creado_en          TIMESTAMP DEFAULT NOW(),
+        actualizado_en     TIMESTAMP DEFAULT NOW()
       );
     `);
 
@@ -111,6 +125,9 @@ const crearTablas = async () => {
       CREATE INDEX IF NOT EXISTS idx_alumnos_curso           ON alumnos (curso);
       CREATE INDEX IF NOT EXISTS idx_padres_alumnos_padre    ON padres_alumnos (padre_id);
       CREATE INDEX IF NOT EXISTS idx_padres_alumnos_alumno   ON padres_alumnos (alumno_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_padre_id          ON pagos (padre_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_alumno_id         ON pagos (alumno_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_estado            ON pagos (estado);
     `);
 
     console.log('Tablas e índices creados correctamente');

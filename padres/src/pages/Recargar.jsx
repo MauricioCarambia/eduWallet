@@ -4,6 +4,12 @@ import api from '../api/axios'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
+const ESTADOS = {
+  pendiente:  { label: 'Pendiente',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
+  acreditado: { label: 'Acreditado', color: 'var(--green)', bg: 'var(--green-bg)' },
+  rechazado:  { label: 'Rechazado',  color: 'var(--red)',   bg: 'var(--red-bg)' },
+}
+
 export default function Recargar() {
   const [alumnos, setAlumnos] = useState([])
   const [alumnoId, setAlumnoId] = useState(null)
@@ -13,10 +19,18 @@ export default function Recargar() {
   const [paso, setPaso] = useState('monto')
   const [msg, setMsg] = useState(null)
   const [searchParams] = useSearchParams()
+  const [historial, setHistorial] = useState([])
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 6000) }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar(); cargarHistorial() }, [])
+
+  const cargarHistorial = async () => {
+    try {
+      const res = await api.get('/pagos/historial')
+      setHistorial(res.data)
+    } catch (err) { console.error(err) }
+  }
 
   useEffect(() => {
     const status = searchParams.get('status')
@@ -48,6 +62,7 @@ export default function Recargar() {
     try {
       const res = await api.get(`/pagos/verificar?payment_id=${paymentId}&alumno_id=${alumnoId}&monto=${monto}`)
       if (res.data.status === 'approved') { setPaso('exito'); cargar() }
+      cargarHistorial()
     } catch (err) { console.error(err) }
   }
 
@@ -153,6 +168,26 @@ export default function Recargar() {
           Aceptamos tarjeta de crédito, débito, transferencia y saldo MP
         </p>
       </div>
+
+      {historial.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px', color: 'var(--text)' }}>Historial de recargas</h2>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+            {historial.map((p, i) => {
+              const e = ESTADOS[p.estado] || ESTADOS.pendiente
+              return (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < historial.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                  <div>
+                    <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmt(p.monto)}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{p.alumno_nombre} · {new Date(p.creado_en).toLocaleString('es-AR')}</p>
+                  </div>
+                  <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: e.color, background: e.bg }}>{e.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

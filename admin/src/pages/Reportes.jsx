@@ -3,6 +3,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -27,6 +29,8 @@ export default function Reportes() {
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [tab, setTab] = useState('general')
+  const [branding, setBranding] = useState({ nombre_colegio: 'EduWallet', logo: null })
+  const [generandoPDF, setGenerandoPDF] = useState(false)
 
   // filtros
   const [modo, setModo] = useState('rapido') // 'rapido' | 'rango'
@@ -53,6 +57,10 @@ export default function Reportes() {
 
   // recargar del backend cuando cambian fechas o local
   useEffect(() => { cargar() }, [fechaDesde, fechaHasta, filtroLocal])
+
+  useEffect(() => {
+    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+  }, [])
 
   const cargar = async () => {
     setCargando(true)
@@ -178,6 +186,130 @@ export default function Reportes() {
     showMsg('ok', `CSV exportado: ${txsFiltradas.length} transacciones`)
   }
 
+  // exportar PDF
+  const exportPDF = () => {
+    setGenerandoPDF(true)
+    try {
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      let y = 18
+
+      // encabezado con logo
+      if (branding.logo) {
+        try { doc.addImage(branding.logo, 'PNG', 14, 10, 16, 16) } catch {}
+      }
+      doc.setFontSize(16)
+      doc.setFont(undefined, 'bold')
+      doc.text(branding.nombre_colegio || 'EduWallet', branding.logo ? 34 : 14, 18)
+      doc.setFontSize(10)
+      doc.setFont(undefined, 'normal')
+      doc.setTextColor(120)
+      doc.text('Reporte de actividad', branding.logo ? 34 : 14, 24)
+      doc.setTextColor(0)
+
+      y = 34
+      doc.setFontSize(11)
+      doc.setFont(undefined, 'bold')
+      doc.text(`Período: ${labelRango}`, 14, y)
+      doc.setFont(undefined, 'normal')
+      doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, pageWidth - 14, y, { align: 'right' })
+      y += 8
+
+      // resumen
+      autoTable(doc, {
+        startY: y,
+        head: [['Ventas', 'Recargas', 'Ticket promedio', 'Promedio diario', 'Transacciones']],
+        body: [[
+          fmt(totalVentas),
+          fmt(totalRecargas),
+          fmt(Math.round(ticketPromedio)),
+          fmt(Math.round(totalVentas / Math.max(diasTotal, 1))),
+          String(compras.length)
+        ]],
+        theme: 'striped',
+        headStyles: { fillColor: [30, 58, 95] },
+        styles: { fontSize: 9, halign: 'center' },
+      })
+      y = doc.lastAutoTable.finalY + 10
+
+      // tabla según el tab activo
+      if (tab === 'productos' && porProducto.length > 0) {
+        doc.setFontSize(12); doc.setFont(undefined, 'bold')
+        doc.text('Productos más vendidos', 14, y); y += 4
+        autoTable(doc, {
+          startY: y,
+          head: [['#', 'Producto', 'Unidades']],
+          body: porProducto.map((p, i) => [i + 1, p.nombre, p.cantidad]),
+          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+        })
+        y = doc.lastAutoTable.finalY + 10
+      } else if (tab === 'locales' && porLocal.length > 0) {
+        doc.setFontSize(12); doc.setFont(undefined, 'bold')
+        doc.text('Ventas por local', 14, y); y += 4
+        autoTable(doc, {
+          startY: y,
+          head: [['Local', 'Total']],
+          body: porLocal.map(l => [l.local, fmt(l.total)]),
+          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+        })
+        y = doc.lastAutoTable.finalY + 10
+      } else if (tab === 'cursos' && porCurso.length > 0) {
+        doc.setFontSize(12); doc.setFont(undefined, 'bold')
+        doc.text('Consumo por curso', 14, y); y += 4
+        autoTable(doc, {
+          startY: y,
+          head: [['Curso', 'Total consumido']],
+          body: porCurso.map(c => [c.curso, fmt(c.total)]),
+          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+        })
+        y = doc.lastAutoTable.finalY + 10
+      }
+
+      // tabla de transacciones (siempre, hasta 200)
+      if (txsFiltradas.length > 0) {
+        if (y > 250) { doc.addPage(); y = 18 }
+        doc.setFontSize(12); doc.setFont(undefined, 'bold')
+        doc.text('Detalle de transacciones', 14, y); y += 4
+        autoTable(doc, {
+          startY: y,
+          head: [['Alumno', 'Descripción', 'Local', 'Tipo', 'Monto', 'Fecha']],
+          body: txsFiltradas.slice(0, 200).map(t => [
+            t.alumno_nombre,
+            (t.descripcion || '').slice(0, 40),
+            t.lugar || '',
+            t.tipo,
+            fmt(t.monto),
+            new Date(t.fecha).toLocaleString('es-AR')
+          ]),
+          theme: 'striped', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 8 },
+          margin: { bottom: 14 },
+        })
+        if (txsFiltradas.length > 200) {
+          const finalY = doc.lastAutoTable.finalY + 6
+          doc.setFontSize(9); doc.setTextColor(150)
+          doc.text(`Mostrando 200 de ${txsFiltradas.length} transacciones. Exportá el CSV para ver todas.`, 14, finalY)
+          doc.setTextColor(0)
+        }
+      }
+
+      // pie de página
+      const pageCount = doc.internal.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8); doc.setTextColor(150)
+        doc.text(`Página ${i} de ${pageCount} — Generado por EduWallet`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' })
+      }
+
+      doc.save(`eduwallet_reporte_${fechaDesde}_${fechaHasta}.pdf`)
+      showMsg('ok', 'PDF generado correctamente')
+    } catch (err) {
+      console.error(err)
+      showMsg('error', 'Error al generar el PDF')
+    } finally {
+      setGenerandoPDF(false)
+    }
+  }
+
   // recarga masiva
   const recargaMasiva = async () => {
     const m = parseInt(montoRecarga); if (!m || m <= 0) return
@@ -207,10 +339,16 @@ export default function Reportes() {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Reportes</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{labelRango} · {txsFiltradas.length} transacciones</p>
         </div>
-        <button onClick={exportCSV} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar CSV
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={exportPDF} disabled={generandoPDF} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500, opacity: generandoPDF ? 0.7 : 1 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+            {generandoPDF ? 'Generando...' : 'Exportar PDF'}
+          </button>
+          <button onClick={exportCSV} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}

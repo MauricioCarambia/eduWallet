@@ -30,31 +30,44 @@ function SectionTitle({ children }) {
 
 const tooltipStyle = { borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, background: 'var(--bg-card)', color: 'var(--text)' }
 
+const ACTUALIZACION_INTERVALO = 15000 // 15s
+
 export default function Dashboard() {
   const [transacciones, setTransacciones] = useState([])
   const [alumnos, setAlumnos] = useState([])
   const [cajas, setCajas] = useState([])
   const [cargando, setCargando] = useState(true)
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null)
+  const [autoActualizar, setAutoActualizar] = useState(true)
 
   useEffect(() => {
-    const cargar = async () => {
+    let activo = true
+    const cargar = async (mostrarSkeleton) => {
+      if (mostrarSkeleton) setCargando(true)
       try {
         const [txRes, alumRes, cajaRes] = await Promise.all([
           api.get('/transacciones'),
           api.get('/alumnos'),
           api.get('/cajas'),
         ])
+        if (!activo) return
         setTransacciones(txRes.data.data ?? txRes.data)
         setAlumnos(alumRes.data)
         setCajas(cajaRes.data)
+        setUltimaActualizacion(new Date())
       } catch (err) {
         console.error(err)
       } finally {
-        setCargando(false)
+        if (activo) setCargando(false)
       }
     }
-    cargar()
-  }, [])
+    cargar(true)
+    let id
+    if (autoActualizar) {
+      id = setInterval(() => cargar(false), ACTUALIZACION_INTERVALO)
+    }
+    return () => { activo = false; if (id) clearInterval(id) }
+  }, [autoActualizar])
 
   const hoy = new Date().toISOString().slice(0, 10)
   const txHoy = transacciones.filter(t => t.fecha?.slice(0, 10) === hoy)
@@ -87,9 +100,24 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Dashboard</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Dashboard</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {ultimaActualizacion && (
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {autoActualizar && (
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'pulse-dot 1.4s ease-in-out infinite' }} />
+              )}
+              Actualizado {ultimaActualizacion.toLocaleTimeString('es-AR')}
+            </span>
+          )}
+          <button onClick={() => setAutoActualizar(v => !v)} style={{ fontSize: 12, padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 8, background: autoActualizar ? 'var(--brand-light)' : 'var(--bg-card)', color: autoActualizar ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>
+            {autoActualizar ? 'En vivo' : 'Pausado'}
+          </button>
+        </div>
       </div>
 
       {/* stats */}

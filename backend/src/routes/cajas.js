@@ -44,7 +44,7 @@ const { verificarToken, soloAdmin } = require('../middlewares/auth');
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Caja' }
  */
-router.get('/', verificarToken, soloAdmin, getCajas);
+router.get('/', verificarToken, getCajas);
 router.post('/', verificarToken, abrirCaja);
 
 /**

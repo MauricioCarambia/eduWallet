@@ -6,9 +6,11 @@ import { ExpirationPlugin } from 'workbox-expiration'
 // precache de los assets generados por el build (lo inyecta vite-plugin-pwa)
 precacheAndRoute(self.__WB_MANIFEST)
 
-// cache de la API con NetworkFirst (igual que la config anterior)
+// cache de la API con NetworkFirst — el origen sale de VITE_API_URL, no hardcodeado
+const apiOrigin = new URL(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').origin
+
 registerRoute(
-  ({ url }) => /^https:\/\/eduwallet-production\.up\.railway\.app\/api\/.*/i.test(url.href),
+  ({ url }) => url.origin === apiOrigin && url.pathname.startsWith('/api/'),
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [

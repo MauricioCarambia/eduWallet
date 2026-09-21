@@ -27,10 +27,10 @@ async function main() {
   const adminUsuario = await preguntar('👤 Usuario del admin: ');
   const adminPin = await preguntar('🔑 PIN del admin (4+ dígitos): ');
   const adminNombre = await preguntar('👤 Nombre del administrador: ');
-  const backendUrl = await preguntar('🌐 URL del backend en Railway (ej: https://mi-colegio.up.railway.app): ');
+  const backendUrl = await preguntar('🌐 URL del backend en Render (ej: https://mi-colegio.onrender.com): ');
   const adminUrl = await preguntar('🌐 URL del admin en Vercel (ej: https://mi-colegio-admin.vercel.app): ');
   const padresUrl = await preguntar('🌐 URL del portal de padres en Vercel (ej: https://mi-colegio-padres.vercel.app): ');
-  const dbUrl = await preguntar('🗄️  DATABASE_URL de Railway: ');
+  const dbUrl = await preguntar('🗄️  DATABASE_URL de Neon: ');
   const resendApiKey = await preguntar('📧 API Key de Resend (re_...): ');
 
   log('\n⏳ Configurando el sistema...', 'yellow');
@@ -222,8 +222,8 @@ URL: ${padresUrl}
 URL: ${backendUrl}
 
 ## Próximos pasos
-1. Ejecutar el SQL de setup.sql en Railway
-2. Cargar las variables de entorno en Railway y Vercel
+1. Ejecutar el SQL de setup.sql en Neon
+2. Cargar las variables de entorno en Render y Vercel
 3. Entregar los accesos al colegio
 4. Configurar el email en el Panel de Administración → Configuración
 
@@ -237,8 +237,8 @@ Para soporte técnico contactar a EduWallet.
   log(`📁 Archivos generados en: scripts/colegios/${slug}/`, 'blue');
   log('', 'reset');
   log('📋 Próximos pasos:', 'bold');
-  log('  1. Ejecutá setup.sql en el editor SQL de Railway', 'reset');
-  log('  2. Cargá backend.env como variables en Railway', 'reset');
+  log('  1. Ejecutá setup.sql en el editor SQL de Neon', 'reset');
+  log('  2. Cargá backend.env como variables en Render', 'reset');
   log('  3. Cargá admin.env, pos.env y padres.env en cada proyecto de Vercel', 'reset');
   log(`  4. Entregá GUIA_ENTREGA.md al colegio`, 'reset');
   log('', 'reset');

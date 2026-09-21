@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { abrirCaja, cerrarCaja, getCajas } = require('../controllers/cajasController');
-const { verificarToken, soloAdmin } = require('../middlewares/auth');
+const { verificarToken } = require('../middlewares/auth');
 
 /**
  * @swagger

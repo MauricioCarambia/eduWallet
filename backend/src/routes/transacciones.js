@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verificarToken, soloAdmin } = require('../middlewares/auth');
+const { verificarToken } = require('../middlewares/auth');
 const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta } = require('../controllers/transaccionesController');
 
 /**
@@ -42,7 +42,7 @@ const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta } = requir
  *           application/json:
  *             schema: { $ref: '#/components/schemas/TransaccionesPaginadas' }
  */
-router.get('/', verificarToken, soloAdmin, getTransacciones);
+router.get('/', verificarToken, getTransacciones);
 
 /**
  * @swagger

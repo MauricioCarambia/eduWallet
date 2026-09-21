@@ -22,6 +22,8 @@ const swaggerSpec = require('./docs/swagger');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // ── Logging ──────────────────────────────────────────────────────────────────
 const logsDir = path.join(__dirname, '../../logs');
 if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });

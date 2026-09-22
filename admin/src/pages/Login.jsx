@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
 
 export default function Login() {
+  const [colegio, setColegio] = useState(() => localStorage.getItem('admin_colegio') || '')
   const [usuario, setUsuario] = useState('')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
@@ -16,10 +17,11 @@ export default function Login() {
   const navigate = useNavigate()
 
   const handleLogin = async () => {
-    if (!usuario || !pin) return
+    if (!colegio || !usuario || !pin) return
     setCargando(true); setError('')
     try {
-      const res = await api.post('/empleados/login', { usuario, pin })
+      localStorage.setItem('admin_colegio', colegio)
+      const res = await api.post('/empleados/login', { colegio, usuario, pin })
       if (res.data.empleado.rol !== 'admin') {
         setError(t('login.error_acceso'))
         setCargando(false); return
@@ -56,8 +58,12 @@ export default function Login() {
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '2rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.colegio')}</label>
+            <input value={colegio} onChange={e => setColegio(e.target.value)} placeholder={t('login.colegio_placeholder')} onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
+          </div>
+          <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.usuario')}</label>
-            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
+            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.pin')}</label>

@@ -23,6 +23,8 @@
   },
   "login": {
     "subtitulo": "Panel de Administración",
+    "colegio": "Colegio",
+    "colegio_placeholder": "Código del colegio",
     "usuario": "Usuario",
     "usuario_placeholder": "Ingresá tu usuario",
     "pin": "PIN",

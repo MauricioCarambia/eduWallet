@@ -3,18 +3,34 @@ const pool = require('./conexion');
 const crearTablas = async () => {
   try {
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS colegios (
+        id               SERIAL PRIMARY KEY,
+        nombre           VARCHAR(150) NOT NULL,
+        slug             VARCHAR(80) UNIQUE NOT NULL,
+        comision_pct     DECIMAL(5,2) DEFAULT 5,
+        plan             VARCHAR(20) DEFAULT 'compartido' CHECK (plan IN ('compartido', 'dedicado')),
+        activo           BOOLEAN DEFAULT true,
+        mp_access_token  TEXT,
+        mp_refresh_token TEXT,
+        mp_user_id       VARCHAR(50),
+        creado_en        TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS empleados (
         id        SERIAL PRIMARY KEY,
+        colegio_id INTEGER NOT NULL REFERENCES colegios(id),
         nombre    VARCHAR(100) NOT NULL,
-        usuario   VARCHAR(50)  UNIQUE NOT NULL,
+        usuario   VARCHAR(50)  NOT NULL,
         pin       VARCHAR(100) NOT NULL,
         rol       VARCHAR(20)  NOT NULL CHECK (rol IN ('admin', 'staff')),
         activo    BOOLEAN      DEFAULT true,
-        creado_en TIMESTAMP    DEFAULT NOW()
+        creado_en TIMESTAMP    DEFAULT NOW(),
+        UNIQUE (colegio_id, usuario)
       );
 
       CREATE TABLE IF NOT EXISTS alumnos (
         id           SERIAL PRIMARY KEY,
+        colegio_id   INTEGER NOT NULL REFERENCES colegios(id),
         nombre       VARCHAR(100)   NOT NULL,
         curso        VARCHAR(50)    NOT NULL,
         saldo        DECIMAL(10,2)  DEFAULT 0  CHECK (saldo >= 0),
@@ -31,6 +47,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS productos (
         id        SERIAL PRIMARY KEY,
+        colegio_id INTEGER NOT NULL REFERENCES colegios(id),
         nombre    VARCHAR(100)  NOT NULL,
         precio    DECIMAL(10,2) NOT NULL CHECK (precio > 0),
         stock     INTEGER       DEFAULT 0 CHECK (stock >= 0),
@@ -41,6 +58,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS transacciones (
         id          SERIAL PRIMARY KEY,
+        colegio_id  INTEGER NOT NULL REFERENCES colegios(id),
         alumno_id   INTEGER       REFERENCES alumnos(id)   ON DELETE SET NULL,
         empleado_id INTEGER       REFERENCES empleados(id) ON DELETE SET NULL,
         monto       DECIMAL(10,2) NOT NULL CHECK (monto > 0),
@@ -52,6 +70,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS cajas (
         id          SERIAL PRIMARY KEY,
+        colegio_id  INTEGER NOT NULL REFERENCES colegios(id),
         empleado_id INTEGER       REFERENCES empleados(id) ON DELETE SET NULL,
         local       VARCHAR(50)   NOT NULL,
         fondo       DECIMAL(10,2) DEFAULT 0 CHECK (fondo >= 0),
@@ -64,6 +83,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS auditoria (
         id          SERIAL PRIMARY KEY,
+        colegio_id  INTEGER NOT NULL REFERENCES colegios(id),
         empleado_id INTEGER       REFERENCES empleados(id) ON DELETE SET NULL,
         accion      VARCHAR(100)  NOT NULL,
         detalle     TEXT,
@@ -89,6 +109,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS configuracion (
         id               SERIAL PRIMARY KEY,
+        colegio_id       INTEGER UNIQUE REFERENCES colegios(id),
         nombre_colegio   VARCHAR(100) DEFAULT 'Mi Colegio',
         direccion        VARCHAR(200),
         telefono         VARCHAR(50),
@@ -110,6 +131,7 @@ const crearTablas = async () => {
 
       CREATE TABLE IF NOT EXISTS pagos (
         id                 SERIAL PRIMARY KEY,
+        colegio_id         INTEGER NOT NULL REFERENCES colegios(id),
         padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
         alumno_id          INTEGER NOT NULL REFERENCES alumnos(id) ON DELETE CASCADE,
         monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
@@ -138,6 +160,13 @@ const crearTablas = async () => {
       CREATE INDEX IF NOT EXISTS idx_pagos_alumno_id         ON pagos (alumno_id);
       CREATE INDEX IF NOT EXISTS idx_pagos_estado            ON pagos (estado);
       CREATE INDEX IF NOT EXISTS idx_push_subs_padre_id      ON push_subscriptions (padre_id);
+      CREATE INDEX IF NOT EXISTS idx_empleados_colegio_id     ON empleados (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_alumnos_colegio_id       ON alumnos (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_productos_colegio_id     ON productos (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_transacciones_colegio_id ON transacciones (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_cajas_colegio_id         ON cajas (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_auditoria_colegio_id     ON auditoria (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_pagos_colegio_id         ON pagos (colegio_id);
     `);
 
     console.log('Tablas e índices creados correctamente');

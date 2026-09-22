@@ -8,7 +8,7 @@ const generarCodigoVinculacion = () => Math.random().toString(36).slice(2, 10).t
 
 const getAlumnos = async (req, res) => {
   try {
-    const resultado = await pool.query("SELECT * FROM alumnos ORDER BY nombre");
+    const resultado = await pool.query("SELECT * FROM alumnos WHERE colegio_id = $1 ORDER BY nombre", [req.empleado.colegio_id]);
     res.json(resultado.rows);
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
@@ -18,8 +18,8 @@ const getAlumnos = async (req, res) => {
 const getAlumno = async (req, res) => {
   const { id } = req.params;
   try {
-    const resultado = await pool.query("SELECT * FROM alumnos WHERE id = $1", [
-      id,
+    const resultado = await pool.query("SELECT * FROM alumnos WHERE id = $1 AND colegio_id = $2", [
+      id, req.empleado.colegio_id,
     ]);
     if (resultado.rows.length === 0) {
       return res.status(404).json({ error: "Alumno no encontrado" });
@@ -37,8 +37,8 @@ const crearAlumno = async (req, res) => {
     const qr = "QR-" + Date.now();
     const codigoVinculacion = generarCodigoVinculacion();
     const resultado = await pool.query(
-      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         nombre,
@@ -50,9 +50,10 @@ const crearAlumno = async (req, res) => {
         alergias || "Ninguna",
         qr,
         codigoVinculacion,
+        req.empleado.colegio_id,
       ],
     );
-    await registrar(req.empleado?.id, "Nuevo alumno", nombre);
+    await registrar(req.empleado.id, req.empleado.colegio_id, "Nuevo alumno", nombre);
     res.json(resultado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
@@ -65,9 +66,10 @@ const actualizarAlumno = async (req, res) => {
   try {
     const resultado = await pool.query(
       `UPDATE alumnos SET nombre=$1, curso=$2, limite_diario=$3, tutor=$4, tutor_tel=$5, alergias=$6
-       WHERE id=$7 RETURNING *`,
-      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id],
+       WHERE id=$7 AND colegio_id=$8 RETURNING *`,
+      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id, req.empleado.colegio_id],
     );
+    if (resultado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     res.json(resultado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
@@ -78,9 +80,10 @@ const toggleAlumno = async (req, res) => {
   const { id } = req.params;
   try {
     const resultado = await pool.query(
-      "UPDATE alumnos SET activo = NOT activo WHERE id = $1 RETURNING *",
-      [id],
+      "UPDATE alumnos SET activo = NOT activo WHERE id = $1 AND colegio_id = $2 RETURNING *",
+      [id, req.empleado.colegio_id],
     );
+    if (resultado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     res.json(resultado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
@@ -91,14 +94,15 @@ const recargarSaldo = async (req, res) => {
   const { id } = req.params;
   const { monto, empleado_id, descripcion } = req.body;
   try {
-    await pool.query("UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2", [
-      monto,
-      id,
-    ]);
+    const actualizado = await pool.query(
+      "UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2 AND colegio_id = $3 RETURNING id",
+      [monto, id, req.empleado.colegio_id],
+    );
+    if (actualizado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     await pool.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion)
-       VALUES ($1, $2, $3, 'recarga', 'Sistema', $4)`,
-      [id, empleado_id, monto, descripcion || "Recarga"],
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, $3, 'recarga', 'Sistema', $4, $5)`,
+      [id, empleado_id, monto, descripcion || "Recarga", req.empleado.colegio_id],
     );
     try {
       const padresRes = await pool.query(
@@ -113,6 +117,7 @@ const recargarSaldo = async (req, res) => {
       );
       for (const padre of padresRes.rows) {
         await enviarEmailRecarga({
+          colegioId: req.empleado.colegio_id,
           nombrePadre: padre.nombre,
           emailPadre: padre.email,
           nombreAlumno: alumnoActualizado.rows[0].nombre,
@@ -129,7 +134,8 @@ const recargarSaldo = async (req, res) => {
       console.error("Error enviando email recarga:", emailErr.message);
     }
     await registrar(
-      req.empleado?.id,
+      req.empleado.id,
+      req.empleado.colegio_id,
       "Recarga de saldo",
       `Alumno ID: ${id} — $${monto}`,
     );
@@ -145,8 +151,9 @@ const recargarSaldo = async (req, res) => {
 const eliminarAlumno = async (req, res) => {
   const { id } = req.params;
   try {
-    await registrar(req.empleado?.id, "Alumno eliminado", `ID: ${id}`);
-    await pool.query("DELETE FROM alumnos WHERE id = $1", [id]);
+    const borrado = await pool.query("DELETE FROM alumnos WHERE id = $1 AND colegio_id = $2 RETURNING id", [id, req.empleado.colegio_id]);
+    if (borrado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
+    await registrar(req.empleado.id, req.empleado.colegio_id, "Alumno eliminado", `ID: ${id}`);
     res.json({ mensaje: "Alumno eliminado" });
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
@@ -163,12 +170,13 @@ const getGastoSemanal = async (req, res) => {
         SUM(monto) as total
       FROM transacciones
       WHERE alumno_id = $1
+        AND colegio_id = $2
         AND tipo = 'compra'
         AND fecha >= NOW() - INTERVAL '7 days'
       GROUP BY dia
       ORDER BY dia
     `,
-      [id],
+      [id, req.empleado.colegio_id],
     );
 
     const dias = [0, 0, 0, 0, 0, 0, 0];
@@ -184,7 +192,7 @@ const getGastoSemanal = async (req, res) => {
 const getQR = async (req, res) => {
   const { id } = req.params;
   try {
-    const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [id]);
+    const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1 AND colegio_id = $2', [id, req.empleado.colegio_id]);
     if (alumno.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
 
     const qrData = alumno.rows[0].qr;
@@ -208,15 +216,15 @@ const regenerarCodigoVinculacion = async (req, res) => {
       codigo = generarCodigoVinculacion();
       try {
         actualizado = await pool.query(
-          'UPDATE alumnos SET codigo_vinculacion = $1 WHERE id = $2 RETURNING *',
-          [codigo, id]
+          'UPDATE alumnos SET codigo_vinculacion = $1 WHERE id = $2 AND colegio_id = $3 RETURNING *',
+          [codigo, id, req.empleado.colegio_id]
         );
       } catch (err) {
         if (err.code !== '23505') throw err; // colisión de UNIQUE, reintentar
       }
     }
     if (actualizado.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
-    await registrar(req.empleado?.id, 'Código de vinculación regenerado', actualizado.rows[0].nombre);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Código de vinculación regenerado', actualizado.rows[0].nombre);
     res.json(actualizado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -258,9 +266,9 @@ const importarAlumnos = async (req, res) => {
 
       try {
         const res = await client.query(
-          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nombre`,
-          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion]
+          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, nombre`,
+          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id]
         );
         creados.push(res.rows[0]);
       } catch (err) {
@@ -269,7 +277,7 @@ const importarAlumnos = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    await registrar(req.empleado?.id, 'Importación masiva', `${creados.length} alumnos importados`);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Importación masiva', `${creados.length} alumnos importados`);
 
     res.json({
       creados: creados.length,

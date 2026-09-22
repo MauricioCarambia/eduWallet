@@ -64,9 +64,9 @@ const crearPreferencia = async (req, res) => {
 
     // Registramos el intento de recarga como "pendiente"
     await pool.query(
-      `INSERT INTO pagos (padre_id, alumno_id, monto, estado, external_reference, detalle)
-       VALUES ($1, $2, $3, 'pendiente', $4, 'Mercado Pago (checkout)')`,
-      [padreId, alumno_id, monto, externalReference]
+      `INSERT INTO pagos (padre_id, alumno_id, monto, estado, external_reference, detalle, colegio_id)
+       VALUES ($1, $2, $3, 'pendiente', $4, 'Mercado Pago (checkout)', $5)`,
+      [padreId, alumno_id, monto, externalReference, alumno.colegio_id]
     );
 
     res.json({ init_point: result.init_point, preference_id: result.id });
@@ -87,6 +87,10 @@ const procesarPago = async (req, res) => {
       [padreId, alumno_id]
     );
     if (vinculo.rows.length === 0) return res.status(403).json({ error: 'Sin acceso a este alumno' });
+
+    const alumnoRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumno_id]);
+    if (alumnoRes.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
+    const colegioId = alumnoRes.rows[0].colegio_id;
 
     const externalReference = `${padreId}_${alumno_id}_${monto}_${Date.now()}`;
 
@@ -112,9 +116,9 @@ const procesarPago = async (req, res) => {
 
     // Registramos el intento de pago en el historial
     await pool.query(
-      `INSERT INTO pagos (padre_id, alumno_id, monto, estado, mp_payment_id, external_reference, detalle)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [padreId, alumno_id, monto, estado, String(result.id), externalReference, result.status_detail || null]
+      `INSERT INTO pagos (padre_id, alumno_id, monto, estado, mp_payment_id, external_reference, detalle, colegio_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [padreId, alumno_id, monto, estado, String(result.id), externalReference, result.status_detail || null, colegioId]
     );
 
     if (result.status === 'approved') {
@@ -125,9 +129,9 @@ const procesarPago = async (req, res) => {
       if (existe.rows.length === 0) {
         await pool.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2', [monto, alumno_id]);
         await pool.query(
-          `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion)
-           VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
-          [alumno_id, monto, `MP:${result.id}`]
+          `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+           VALUES ($1, $2, 'recarga', 'Mercado Pago', $3, $4)`,
+          [alumno_id, monto, `MP:${result.id}`, colegioId]
         );
       }
       const alumno = await pool.query('SELECT saldo FROM alumnos WHERE id = $1', [alumno_id]);
@@ -142,11 +146,14 @@ const procesarPago = async (req, res) => {
 
     // Registramos el intento fallido en el historial (si tenemos los datos mínimos)
     try {
-      await pool.query(
-        `INSERT INTO pagos (padre_id, alumno_id, monto, estado, detalle)
-         VALUES ($1, $2, $3, 'rechazado', 'Error al procesar el pago')`,
-        [padreId, alumno_id, monto]
-      );
+      const colegioRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumno_id]);
+      if (colegioRes.rows.length > 0) {
+        await pool.query(
+          `INSERT INTO pagos (padre_id, alumno_id, monto, estado, detalle, colegio_id)
+           VALUES ($1, $2, $3, 'rechazado', 'Error al procesar el pago', $4)`,
+          [padreId, alumno_id, monto, colegioRes.rows[0].colegio_id]
+        );
+      }
     } catch (e) { console.error('Error registrando pago fallido:', e.message); }
 
     res.status(500).json({ error: 'Error al procesar el pago' });
@@ -163,6 +170,10 @@ const webhook = async (req, res) => {
     const [padreId, alumnoId, monto] = ref.split("_");
     const estado = mapEstado(pagoData.status);
 
+    const alumnoRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumnoId]);
+    if (alumnoRes.rows.length === 0) return res.sendStatus(200);
+    const colegioId = alumnoRes.rows[0].colegio_id;
+
     // actualizar (o crear) el registro en pagos
     const existePago = await pool.query('SELECT id FROM pagos WHERE external_reference = $1', [ref]);
     if (existePago.rows.length > 0) {
@@ -172,9 +183,9 @@ const webhook = async (req, res) => {
       );
     } else {
       await pool.query(
-        `INSERT INTO pagos (padre_id, alumno_id, monto, estado, mp_payment_id, external_reference, detalle)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [padreId, alumnoId, monto, estado, String(data.id), ref, pagoData.status_detail || null]
+        `INSERT INTO pagos (padre_id, alumno_id, monto, estado, mp_payment_id, external_reference, detalle, colegio_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [padreId, alumnoId, monto, estado, String(data.id), ref, pagoData.status_detail || null, colegioId]
       );
     }
 
@@ -190,9 +201,9 @@ const webhook = async (req, res) => {
       alumnoId,
     ]);
     await pool.query(
-      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion)
-       VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
-      [alumnoId, monto, `MP:${data.id}`],
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'recarga', 'Mercado Pago', $3, $4)`,
+      [alumnoId, monto, `MP:${data.id}`, colegioId],
     );
     await notificarRecargaMP(padreId, alumnoId, monto);
     res.sendStatus(200);
@@ -229,14 +240,16 @@ const verificarPago = async (req, res) => {
       [`MP:${payment_id}`],
     );
     if (existe.rows.length === 0) {
+      const alumnoRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumno_id]);
+      if (alumnoRes.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
       await pool.query("UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2", [
         monto,
         alumno_id,
       ]);
       await pool.query(
-        `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion)
-         VALUES ($1, $2, 'recarga', 'Mercado Pago', $3)`,
-        [alumno_id, monto, `MP:${payment_id}`],
+        `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+         VALUES ($1, $2, 'recarga', 'Mercado Pago', $3, $4)`,
+        [alumno_id, monto, `MP:${payment_id}`, alumnoRes.rows[0].colegio_id],
       );
       await notificarRecargaMP(req.padre.id, alumno_id, monto);
     }

@@ -5,16 +5,14 @@ require('dotenv').config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
-const getBrandingDB = async () => {
-  const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion LIMIT 1');
+const getBrandingDB = async (colegioId) => {
+  if (!colegioId) return { nombre: 'EduWallet', logo: null };
+  const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [colegioId]);
   return {
     nombre: res.rows[0]?.nombre_colegio || 'EduWallet',
     logo:   res.rows[0]?.logo || null
   };
 };
-
-// Compatibilidad con código que ya usa getNombreColegio
-const getNombreColegio = async () => (await getBrandingDB()).nombre;
 
 const enviarEmail = async ({ to, subject, html }) => {
   try {
@@ -43,8 +41,8 @@ const baseHTML = (contenido, nombreColegio, logo) => `
   </div>
 `;
 
-const enviarEmailSaldoBajo = async ({ nombrePadre, emailPadre, nombreAlumno, saldo, curso }) => {
-  const { nombre: nombreColegio, logo } = await getBrandingDB();
+const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, saldo, curso }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${nombreAlumno}</b> (${curso}) está por debajo de $200.</p>
@@ -62,8 +60,8 @@ const enviarEmailSaldoBajo = async ({ nombrePadre, emailPadre, nombreAlumno, sal
   });
 };
 
-const enviarEmailRecarga = async ({ nombrePadre, emailPadre, nombreAlumno, monto, nuevoSaldo }) => {
-  const { nombre: nombreColegio, logo } = await getBrandingDB();
+const enviarEmailRecarga = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, monto, nuevoSaldo }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">La recarga para <b>${nombreAlumno}</b> fue acreditada correctamente.</p>
@@ -81,8 +79,8 @@ const enviarEmailRecarga = async ({ nombrePadre, emailPadre, nombreAlumno, monto
   });
 };
 
-const enviarEmailCompra = async ({ nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar }) => {
-  const { nombre: nombreColegio, logo } = await getBrandingDB();
+const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;"><b>${nombreAlumno}</b> realizó una compra en el ${lugar}.</p>
@@ -102,9 +100,9 @@ const enviarEmailCompra = async ({ nombrePadre, emailPadre, nombreAlumno, descri
   });
 };
 
-const enviarEmailBackup = async ({ sql, nombre }) => {
+const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
   try {
-    const config = await pool.query('SELECT * FROM configuracion LIMIT 1');
+    const config = await pool.query('SELECT * FROM configuracion WHERE colegio_id = $1', [colegioId]);
     const emailAdmin = config.rows[0]?.email_admin;
     const nombreColegio = config.rows[0]?.nombre_colegio || 'EduWallet';
 
@@ -135,8 +133,8 @@ const enviarEmailBackup = async ({ sql, nombre }) => {
   }
 };
 
-const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) => {
-  const { nombre: nombreColegio, logo } = await getBrandingDB();
+const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, linkReset }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en EduWallet.</p>
@@ -154,8 +152,8 @@ const enviarEmailRecuperacion = async ({ nombrePadre, emailPadre, linkReset }) =
   });
 };
 
-const enviarMensajeAdmin = async ({ asunto, mensaje, destinatarios }) => {
-  const { nombre: nombreColegio, logo } = await getBrandingDB();
+const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #111; margin: 0 0 20px; font-size: 15px; white-space: pre-line;">${mensaje}</p>
   `, nombreColegio, logo);

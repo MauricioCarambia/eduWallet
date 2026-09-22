@@ -6,15 +6,15 @@ const getTransacciones = async (req, res) => {
   try {
     const { desde, hasta, tipo, lugar, page = 1, limit = 500 } = req.query;
 
-    const condiciones = [];
-    const valores = [];
+    const condiciones = ['t.colegio_id = $1'];
+    const valores = [req.empleado.colegio_id];
 
     if (desde) { valores.push(desde); condiciones.push(`t.fecha::date >= $${valores.length}`); }
     if (hasta) { valores.push(hasta); condiciones.push(`t.fecha::date <= $${valores.length}`); }
     if (tipo)  { valores.push(tipo);  condiciones.push(`t.tipo = $${valores.length}`); }
     if (lugar) { valores.push(lugar); condiciones.push(`t.lugar = $${valores.length}`); }
 
-    const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+    const where = `WHERE ${condiciones.join(' AND ')}`;
 
     const limitNum  = Math.min(Math.max(parseInt(limit) || 500, 1), 2000);
     const offset    = (Math.max(parseInt(page) || 1, 1) - 1) * limitNum;
@@ -60,9 +60,9 @@ const getTransaccionesAlumno = async (req, res) => {
       `SELECT t.*, e.nombre as empleado_nombre
        FROM transacciones t
        LEFT JOIN empleados e ON t.empleado_id = e.id
-       WHERE t.alumno_id = $1
+       WHERE t.alumno_id = $1 AND t.colegio_id = $2
        ORDER BY t.fecha DESC`,
-      [id]
+      [id, req.empleado.colegio_id]
     );
     res.json(resultado.rows);
   } catch (err) {
@@ -78,8 +78,8 @@ const cobrar = async (req, res) => {
     await client.query('BEGIN');
 
     const alumno = await client.query(
-      'SELECT * FROM alumnos WHERE id = $1 FOR UPDATE',
-      [alumno_id]
+      'SELECT * FROM alumnos WHERE id = $1 AND colegio_id = $2 FOR UPDATE',
+      [alumno_id, req.empleado.colegio_id]
     );
 
     if (alumno.rows.length === 0) {
@@ -116,24 +116,24 @@ const cobrar = async (req, res) => {
     // descontar stock
     for (const item of items) {
       await client.query(
-        'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2',
-        [item.qty, item.id]
+        'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 AND colegio_id = $3',
+        [item.qty, item.id, req.empleado.colegio_id]
       );
     }
 
     // registrar transacción
     const desc = items.map(i => `${i.nombre}${i.qty > 1 ? ` ×${i.qty}` : ''}`).join(', ');
     const tx = await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion)
-       VALUES ($1, $2, $3, 'compra', $4, $5) RETURNING *`,
-      [alumno_id, empleado_id, total, lugar, desc]
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, $3, 'compra', $4, $5, $6) RETURNING *`,
+      [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id]
     );
 
     // actualizar caja
     if (caja_id) {
       await client.query(
-        'UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2',
-        [total, caja_id]
+        'UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3',
+        [total, caja_id, req.empleado.colegio_id]
       );
     }
 
@@ -152,6 +152,7 @@ const cobrar = async (req, res) => {
       );
       for (const padre of padresRes.rows) {
         await enviarEmailCompra({
+          colegioId: req.empleado.colegio_id,
           nombrePadre: padre.nombre,
           emailPadre: padre.email,
           nombreAlumno: a.nombre,
@@ -167,6 +168,7 @@ const cobrar = async (req, res) => {
         });
         if (parseFloat(alumnoActualizado.saldo) < 200) {
           await enviarEmailSaldoBajo({
+            colegioId: req.empleado.colegio_id,
             nombrePadre: padre.nombre,
             emailPadre: padre.email,
             nombreAlumno: a.nombre,
@@ -201,8 +203,8 @@ const anularVenta = async (req, res) => {
     await client.query('BEGIN');
 
     const tx = await client.query(
-      'SELECT * FROM transacciones WHERE id = $1 AND tipo = $2',
-      [id, 'compra']
+      'SELECT * FROM transacciones WHERE id = $1 AND tipo = $2 AND colegio_id = $3',
+      [id, 'compra', req.empleado.colegio_id]
     );
 
     if (tx.rows.length === 0) {
@@ -232,23 +234,23 @@ const anularVenta = async (req, res) => {
       const nombre = item.replace(/ ×\d+$/, '').trim()
       await client.query(
         `UPDATE productos SET stock = stock + $1
-         WHERE nombre = $2 AND local = $3`,
-        [qty, nombre, t.lugar]
+         WHERE nombre = $2 AND local = $3 AND colegio_id = $4`,
+        [qty, nombre, t.lugar, req.empleado.colegio_id]
       )
     }
 
     // restar de la caja activa del mismo local
     await client.query(
       `UPDATE cajas SET ventas = GREATEST(0, ventas - $1), tx_count = GREATEST(0, tx_count - 1)
-       WHERE local = $2 AND abierta = true AND empleado_id = $3`,
-      [t.monto, t.lugar, t.empleado_id]
+       WHERE local = $2 AND abierta = true AND empleado_id = $3 AND colegio_id = $4`,
+      [t.monto, t.lugar, t.empleado_id, req.empleado.colegio_id]
     )
 
     // registrar anulación
     await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion)
-       VALUES ($1, $2, $3, 'anulacion', $4, $5)`,
-      [t.alumno_id, t.empleado_id, t.monto, t.lugar, `Anulación de venta #${id}: ${t.descripcion}`]
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, $3, 'anulacion', $4, $5, $6)`,
+      [t.alumno_id, t.empleado_id, t.monto, t.lugar, `Anulación de venta #${id}: ${t.descripcion}`, req.empleado.colegio_id]
     );
 
     // marcar la venta original como anulada

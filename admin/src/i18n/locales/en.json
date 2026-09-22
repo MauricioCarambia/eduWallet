@@ -23,6 +23,8 @@
   },
   "login": {
     "subtitulo": "Admin Panel",
+    "colegio": "School",
+    "colegio_placeholder": "School code",
     "usuario": "Username",
     "usuario_placeholder": "Enter your username",
     "pin": "PIN",

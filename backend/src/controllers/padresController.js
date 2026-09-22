@@ -96,7 +96,7 @@ const recargarSaldo = async (req, res) => {
   const padreId = req.padre.id;
   try {
     const vinculo = await pool.query(
-      'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
+      'SELECT a.colegio_id FROM padres_alumnos pa JOIN alumnos a ON a.id = pa.alumno_id WHERE pa.padre_id = $1 AND pa.alumno_id = $2',
       [padreId, alumno_id]
     );
     if (vinculo.rows.length === 0) {
@@ -104,9 +104,9 @@ const recargarSaldo = async (req, res) => {
     }
     await pool.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2', [monto, alumno_id]);
     await pool.query(
-      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion)
-       VALUES ($1, $2, 'recarga', 'App Padres', 'Recarga desde app padres')`,
-      [alumno_id, monto]
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'recarga', 'App Padres', 'Recarga desde app padres', $3)`,
+      [alumno_id, monto, vinculo.rows[0].colegio_id]
     );
     const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
     res.json(alumno.rows[0]);

@@ -17,6 +17,8 @@
   },
   "login": {
     "subtitulo": "Point of Sale",
+    "colegio": "School",
+    "colegio_placeholder": "School code",
     "usuario": "Username",
     "usuario_placeholder": "username",
     "pin": "PIN",

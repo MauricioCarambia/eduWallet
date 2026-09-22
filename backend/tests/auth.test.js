@@ -6,13 +6,21 @@ const pool = require('../src/db/conexion');
 describe('Autenticación de empleados', () => {
   const usuario = `test_emp_${Date.now()}`;
   const pin = '1234';
+  const slug = `test-colegio-${Date.now()}`;
   let empleadoId;
+  let colegioId;
 
   beforeAll(async () => {
+    const colegio = await pool.query(
+      `INSERT INTO colegios (nombre, slug) VALUES ($1, $2) RETURNING id`,
+      ['Colegio de prueba', slug]
+    );
+    colegioId = colegio.rows[0].id;
+
     const hash = await bcrypt.hash(pin, 10);
     const res = await pool.query(
-      `INSERT INTO empleados (nombre, usuario, pin, rol, activo) VALUES ($1, $2, $3, 'admin', true) RETURNING id`,
-      ['Empleado de prueba', usuario, hash]
+      `INSERT INTO empleados (nombre, usuario, pin, rol, activo, colegio_id) VALUES ($1, $2, $3, 'admin', true, $4) RETURNING id`,
+      ['Empleado de prueba', usuario, hash, colegioId]
     );
     empleadoId = res.rows[0].id;
   });
@@ -20,13 +28,14 @@ describe('Autenticación de empleados', () => {
   afterAll(async () => {
     await pool.query('DELETE FROM auditoria WHERE empleado_id = $1', [empleadoId]);
     await pool.query('DELETE FROM empleados WHERE id = $1', [empleadoId]);
+    await pool.query('DELETE FROM colegios WHERE id = $1', [colegioId]);
     await pool.end();
   });
 
   test('rechaza login con usuario inexistente', async () => {
     const res = await request(app)
       .post('/api/empleados/login')
-      .send({ usuario: 'no_existe_usuario', pin: '0000' });
+      .send({ colegio: slug, usuario: 'no_existe_usuario', pin: '0000' });
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty('error');
   });
@@ -34,14 +43,14 @@ describe('Autenticación de empleados', () => {
   test('rechaza login con PIN incorrecto', async () => {
     const res = await request(app)
       .post('/api/empleados/login')
-      .send({ usuario, pin: '9999' });
+      .send({ colegio: slug, usuario, pin: '9999' });
     expect(res.status).toBe(401);
   });
 
   test('login correcto devuelve un token JWT', async () => {
     const res = await request(app)
       .post('/api/empleados/login')
-      .send({ usuario, pin });
+      .send({ colegio: slug, usuario, pin });
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('token');
     expect(res.body.empleado.usuario).toBe(usuario);
@@ -61,7 +70,7 @@ describe('Autenticación de empleados', () => {
   });
 
   test('permite acceso a rutas protegidas con token válido', async () => {
-    const login = await request(app).post('/api/empleados/login').send({ usuario, pin });
+    const login = await request(app).post('/api/empleados/login').send({ colegio: slug, usuario, pin });
     const token = login.body.token;
 
     const res = await request(app)

@@ -5,19 +5,27 @@ const pool = require('../src/db/conexion');
 
 describe('Alumnos', () => {
   const usuario = `test_admin_${Date.now()}`;
+  const slug = `test-colegio-${Date.now()}-alu`;
   let token;
   let empleadoId;
+  let colegioId;
   let alumnoId;
 
   beforeAll(async () => {
+    const colegio = await pool.query(
+      `INSERT INTO colegios (nombre, slug) VALUES ($1, $2) RETURNING id`,
+      ['Colegio de prueba', slug]
+    );
+    colegioId = colegio.rows[0].id;
+
     const hash = await bcrypt.hash('1234', 10);
     const empleado = await pool.query(
-      `INSERT INTO empleados (nombre, usuario, pin, rol, activo) VALUES ($1, $2, $3, 'admin', true) RETURNING id`,
-      ['Admin de prueba', usuario, hash]
+      `INSERT INTO empleados (nombre, usuario, pin, rol, activo, colegio_id) VALUES ($1, $2, $3, 'admin', true, $4) RETURNING id`,
+      ['Admin de prueba', usuario, hash, colegioId]
     );
     empleadoId = empleado.rows[0].id;
 
-    const login = await request(app).post('/api/empleados/login').send({ usuario, pin: '1234' });
+    const login = await request(app).post('/api/empleados/login').send({ colegio: slug, usuario, pin: '1234' });
     token = login.body.token;
   });
 
@@ -25,6 +33,7 @@ describe('Alumnos', () => {
     if (alumnoId) await pool.query('DELETE FROM alumnos WHERE id = $1', [alumnoId]);
     await pool.query('DELETE FROM auditoria WHERE empleado_id = $1', [empleadoId]);
     await pool.query('DELETE FROM empleados WHERE id = $1', [empleadoId]);
+    await pool.query('DELETE FROM colegios WHERE id = $1', [colegioId]);
     await pool.end();
   });
 

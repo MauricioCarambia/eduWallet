@@ -2,7 +2,7 @@ const { hacerBackup } = require('../services/backupService');
 
 const descargarBackup = async (req, res) => {
   try {
-    const { sql, nombre } = await hacerBackup(false);
+    const { sql, nombre } = await hacerBackup(req.empleado.colegio_id, false);
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
     res.send(sql);
@@ -13,7 +13,7 @@ const descargarBackup = async (req, res) => {
 
 const enviarBackupEmail = async (req, res) => {
   try {
-    await hacerBackup(true);
+    await hacerBackup(req.empleado.colegio_id, true);
     res.json({ mensaje: 'Backup enviado por email correctamente' });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Error al enviar backup' });

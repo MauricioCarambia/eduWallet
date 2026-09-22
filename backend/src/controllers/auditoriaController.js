@@ -11,11 +11,12 @@ const getAuditoria = async (req, res) => {
         `SELECT a.*, e.nombre as empleado_nombre
          FROM auditoria a
          LEFT JOIN empleados e ON a.empleado_id = e.id
+         WHERE a.colegio_id = $1
          ORDER BY a.fecha DESC
-         LIMIT $1 OFFSET $2`,
-        [limitNum, offset]
+         LIMIT $2 OFFSET $3`,
+        [req.empleado.colegio_id, limitNum, offset]
       ),
-      pool.query('SELECT COUNT(*) FROM auditoria')
+      pool.query('SELECT COUNT(*) FROM auditoria WHERE colegio_id = $1', [req.empleado.colegio_id])
     ]);
 
     res.json({
@@ -30,11 +31,11 @@ const getAuditoria = async (req, res) => {
   }
 };
 
-const registrar = async (empleado_id, accion, detalle) => {
+const registrar = async (empleado_id, colegio_id, accion, detalle) => {
   try {
     await pool.query(
-      'INSERT INTO auditoria (empleado_id, accion, detalle) VALUES ($1, $2, $3)',
-      [empleado_id, accion, detalle]
+      'INSERT INTO auditoria (empleado_id, colegio_id, accion, detalle) VALUES ($1, $2, $3, $4)',
+      [empleado_id, colegio_id, accion, detalle]
     );
   } catch (err) {
     console.error('Error al registrar auditoría:', err);

@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
 
 export default function Login() {
+  const [colegio, setColegio] = useState(() => localStorage.getItem('pos_colegio') || '')
   const [usuario, setUsuario] = useState('')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
@@ -16,10 +17,11 @@ export default function Login() {
   const navigate = useNavigate()
 
   const handleLogin = async () => {
-    if (!usuario || !pin) return
+    if (!colegio || !usuario || !pin) return
     setCargando(true); setError('')
     try {
-      const res = await api.post('/empleados/login', { usuario, pin })
+      localStorage.setItem('pos_colegio', colegio)
+      const res = await api.post('/empleados/login', { colegio, usuario, pin })
       login(res.data.empleado, res.data.token)
       navigate('/venta')
     } catch (err) {
@@ -52,8 +54,12 @@ export default function Login() {
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '1.5rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.colegio')}</label>
+            <input value={colegio} onChange={e => setColegio(e.target.value)} placeholder={t('login.colegio_placeholder')} autoFocus />
+          </div>
+          <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.usuario')}</label>
-            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} autoFocus />
+            <input value={usuario} onChange={e => setUsuario(e.target.value)} placeholder={t('login.usuario_placeholder')} />
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -75,8 +81,8 @@ export default function Login() {
 
           {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
 
-          <button onClick={handleLogin} disabled={cargando || !usuario || !pin}
-            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
+          <button onClick={handleLogin} disabled={cargando || !colegio || !usuario || !pin}
+            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !colegio || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
             {cargando ? t('login.ingresando') : t('login.ingresar')}
           </button>
         </div>

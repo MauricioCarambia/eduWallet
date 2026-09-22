@@ -115,6 +115,27 @@ const recargarSaldo = async (req, res) => {
   }
 };
 
+const getTransaccionesAlumno = async (req, res) => {
+  const { alumno_id } = req.params;
+  const padreId = req.padre.id;
+  try {
+    const vinculo = await pool.query(
+      'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
+      [padreId, alumno_id]
+    );
+    if (vinculo.rows.length === 0) {
+      return res.status(403).json({ error: 'No tenés acceso a este alumno' });
+    }
+    const resultado = await pool.query(
+      'SELECT * FROM transacciones WHERE alumno_id = $1 ORDER BY fecha DESC',
+      [alumno_id]
+    );
+    res.json(resultado.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 const toggleBloqueo = async (req, res) => {
   const { alumno_id } = req.params;
   const padreId = req.padre.id;
@@ -223,4 +244,4 @@ const resetearPassword = async (req, res) => {
   }
 };
 
-module.exports = { registro, login, getAlumnos, vincularAlumno, recargarSaldo, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };
+module.exports = { registro, login, getAlumnos, vincularAlumno, recargarSaldo, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };

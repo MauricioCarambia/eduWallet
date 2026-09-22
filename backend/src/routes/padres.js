@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, getAlumnos, vincularAlumno, recargarSaldo, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
+const { registro, login, getAlumnos, vincularAlumno, recargarSaldo, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
@@ -121,6 +121,25 @@ router.post('/resetear-password', resetearPassword);
  *         description: Lista de alumnos vinculados con saldo y gasto del día
  */
 router.get('/alumnos', verificarPadre, getAlumnos);
+
+/**
+ * @swagger
+ * /padres/alumnos/{alumno_id}/transacciones:
+ *   get:
+ *     summary: Historial de transacciones de un alumno vinculado al padre autenticado
+ *     tags: [Padres]
+ *     parameters:
+ *       - in: path
+ *         name: alumno_id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Lista de transacciones del alumno
+ *       403:
+ *         description: El alumno no está vinculado a este padre
+ */
+router.get('/alumnos/:alumno_id/transacciones', verificarPadre, getTransaccionesAlumno);
 
 /**
  * @swagger

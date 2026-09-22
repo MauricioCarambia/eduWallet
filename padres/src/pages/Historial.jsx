@@ -19,7 +19,7 @@ export default function Historial() {
       setAlumnos(aRes.data)
       if (aRes.data.length > 0) {
         setAlumnoId(aRes.data[0].id)
-        const tRes = await api.get(`/transacciones/alumno/${aRes.data[0].id}`)
+        const tRes = await api.get(`/padres/alumnos/${aRes.data[0].id}/transacciones`)
         setTxs(tRes.data)
       }
     } catch (err) {
@@ -32,7 +32,7 @@ export default function Historial() {
   const cambiarAlumno = async id => {
     setAlumnoId(id)
     try {
-      const res = await api.get(`/transacciones/alumno/${id}`)
+      const res = await api.get(`/padres/alumnos/${id}/transacciones`)
       setTxs(res.data)
     } catch (err) { console.error(err) }
   }

@@ -152,6 +152,24 @@ const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, lin
   });
 };
 
+const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, linkActivacion }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
+  const html = baseHTML(`
+    <p style="color: #666; margin: 0 0 16px;">Hola${nombrePadre ? ` <b>${nombrePadre}</b>` : ''},</p>
+    <p style="color: #111; margin: 0 0 20px;"><b>${nombreColegio}</b> te dio de alta en EduWallet como padre/tutor de <b>${nombreAlumno}</b>, para que puedas ver su saldo y recargarlo desde el celular.</p>
+    <a href="${linkActivacion}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
+      Activar mi cuenta
+    </a>
+    <p style="font-size: 12px; color: #999; margin: 0 0 8px;">El enlace expira en <b>7 días</b>. Al activar tu cuenta vas a poder elegir tu contraseña.</p>
+  `, nombreColegio, logo);
+
+  await enviarEmail({
+    to: emailPadre,
+    subject: `Te invitaron a EduWallet — ${nombreColegio}`,
+    html
+  });
+};
+
 const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
@@ -180,5 +198,6 @@ module.exports = {
   enviarEmailCompra,
   enviarEmailBackup,
   enviarMensajeAdmin,
-  enviarEmailRecuperacion
+  enviarEmailRecuperacion,
+  enviarEmailInvitacion
 };

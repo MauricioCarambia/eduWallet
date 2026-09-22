@@ -1,6 +1,8 @@
 const pool = require("../db/conexion");
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
-const { enviarEmailRecarga } = require("../services/emailService");
+const { enviarEmailRecarga, enviarEmailInvitacion } = require("../services/emailService");
 const { enviarPush } = require("../services/pushService");
 const QRCode = require('qrcode');
 
@@ -231,6 +233,46 @@ const regenerarCodigoVinculacion = async (req, res) => {
   }
 };
 
+// Crea o vincula un padre a un alumno recién importado. Si el padre no
+// existe, lo crea con un token de invitación (7 días) y le manda un email
+// para que active su cuenta; si ya existe, solo lo vincula.
+const vincularOInvitarPadre = async (email, nombreSugerido, alumnoId, alumnoNombre, colegioId) => {
+  const correo = email.trim().toLowerCase();
+  const existente = await pool.query('SELECT id FROM padres WHERE email = $1', [correo]);
+
+  let padreId;
+  let esNuevo = false;
+
+  if (existente.rows.length > 0) {
+    padreId = existente.rows[0].id;
+  } else {
+    esNuevo = true;
+    const passwordPlaceholder = await bcrypt.hash(crypto.randomUUID(), 10);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
+    const nombrePadre = nombreSugerido?.trim() || correo.split('@')[0];
+
+    const nuevo = await pool.query(
+      `INSERT INTO padres (nombre, email, password, reset_token, reset_token_expiry)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [nombrePadre, correo, passwordPlaceholder, token, expiry]
+    );
+    padreId = nuevo.rows[0].id;
+
+    const linkActivacion = `${process.env.PADRES_URL}/resetear-password?token=${token}`;
+    try {
+      await enviarEmailInvitacion({ colegioId, nombrePadre, emailPadre: correo, nombreAlumno: alumnoNombre, linkActivacion });
+    } catch (err) { console.error('Error enviando invitación:', err.message); }
+  }
+
+  await pool.query(
+    'INSERT INTO padres_alumnos (padre_id, alumno_id) VALUES ($1, $2) ON CONFLICT (padre_id, alumno_id) DO NOTHING',
+    [padreId, alumnoId]
+  );
+
+  return esNuevo;
+};
+
 const importarAlumnos = async (req, res) => {
   const { filas } = req.body; // array de objetos ya parseados en el frontend
   if (!Array.isArray(filas) || filas.length === 0) {
@@ -243,6 +285,7 @@ const importarAlumnos = async (req, res) => {
   const client = await pool.connect();
   const creados = [];
   const errores = [];
+  const padresAVincular = []; // [{ email, nombreSugerido, alumnoId, alumnoNombre }]
 
   try {
     await client.query('BEGIN');
@@ -271,6 +314,13 @@ const importarAlumnos = async (req, res) => {
           [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id]
         );
         creados.push(res.rows[0]);
+
+        if (f.padre_email?.trim()) {
+          padresAVincular.push({ email: f.padre_email, nombreSugerido: tutor, alumnoId: res.rows[0].id, alumnoNombre: nombre });
+        }
+        if (f.padre2_email?.trim()) {
+          padresAVincular.push({ email: f.padre2_email, nombreSugerido: null, alumnoId: res.rows[0].id, alumnoNombre: nombre });
+        }
       } catch (err) {
         errores.push({ fila, error: `${nombre}: ${err.message}` });
       }
@@ -279,11 +329,24 @@ const importarAlumnos = async (req, res) => {
     await client.query('COMMIT');
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Importación masiva', `${creados.length} alumnos importados`);
 
+    let padresInvitados = 0;
+    let padresVinculados = 0;
+    for (const p of padresAVincular) {
+      try {
+        const esNuevo = await vincularOInvitarPadre(p.email, p.nombreSugerido, p.alumnoId, p.alumnoNombre, req.empleado.colegio_id);
+        if (esNuevo) padresInvitados++; else padresVinculados++;
+      } catch (err) {
+        console.error('Error vinculando padre en importación:', err.message);
+      }
+    }
+
     res.json({
       creados: creados.length,
       errores: errores.length,
       detalle_errores: errores,
-      alumnos: creados
+      alumnos: creados,
+      padres_invitados: padresInvitados,
+      padres_vinculados: padresVinculados
     });
   } catch (err) {
     await client.query('ROLLBACK');

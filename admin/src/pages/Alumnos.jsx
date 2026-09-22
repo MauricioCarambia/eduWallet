@@ -36,8 +36,8 @@ function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
 }
 
 const FORM_VACIO = { nombre: '', curso: '', saldo: '0', limite_diario: '500', tutor: '', tutor_tel: '', alergias: 'Ninguna' }
-const CSV_COLUMNAS = ['nombre', 'curso', 'saldo', 'limite_diario', 'tutor', 'tutor_tel', 'alergias']
-const CSV_PLANTILLA = 'nombre,curso,saldo,limite_diario,tutor,tutor_tel,alergias\nJuan Pérez,1A,500,1000,María Pérez,11-1234-5678,Ninguna\nAna García,2B,0,500,Carlos García,,Maní'
+const CSV_COLUMNAS = ['nombre', 'curso', 'saldo', 'limite_diario', 'tutor', 'tutor_tel', 'alergias', 'padre_email', 'padre2_email']
+const CSV_PLANTILLA = 'nombre,curso,saldo,limite_diario,tutor,tutor_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,500,1000,María Pérez,11-1234-5678,Ninguna,maria@mail.com,\nAna García,2B,0,500,Carlos García,,Maní,carlos@mail.com,laura@mail.com'
 
 const parsearCSV = (texto) => {
   const lineas = texto.trim().split('\n').filter(l => l.trim())
@@ -368,8 +368,11 @@ export default function Alumnos() {
             <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Formato requerido</p>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>El CSV debe tener estos encabezados en la primera fila:</p>
             <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
-              nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias
+              nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, padre_email, padre2_email
             </code>
+            <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>
+              Si cargás <code>padre_email</code> (y opcionalmente <code>padre2_email</code>), el sistema crea la cuenta del padre/madre automáticamente y les manda un email para activarla — no hace falta código de vinculación.
+            </p>
             <button onClick={descargarPlantilla} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
               Descargar plantilla de ejemplo
             </button>
@@ -428,6 +431,13 @@ export default function Alumnos() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ background: 'var(--green-bg)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: importResult.errores > 0 ? 10 : 0, borderLeft: '3px solid var(--green)' }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--green)' }}>✓ {importResult.creados} alumnos importados correctamente</p>
+                {(importResult.padres_invitados > 0 || importResult.padres_vinculados > 0) && (
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--green)' }}>
+                    {importResult.padres_invitados > 0 && `${importResult.padres_invitados} padres nuevos invitados por email`}
+                    {importResult.padres_invitados > 0 && importResult.padres_vinculados > 0 && ' · '}
+                    {importResult.padres_vinculados > 0 && `${importResult.padres_vinculados} vinculados a una cuenta existente`}
+                  </p>
+                )}
               </div>
               {importResult.errores > 0 && (
                 <div style={{ background: 'var(--red-bg)', borderRadius: 'var(--radius)', padding: '10px 14px', borderLeft: '3px solid var(--red)' }}>

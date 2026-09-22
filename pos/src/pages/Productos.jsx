@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -30,8 +31,9 @@ function Campo({ label, children }) {
 const FORM_VACIO = { nombre: '', precio: '0', stock: '10', categoria: 'comida' }
 
 export default function Productos() {
+  const { locales } = useLocales()
   const [productos, setProductos] = useState([])
-  const [local, setLocal] = useState('Kiosco')
+  const [local, setLocal] = useState('')
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
@@ -42,6 +44,7 @@ export default function Productos() {
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
+  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
 
   const cargar = async () => {
     try { const res = await api.get('/productos'); setProductos(res.data) }
@@ -105,7 +108,7 @@ export default function Productos() {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        {['Kiosco', 'Librería'].map(l => (
+        {locales.map(l => (
           <button key={l} onClick={() => setLocal(l)} style={{ padding: '7px 18px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: local === l ? 500 : 400, cursor: 'pointer' }}>{l}</button>
         ))}
       </div>

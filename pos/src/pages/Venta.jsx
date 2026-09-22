@@ -3,12 +3,14 @@ import { SkeletonCards } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Venta() {
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja, actualizarVentas } = useCaja()
+  const { locales } = useLocales()
   const [productos, setProductos] = useState([])
   const [alumnos, setAlumnos] = useState([])
   const [carrito, setCarrito] = useState([])
@@ -17,7 +19,7 @@ export default function Venta() {
   const [busq, setBusq] = useState('')
   const [descPct, setDescPct] = useState(0)
   const [fondoCaja, setFondoCaja] = useState('500')
-  const [local, setLocal] = useState('Kiosco')
+  const [local, setLocal] = useState('')
   const [msg, setMsg] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [procesando, setProcesando] = useState(false)
@@ -36,6 +38,7 @@ export default function Venta() {
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
   useEffect(() => { cargarDatos() }, [])
+  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
   useEffect(() => {
     const handleClick = e => { if (!e.target.closest('#alumno-search')) setShowSugerencias(false) }
     document.addEventListener('mousedown', handleClick)
@@ -176,7 +179,7 @@ export default function Venta() {
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {['Kiosco', 'Librería'].map(l => (
+            {locales.map(l => (
               <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 12, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 15, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
             ))}
           </div>
@@ -255,7 +258,7 @@ export default function Venta() {
       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
         <div style={{ padding: '12px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            {['Kiosco', 'Librería'].map(l => (
+            {locales.map(l => (
               <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
             ))}
             <button onClick={() => { setVistaVentas(true); cargarVentasHoy() }} title="Ver ventas del turno" style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>

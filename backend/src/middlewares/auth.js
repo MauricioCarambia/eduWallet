@@ -28,6 +28,19 @@ const soloAdmin = (req, res, next) => {
   next();
 };
 
+const verificarSuperAdmin = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token requerido' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.tipo !== 'superadmin') return res.status(403).json({ error: 'Acceso restringido' });
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Token inválido o expirado.' });
+  }
+};
+
 const verificarPadre = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -41,4 +54,4 @@ const verificarPadre = (req, res, next) => {
     return res.status(403).json({ error: 'Token inválido' });
   }
 };
-module.exports = { verificarToken, soloAdmin, verificarPadre };
+module.exports = { verificarToken, soloAdmin, verificarPadre, verificarSuperAdmin };

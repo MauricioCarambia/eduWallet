@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonLine, SkeletonCard } from '../components/Skeleton'
+import { useLocales } from '../hooks/useLocales'
 
 function Campo({ label, hint, children }) {
   return (
@@ -22,6 +23,9 @@ function Section({ title, children }) {
 }
 
 export default function Configuracion() {
+  const { locales, cargando: cargandoLocales, recargar: recargarLocales } = useLocales(true)
+  const [nuevoLocal, setNuevoLocal] = useState('')
+  const [guardandoLocal, setGuardandoLocal] = useState(false)
   const [config, setConfig] = useState({
     nombre_colegio: '', direccion: '', telefono: '', email_admin: '',
     email_smtp: '', email_smtp_pass: '', email_smtp_host: 'smtp.gmail.com',
@@ -85,6 +89,25 @@ export default function Configuracion() {
   }
 
   const set = (key, val) => setConfig(p => ({ ...p, [key]: val }))
+
+  const agregarLocal = async () => {
+    if (!nuevoLocal.trim()) return
+    setGuardandoLocal(true)
+    try {
+      await api.post('/locales', { nombre: nuevoLocal.trim() })
+      setNuevoLocal('')
+      recargarLocales()
+      showMsg('ok', 'Local agregado correctamente')
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al agregar el local') }
+    finally { setGuardandoLocal(false) }
+  }
+
+  const toggleLocal = async (id) => {
+    try {
+      await api.patch(`/locales/${id}/toggle`)
+      recargarLocales()
+    } catch { showMsg('error', 'Error al actualizar el local') }
+  }
 
   const onLogo = (e) => {
     const archivo = e.target.files[0]
@@ -162,6 +185,30 @@ export default function Configuracion() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <Campo label="Teléfono"><input value={config.telefono} onChange={e => set('telefono', e.target.value)} placeholder="011-4444-5555" /></Campo>
           <Campo label="Email de administración"><input type="email" value={config.email_admin} onChange={e => set('email_admin', e.target.value)} placeholder="admin@colegio.edu.ar" /></Campo>
+        </div>
+      </Section>
+
+      <Section title="Locales de venta">
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 14px' }}>
+          Zonas donde se puede vender (Kiosco, Comedor, Fotocopiadora, etc.). Aparecen como opciones en el POS.
+        </p>
+        {cargandoLocales ? <SkeletonLine /> : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+            {locales.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Todavía no hay locales creados.</p>}
+            {locales.map(l => (
+              <button key={l.id} onClick={() => toggleLocal(l.id)}
+                title={l.activo ? 'Click para desactivar' : 'Click para reactivar'}
+                style={{ padding: '7px 14px', border: `1.5px solid ${l.activo ? 'var(--border)' : 'var(--red-bg)'}`, borderRadius: 'var(--radius)', background: l.activo ? 'var(--bg-card)' : 'var(--red-bg)', color: l.activo ? 'var(--text)' : 'var(--red)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textDecoration: l.activo ? 'none' : 'line-through' }}>
+                {l.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input placeholder="Nombre del nuevo local (ej: Comedor)" value={nuevoLocal} onChange={e => setNuevoLocal(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarLocal()} style={{ flex: 1 }} />
+          <button onClick={agregarLocal} disabled={guardandoLocal || !nuevoLocal.trim()} style={{ padding: '0 16px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: guardandoLocal || !nuevoLocal.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+            Agregar
+          </button>
         </div>
       </Section>
 

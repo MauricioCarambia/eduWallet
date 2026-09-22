@@ -129,6 +129,15 @@ const crearTablas = async () => {
         creado_en TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS locales (
+        id         SERIAL PRIMARY KEY,
+        colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+        nombre     VARCHAR(50) NOT NULL,
+        activo     BOOLEAN DEFAULT true,
+        creado_en  TIMESTAMP DEFAULT NOW(),
+        UNIQUE (colegio_id, nombre)
+      );
+
       CREATE TABLE IF NOT EXISTS pagos (
         id                 SERIAL PRIMARY KEY,
         colegio_id         INTEGER NOT NULL REFERENCES colegios(id),

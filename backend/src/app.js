@@ -17,6 +17,8 @@ const configuracionRoutes = require('./routes/configuracion');
 const adminPadresRoutes = require('./routes/adminPadres');
 const backupRoutes = require('./routes/backup');
 const mensajesRoutes = require('./routes/mensajes');
+const localesRoutes = require('./routes/locales');
+const superadminRoutes = require('./routes/superadmin');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./docs/swagger');
 
@@ -73,6 +75,8 @@ app.use('/api/configuracion', configuracionRoutes);
 app.use('/api/admin/padres', adminPadresRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/mensajes', mensajesRoutes);
+app.use('/api/locales', localesRoutes);
+app.use('/api/superadmin', superadminRoutes);
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'EduWallet API Docs',

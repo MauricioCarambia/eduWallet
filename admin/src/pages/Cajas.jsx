@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -19,6 +20,7 @@ function Modal({ title, onClose, children }) {
 }
 
 export default function Cajas() {
+  const { locales } = useLocales()
   const [cajas, setCajas] = useState([])
   const [txs, setTxs] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -110,7 +112,7 @@ export default function Cajas() {
       )}
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-        {['Todos', 'Kiosco', 'Librería'].map(l => filtroBtn(l, filtroLocal === l, () => setFiltroLocal(l)))}
+        {['Todos', ...locales.map(l => l.nombre)].map(l => filtroBtn(l, filtroLocal === l, () => setFiltroLocal(l)))}
         <div style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
         {['Todos', 'Abiertas', 'Cerradas'].map(e => filtroBtn(e, filtroEstado === e, () => setFiltroEstado(e)))}
       </div>

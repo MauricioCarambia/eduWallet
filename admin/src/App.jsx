@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useSuperAdmin } from './context/SuperAdminContext'
 import Login from './pages/Login'
+import SuperAdminLogin from './pages/SuperAdminLogin'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import Dashboard from './pages/Dashboard'
 import Alumnos from './pages/Alumnos'
 import Empleados from './pages/Empleados'
@@ -18,6 +21,12 @@ function PrivateRoute({ children }) {
   return sesion ? children : <Navigate to="/" replace />
 }
 
+function SuperAdminPrivateRoute({ children }) {
+  const { autenticado, cargando } = useSuperAdmin()
+  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#8B95A8', background: '#0B1220' }}>Cargando...</div>
+  return autenticado ? children : <Navigate to="/superadmin" replace />
+}
+
 export default function App() {
   const { sesion } = useAuth()
 
@@ -33,6 +42,8 @@ export default function App() {
       <Route path="/reportes" element={<PrivateRoute><Layout><Reportes /></Layout></PrivateRoute>} />
       <Route path="/auditoria" element={<PrivateRoute><Layout><Auditoria /></Layout></PrivateRoute>} />
       <Route path="/configuracion" element={<PrivateRoute><Layout><Configuracion /></Layout></PrivateRoute>} />
+      <Route path="/superadmin" element={<SuperAdminLogin />} />
+      <Route path="/superadmin/dashboard" element={<SuperAdminPrivateRoute><SuperAdminDashboard /></SuperAdminPrivateRoute>} />
     </Routes>
   )
 }

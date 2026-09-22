@@ -3,22 +3,25 @@ import { SkeletonTable } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Caja() {
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja } = useCaja()
+  const { locales } = useLocales()
   const [txs, setTxs] = useState([])
   const [misCajas, setMisCajas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [msg, setMsg] = useState(null)
   const [fondoCaja, setFondoCaja] = useState('500')
-  const [local, setLocal] = useState('Kiosco')
+  const [local, setLocal] = useState('')
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
+  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
 
   const cargar = async () => {
     try {
@@ -111,7 +114,7 @@ export default function Caja() {
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
             <div style={{ display: 'flex', gap: 8 }}>
-              {['Kiosco', 'Librería'].map(l => (
+              {locales.map(l => (
                 <button key={l} onClick={() => setLocal(l)} style={{ flex: 1, padding: '10px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
               ))}
             </div>

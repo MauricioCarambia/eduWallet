@@ -26,12 +26,19 @@ if (!tareasInicializadas) {
     }
   });
 
-  // Backup diario a las 3am
+  // Backup diario a las 3am — uno por cada colegio activo
   cron.schedule('0 3 * * *', async () => {
     try {
       const { hacerBackup } = require('./services/backupService');
-      await hacerBackup(true);
-      console.log('Backup diario completado');
+      const colegios = await pool.query('SELECT id FROM colegios WHERE activo = true');
+      for (const { id } of colegios.rows) {
+        try {
+          await hacerBackup(id, true);
+        } catch (err) {
+          console.error(`Error en backup diario del colegio ${id}:`, err.message);
+        }
+      }
+      console.log(`Backup diario completado (${colegios.rows.length} colegios)`);
     } catch (err) {
       console.error('Error en backup diario:', err.message);
     }

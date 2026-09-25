@@ -28,7 +28,6 @@ const mapEstado = (mpStatus) => {
 };
 
 const crearPreferencia = async (req, res) => {
-  console.log('Creando preferencia:', req.body)
   const { monto, alumno_id } = req.body;
   const padreId = req.padre.id;
   try {
@@ -83,7 +82,6 @@ const crearPreferencia = async (req, res) => {
 };
 
 const procesarPago = async (req, res) => {
-  console.log('Body recibido:', JSON.stringify(req.body, null, 2));
   const { token, payment_method_id, issuer_id, installments, monto, alumno_id, email, payer } = req.body;
   const padreId = req.padre.id;
 

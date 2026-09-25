@@ -27,7 +27,7 @@ function Campo({ label, children }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', usuario: '', pin: '', rol: 'cajero' }
+const FORM_VACIO = { nombre: '', usuario: '', pin: '', rol: 'staff' }
 
 export default function Empleados() {
   const [empleados, setEmpleados] = useState([])
@@ -132,7 +132,7 @@ export default function Empleados() {
           <Campo label="PIN"><input type="password" value={form.pin} onChange={e => setForm(p => ({ ...p, pin: e.target.value }))} /></Campo>
           <Campo label="Rol">
             <select value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}>
-              <option value="cajero">Cajero</option>
+              <option value="staff">Cajero</option>
               <option value="admin">Administrador</option>
             </select>
           </Campo>

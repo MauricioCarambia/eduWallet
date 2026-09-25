@@ -32,6 +32,12 @@ const crearPreferencia = async (req, res) => {
   const { monto, alumno_id } = req.body;
   const padreId = req.padre.id;
   try {
+    const vinculo = await pool.query(
+      'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
+      [padreId, alumno_id]
+    );
+    if (vinculo.rows.length === 0) return res.status(403).json({ error: 'Sin acceso a este alumno' });
+
     const padreRes = await pool.query('SELECT * FROM padres WHERE id = $1', [padreId]);
     const alumnoRes = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
     if (alumnoRes.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
@@ -214,22 +220,30 @@ const webhook = async (req, res) => {
 };
 
 const verificarPago = async (req, res) => {
-  const { payment_id, alumno_id, monto } = req.query;
+  const { payment_id } = req.query;
   try {
     const payment = new Payment(client);
     const pagoData = await payment.get({ id: payment_id });
     const estado = mapEstado(pagoData.status);
     const ref = pagoData.external_reference;
 
+    if (!ref) return res.status(400).json({ error: 'Pago sin referencia válida' });
+
+    // el alumno y el monto salen de la referencia que generamos nosotros al
+    // crear la preferencia, nunca de lo que mande el cliente (query params
+    // vienen de la URL de retorno de Mercado Pago y son editables a mano)
+    const [padreIdRef, alumnoId, montoRef] = ref.split('_');
+    if (padreIdRef !== String(req.padre.id)) {
+      return res.status(403).json({ error: 'Este pago no te pertenece' });
+    }
+
     // actualizar (o crear) el registro en pagos
-    if (ref) {
-      const existePago = await pool.query('SELECT id FROM pagos WHERE external_reference = $1', [ref]);
-      if (existePago.rows.length > 0) {
-        await pool.query(
-          `UPDATE pagos SET estado = $1, mp_payment_id = $2, detalle = $3, actualizado_en = NOW() WHERE external_reference = $4`,
-          [estado, String(payment_id), pagoData.status_detail || null, ref]
-        );
-      }
+    const existePago = await pool.query('SELECT id FROM pagos WHERE external_reference = $1', [ref]);
+    if (existePago.rows.length > 0) {
+      await pool.query(
+        `UPDATE pagos SET estado = $1, mp_payment_id = $2, detalle = $3, actualizado_en = NOW() WHERE external_reference = $4`,
+        [estado, String(payment_id), pagoData.status_detail || null, ref]
+      );
     }
 
     if (pagoData.status !== "approved") {
@@ -240,24 +254,25 @@ const verificarPago = async (req, res) => {
       [`MP:${payment_id}`],
     );
     if (existe.rows.length === 0) {
-      const alumnoRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumno_id]);
+      const alumnoRes = await pool.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumnoId]);
       if (alumnoRes.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
       await pool.query("UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2", [
-        monto,
-        alumno_id,
+        montoRef,
+        alumnoId,
       ]);
       await pool.query(
         `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
          VALUES ($1, $2, 'recarga', 'Mercado Pago', $3, $4)`,
-        [alumno_id, monto, `MP:${payment_id}`, alumnoRes.rows[0].colegio_id],
+        [alumnoId, montoRef, `MP:${payment_id}`, alumnoRes.rows[0].colegio_id],
       );
-      await notificarRecargaMP(req.padre.id, alumno_id, monto);
+      await notificarRecargaMP(req.padre.id, alumnoId, montoRef);
     }
     const alumno = await pool.query("SELECT saldo FROM alumnos WHERE id = $1", [
-      alumno_id,
+      alumnoId,
     ]);
     res.json({ status: "approved", saldo: alumno.rows[0].saldo });
   } catch (err) {
+    console.error('Error verificarPago:', err);
     res.status(500).json({ error: "Error al verificar pago" });
   }
 };

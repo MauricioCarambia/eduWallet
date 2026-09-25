@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import { useAuth } from '../context/AuthContext'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -60,6 +61,7 @@ const parsearCSV = (texto) => {
 }
 
 export default function Alumnos() {
+  const { sesion } = useAuth()
   const [alumnos, setAlumnos] = useState([])
   const [txs, setTxs] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -144,7 +146,7 @@ export default function Alumnos() {
   const recargar = async () => {
     const n = parseInt(montoRecarga); if (!n || n <= 0) return
     try {
-      const res = await api.post(`/alumnos/${seleccionado.id}/recargar`, { monto: n, empleado_id: 1, descripcion: 'Recarga desde admin' })
+      const res = await api.post(`/alumnos/${seleccionado.id}/recargar`, { monto: n, empleado_id: sesion.id, descripcion: 'Recarga desde admin' })
       setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
       const tRes = await api.get('/transacciones'); setTxs(tRes.data.data ?? tRes.data)
       showMsg('ok', `Recarga de ${fmt(n)} aplicada`); cerrarModal()

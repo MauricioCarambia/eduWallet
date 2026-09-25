@@ -7,6 +7,7 @@ import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
+import { useAuth } from '../context/AuthContext'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const tooltipStyle = {
@@ -26,6 +27,7 @@ const hoy = () => toISO(new Date())
 const haceN = n => { const d = new Date(); d.setDate(d.getDate() - n); return toISO(d) }
 
 export default function Reportes() {
+  const { sesion } = useAuth()
   const [txs, setTxs] = useState([])
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -318,7 +320,7 @@ export default function Reportes() {
     if (!confirm(`¿Recargar ${fmt(m)} a ${targets.length} alumnos?`)) return
     try {
       for (const a of targets)
-        await api.post(`/alumnos/${a.id}/recargar`, { monto: m, empleado_id: 1, descripcion: `Recarga masiva (${cursoRecarga})` })
+        await api.post(`/alumnos/${a.id}/recargar`, { monto: m, empleado_id: sesion.id, descripcion: `Recarga masiva (${cursoRecarga})` })
       const aRes = await api.get('/alumnos'); setAlumnos(aRes.data)
       showMsg('ok', `Recarga de ${fmt(m)} aplicada a ${targets.length} alumnos`)
       setMontoRecarga('')

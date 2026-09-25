@@ -1,8 +1,16 @@
 const pool = require('../db/conexion');
 
 const abrirCaja = async (req, res) => {
-  const { empleado_id, local, fondo } = req.body;
+  const { empleado_id, fondo } = req.body;
+  let { local } = req.body;
   try {
+    // si el empleado tiene una zona fija asignada, se ignora lo que mande
+    // el cliente y se fuerza esa zona — así no se puede eludir desde la API
+    if (req.empleado.local_id) {
+      const localAsignado = await pool.query('SELECT nombre FROM locales WHERE id = $1', [req.empleado.local_id]);
+      if (localAsignado.rows.length === 0) return res.status(400).json({ error: 'Tu zona asignada ya no existe, avisá al administrador' });
+      local = localAsignado.rows[0].nombre;
+    }
     const resultado = await pool.query(
       `INSERT INTO cajas (empleado_id, local, fondo, ventas, tx_count, abierta, colegio_id)
        VALUES ($1, $2, $3, 0, 0, true, $4) RETURNING *`,

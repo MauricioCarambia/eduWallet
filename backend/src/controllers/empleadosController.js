@@ -21,7 +21,9 @@ const login = async (req, res) => {
     const colegioId = colegioRes.rows[0].id;
 
     const resultado = await pool.query(
-      'SELECT * FROM empleados WHERE colegio_id = $1 AND usuario = $2 AND activo = true',
+      `SELECT e.*, l.nombre AS local_nombre FROM empleados e
+       LEFT JOIN locales l ON l.id = e.local_id
+       WHERE e.colegio_id = $1 AND e.usuario = $2 AND e.activo = true`,
       [colegioId, usuario]
     );
 
@@ -37,7 +39,7 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: empleado.id, rol: empleado.rol, colegio_id: empleado.colegio_id },
+      { id: empleado.id, rol: empleado.rol, colegio_id: empleado.colegio_id, local_id: empleado.local_id },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -51,6 +53,8 @@ const login = async (req, res) => {
         nombre: empleado.nombre,
         usuario: empleado.usuario,
         rol: empleado.rol,
+        local: empleado.local_nombre || null,
+        mp_conectado: !!empleado.mp_access_token,
       }
     });
 
@@ -63,7 +67,11 @@ const login = async (req, res) => {
 const getEmpleados = async (req, res) => {
   try {
     const resultado = await pool.query(
-      'SELECT id, nombre, usuario, rol, activo FROM empleados WHERE colegio_id = $1 ORDER BY id',
+      `SELECT e.id, e.nombre, e.usuario, e.rol, e.activo, e.local_id, l.nombre AS local_nombre,
+              (e.mp_access_token IS NOT NULL) AS mp_conectado
+       FROM empleados e
+       LEFT JOIN locales l ON l.id = e.local_id
+       WHERE e.colegio_id = $1 ORDER BY e.id`,
       [req.empleado.colegio_id]
     );
     res.json(resultado.rows);
@@ -73,14 +81,42 @@ const getEmpleados = async (req, res) => {
 };
 
 const crearEmpleado = async (req, res) => {
-  const { nombre, usuario, pin, rol } = req.body;
+  const { nombre, usuario, pin, rol, local_id } = req.body;
   try {
+    let localId = null;
+    if (local_id) {
+      const local = await pool.query('SELECT id FROM locales WHERE id = $1 AND colegio_id = $2', [local_id, req.empleado.colegio_id]);
+      if (local.rows.length === 0) return res.status(400).json({ error: 'Local inválido' });
+      localId = local_id;
+    }
     const hash = await bcrypt.hash(pin, 10);
     const resultado = await pool.query(
-      'INSERT INTO empleados (nombre, usuario, pin, rol, colegio_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, nombre, usuario, rol',
-      [nombre, usuario, hash, rol, req.empleado.colegio_id]
+      'INSERT INTO empleados (nombre, usuario, pin, rol, colegio_id, local_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, nombre, usuario, rol, local_id',
+      [nombre, usuario, hash, rol, req.empleado.colegio_id, localId]
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo empleado', nombre);
+    res.json(resultado.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const asignarZona = async (req, res) => {
+  const { id } = req.params;
+  const { local_id } = req.body;
+  try {
+    let localId = null;
+    if (local_id) {
+      const local = await pool.query('SELECT id FROM locales WHERE id = $1 AND colegio_id = $2', [local_id, req.empleado.colegio_id]);
+      if (local.rows.length === 0) return res.status(400).json({ error: 'Local inválido' });
+      localId = local_id;
+    }
+    const resultado = await pool.query(
+      'UPDATE empleados SET local_id = $1 WHERE id = $2 AND colegio_id = $3 RETURNING id, nombre, usuario, rol, local_id',
+      [localId, id, req.empleado.colegio_id]
+    );
+    if (resultado.rows.length === 0) return res.status(404).json({ error: 'Empleado no encontrado' });
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Zona reasignada', `Empleado: ${resultado.rows[0].nombre}`);
     res.json(resultado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -153,4 +189,4 @@ const resetearPin = async (req, res) => {
   }
 };
 
-module.exports = { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin };
+module.exports = { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin, asignarZona };

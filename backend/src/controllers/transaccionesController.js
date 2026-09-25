@@ -71,11 +71,22 @@ const getTransaccionesAlumno = async (req, res) => {
 };
 
 const cobrar = async (req, res) => {
-  const { alumno_id, empleado_id, caja_id, items, lugar, descuento } = req.body;
+  const { alumno_id, empleado_id, caja_id, items, descuento } = req.body;
+  let { lugar } = req.body;
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
+
+    // si el empleado tiene zona fija, no puede vender bajo otra
+    if (req.empleado.local_id) {
+      const localAsignado = await pool.query('SELECT nombre FROM locales WHERE id = $1', [req.empleado.local_id]);
+      if (localAsignado.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Tu zona asignada ya no existe, avisá al administrador' });
+      }
+      lugar = localAsignado.rows[0].nombre;
+    }
 
     const alumno = await client.query(
       'SELECT * FROM alumnos WHERE id = $1 AND colegio_id = $2 FOR UPDATE',

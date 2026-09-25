@@ -47,7 +47,8 @@ export default function Productos() {
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
-  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
+  const zonaFija = sesion?.local || null
+  useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
 
   const cargar = async () => {
     try { const res = await api.get('/productos'); setProductos(res.data) }
@@ -112,11 +113,13 @@ export default function Productos() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        {locales.map(l => (
-          <button key={l} onClick={() => setLocal(l)} style={{ padding: '7px 18px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: local === l ? 500 : 400, cursor: 'pointer' }}>{l}</button>
-        ))}
-      </div>
+      {!zonaFija && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          {locales.map(l => (
+            <button key={l} onClick={() => setLocal(l)} style={{ padding: '7px 18px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: local === l ? 500 : 400, cursor: 'pointer' }}>{l}</button>
+          ))}
+        </div>
+      )}
 
       <input placeholder="Buscar producto..." value={busq} onChange={e => setBusq(e.target.value)} style={{ marginBottom: 14 }} />
 

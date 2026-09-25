@@ -37,8 +37,10 @@ export default function Venta() {
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
+  const zonaFija = sesion?.local || null
+
   useEffect(() => { cargarDatos() }, [])
-  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
+  useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
   useEffect(() => {
     const handleClick = e => { if (!e.target.closest('#alumno-search')) setShowSugerencias(false) }
     document.addEventListener('mousedown', handleClick)
@@ -178,11 +180,15 @@ export default function Venta() {
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 20px' }}>Seleccioná el local y el fondo inicial</p>
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {locales.map(l => (
-              <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 12, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 15, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
-            ))}
-          </div>
+          {zonaFija ? (
+            <div style={{ padding: '14px', border: '2px solid var(--brand)', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {locales.map(l => (
+                <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 12, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 15, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+              ))}
+            </div>
+          )}
         </div>
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>
@@ -258,7 +264,9 @@ export default function Venta() {
       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
         <div style={{ padding: '12px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            {locales.map(l => (
+            {zonaFija ? (
+              <div style={{ flex: 1, padding: '10px', border: '2px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+            ) : locales.map(l => (
               <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
             ))}
             <button onClick={() => { setVistaVentas(true); cargarVentasHoy() }} title="Ver ventas del turno" style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>

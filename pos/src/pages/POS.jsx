@@ -28,8 +28,10 @@ export default function POS() {
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
+  const zonaFija = sesion?.local || null
+
   useEffect(() => { cargarDatos() }, [])
-  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
+  useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
 
   const cargarDatos = async () => {
     try {
@@ -176,11 +178,15 @@ export default function POS() {
             <p style={{ fontSize: 14, color: '#999', margin: '0 0 20px' }}>Seleccioná el local y el fondo inicial</p>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 8 }}>Local</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {locales.map(l => (
-                  <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? '#111' : '#F0F0F0'}`, borderRadius: 12, background: local === l ? '#111' : 'white', color: local === l ? 'white' : '#666', fontSize: 15, fontWeight: local === l ? 600 : 400 }}>{l}</button>
-                ))}
-              </div>
+              {zonaFija ? (
+                <div style={{ padding: '14px', border: '2px solid #111', borderRadius: 12, background: '#111', color: 'white', fontSize: 15, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {locales.map(l => (
+                    <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? '#111' : '#F0F0F0'}`, borderRadius: 12, background: local === l ? '#111' : 'white', color: local === l ? 'white' : '#666', fontSize: 15, fontWeight: local === l ? 600 : 400 }}>{l}</button>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 8 }}>Fondo inicial</label>
@@ -245,7 +251,9 @@ export default function POS() {
             {/* selector local + buscar */}
             <div style={{ padding: '12px 16px', background: 'white', borderBottom: '1px solid #F0F0F0' }}>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                {locales.map(l => (
+                {zonaFija ? (
+                  <div style={{ flex: 1, padding: '10px', border: '2px solid #111', borderRadius: 10, background: '#111', color: 'white', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+                ) : locales.map(l => (
                   <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? '#111' : '#F0F0F0'}`, borderRadius: 10, background: local === l ? '#111' : 'white', color: local === l ? 'white' : '#666', fontSize: 14, fontWeight: local === l ? 600 : 400 }}>{l}</button>
                 ))}
                 <button onClick={() => { setVista('ventas'); cargarVentasHoy() }} style={{ padding: '10px 14px', border: '1px solid #F0F0F0', borderRadius: 10, background: 'white', color: '#666', fontSize: 13 }}>

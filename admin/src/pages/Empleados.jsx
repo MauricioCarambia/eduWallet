@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -27,9 +28,10 @@ function Campo({ label, children }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', usuario: '', pin: '', rol: 'staff' }
+const FORM_VACIO = { nombre: '', usuario: '', pin: '', rol: 'staff', local_id: '' }
 
 export default function Empleados() {
+  const { locales } = useLocales()
   const [empleados, setEmpleados] = useState([])
   const [cajas, setCajas] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -37,6 +39,7 @@ export default function Empleados() {
   const [seleccionado, setSeleccionado] = useState(null)
   const [form, setForm] = useState(FORM_VACIO)
   const [pinReset, setPinReset] = useState('')
+  const [zonaSel, setZonaSel] = useState('')
   const [msg, setMsg] = useState(null)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
@@ -51,15 +54,23 @@ export default function Empleados() {
     finally { setCargando(false) }
   }
 
-  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO); setPinReset('') }
+  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO); setPinReset(''); setZonaSel('') }
 
   const guardarNuevo = async () => {
     if (!form.nombre || !form.usuario || !form.pin) return
     try {
-      const res = await api.post('/empleados', form)
-      setEmpleados(p => [...p, res.data])
+      const res = await api.post('/empleados', { ...form, local_id: form.rol === 'staff' && form.local_id ? form.local_id : null })
+      cargar()
       showMsg('ok', `Empleado ${form.nombre} registrado`); cerrarModal()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al registrar') }
+  }
+
+  const cambiarZona = async () => {
+    try {
+      await api.patch(`/empleados/${seleccionado.id}/zona`, { local_id: zonaSel || null })
+      cargar()
+      showMsg('ok', 'Zona actualizada correctamente'); cerrarModal()
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar la zona') }
   }
 
   const toggleEmpleado = async id => {
@@ -104,16 +115,20 @@ export default function Empleados() {
                 {e.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
               </div>
               <div style={{ flex: 1, minWidth: 150 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{e.nombre}</p>
                   <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? '#EDE9FE' : 'var(--brand-light)', color: e.rol === 'admin' ? '#7C3AED' : 'var(--accent)' }}>{e.rol}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: e.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: e.activo ? 'var(--green)' : 'var(--red)' }}>{e.activo ? 'Activo' : 'Inactivo'}</span>
+                  {e.local_nombre
+                    ? <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>📍 {e.local_nombre}</span>
+                    : e.rol === 'staff' && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin zona</span>}
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>@{e.usuario} · {cajasE.length} turnos · Total: <b style={{ color: 'var(--text)' }}>{fmt(totalE)}</b></p>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {[
                   { label: 'Ver turnos', onClick: () => { setSeleccionado(e); setModal('cajas') }, bg: 'var(--bg)', color: 'var(--text-secondary)' },
+                  ...(e.rol === 'staff' ? [{ label: 'Zona', onClick: () => { setSeleccionado(e); setZonaSel(e.local_id || ''); setModal('zona') }, bg: 'var(--brand-light)', color: 'var(--accent)' }] : []),
                   { label: 'Reset PIN', onClick: () => { setSeleccionado(e); setModal('resetPin') }, bg: 'var(--amber-bg)', color: 'var(--amber)' },
                   { label: e.activo ? 'Deshabilitar' : 'Habilitar', onClick: () => toggleEmpleado(e.id), bg: e.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: e.activo ? 'var(--red)' : 'var(--green)' },
                 ].map(b => (
@@ -136,9 +151,33 @@ export default function Empleados() {
               <option value="admin">Administrador</option>
             </select>
           </Campo>
+          {form.rol === 'staff' && (
+            <Campo label="Zona fija (opcional)">
+              <select value={form.local_id} onChange={e => setForm(p => ({ ...p, local_id: e.target.value }))}>
+                <option value="">Sin restricción (puede elegir)</option>
+                {locales.map(l => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+              </select>
+            </Campo>
+          )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
             <button onClick={guardarNuevo} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'zona' && seleccionado && (
+        <Modal title={`Zona — ${seleccionado.nombre}`} onClose={cerrarModal}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Si le asignás una zona fija, en el POS va a quedar bloqueado a esa zona y no va a poder elegir otra.</p>
+          <Campo label="Zona">
+            <select value={zonaSel} onChange={e => setZonaSel(e.target.value)}>
+              <option value="">Sin restricción (puede elegir)</option>
+              {locales.map(l => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+            </select>
+          </Campo>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
+            <button onClick={cambiarZona} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
           </div>
         </Modal>
       )}

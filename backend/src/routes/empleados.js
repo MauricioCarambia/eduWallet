@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin } = require('../controllers/empleadosController');
+const { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin, asignarZona } = require('../controllers/empleadosController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
 const { loginEmpleadosLimiter } = require('../middlewares/rateLimiter');
 
@@ -130,5 +130,30 @@ router.patch('/:id/cambiar-pin', verificarToken, cambiarPin);
  *         description: PIN reseteado
  */
 router.patch('/:id/resetear-pin', verificarToken, soloAdmin, resetearPin);
+
+/**
+ * @swagger
+ * /empleados/{id}/zona:
+ *   patch:
+ *     summary: Asignar (o quitar) la zona fija de un empleado (solo admin)
+ *     tags: [Empleados]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               local_id: { type: integer, nullable: true, description: "null para quitar la restricción" }
+ *     responses:
+ *       200:
+ *         description: Empleado actualizado
+ */
+router.patch('/:id/zona', verificarToken, soloAdmin, asignarZona);
 
 module.exports = router;

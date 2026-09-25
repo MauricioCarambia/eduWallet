@@ -20,8 +20,10 @@ export default function Caja() {
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
+  const zonaFija = sesion?.local || null
+
   useEffect(() => { cargar() }, [])
-  useEffect(() => { if (!local && locales.length > 0) setLocal(locales[0]) }, [locales])
+  useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
 
   const cargar = async () => {
     try {
@@ -113,11 +115,15 @@ export default function Caja() {
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Abrí una caja para empezar a cobrar.</p>
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {locales.map(l => (
-                <button key={l} onClick={() => setLocal(l)} style={{ flex: 1, padding: '10px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
-              ))}
-            </div>
+            {zonaFija ? (
+              <div style={{ padding: '10px', border: '1.5px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {locales.map(l => (
+                  <button key={l} onClick={() => setLocal(l)} style={{ flex: 1, padding: '10px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>

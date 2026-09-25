@@ -16,14 +16,27 @@ const crearTablas = async () => {
         creado_en        TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS locales (
+        id         SERIAL PRIMARY KEY,
+        colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+        nombre     VARCHAR(50) NOT NULL,
+        activo     BOOLEAN DEFAULT true,
+        creado_en  TIMESTAMP DEFAULT NOW(),
+        UNIQUE (colegio_id, nombre)
+      );
+
       CREATE TABLE IF NOT EXISTS empleados (
         id        SERIAL PRIMARY KEY,
         colegio_id INTEGER NOT NULL REFERENCES colegios(id),
+        local_id  INTEGER REFERENCES locales(id),
         nombre    VARCHAR(100) NOT NULL,
         usuario   VARCHAR(50)  NOT NULL,
         pin       VARCHAR(100) NOT NULL,
         rol       VARCHAR(20)  NOT NULL CHECK (rol IN ('admin', 'staff')),
         activo    BOOLEAN      DEFAULT true,
+        mp_access_token  TEXT,
+        mp_refresh_token TEXT,
+        mp_user_id       VARCHAR(50),
         creado_en TIMESTAMP    DEFAULT NOW(),
         UNIQUE (colegio_id, usuario)
       );
@@ -129,15 +142,6 @@ const crearTablas = async () => {
         creado_en TIMESTAMP DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS locales (
-        id         SERIAL PRIMARY KEY,
-        colegio_id INTEGER NOT NULL REFERENCES colegios(id),
-        nombre     VARCHAR(50) NOT NULL,
-        activo     BOOLEAN DEFAULT true,
-        creado_en  TIMESTAMP DEFAULT NOW(),
-        UNIQUE (colegio_id, nombre)
-      );
-
       CREATE TABLE IF NOT EXISTS pagos (
         id                 SERIAL PRIMARY KEY,
         colegio_id         INTEGER NOT NULL REFERENCES colegios(id),
@@ -176,6 +180,7 @@ const crearTablas = async () => {
       CREATE INDEX IF NOT EXISTS idx_cajas_colegio_id         ON cajas (colegio_id);
       CREATE INDEX IF NOT EXISTS idx_auditoria_colegio_id     ON auditoria (colegio_id);
       CREATE INDEX IF NOT EXISTS idx_pagos_colegio_id         ON pagos (colegio_id);
+      CREATE INDEX IF NOT EXISTS idx_empleados_local_id       ON empleados (local_id);
     `);
 
     console.log('Tablas e índices creados correctamente');

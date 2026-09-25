@@ -3,7 +3,8 @@
     "venta": "Sale",
     "productos": "Products",
     "caja": "Register",
-    "historial": "History"
+    "historial": "History",
+    "cuenta": "My account"
   },
   "common": {
     "punto_venta": "Point of Sale",

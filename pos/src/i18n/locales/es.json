@@ -3,7 +3,8 @@
     "venta": "Venta",
     "productos": "Productos",
     "caja": "Caja",
-    "historial": "Historial"
+    "historial": "Historial",
+    "cuenta": "Mi cuenta"
   },
   "common": {
     "punto_venta": "Punto de Venta",

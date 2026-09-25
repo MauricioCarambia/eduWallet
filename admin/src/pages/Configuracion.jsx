@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 import { SkeletonLine, SkeletonCard } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
@@ -23,9 +24,12 @@ function Section({ title, children }) {
 }
 
 export default function Configuracion() {
+  const [searchParams] = useSearchParams()
   const { locales, cargando: cargandoLocales, recargar: recargarLocales } = useLocales(true)
   const [nuevoLocal, setNuevoLocal] = useState('')
   const [guardandoLocal, setGuardandoLocal] = useState(false)
+  const [estadoMP, setEstadoMP] = useState(null)
+  const [conectandoMP, setConectandoMP] = useState(false)
   const [config, setConfig] = useState({
     nombre_colegio: '', direccion: '', telefono: '', email_admin: '',
     email_smtp: '', email_smtp_pass: '', email_smtp_host: 'smtp.gmail.com',
@@ -40,7 +44,31 @@ export default function Configuracion() {
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar(); cargarEstadoMP() }, [])
+
+  useEffect(() => {
+    const mp = searchParams.get('mp')
+    if (mp === 'conectado') showMsg('ok', 'Cuenta de Mercado Pago conectada correctamente')
+    else if (mp === 'error') showMsg('error', 'No se pudo conectar Mercado Pago. Probá de nuevo.')
+  }, [searchParams])
+
+  const cargarEstadoMP = async () => {
+    try {
+      const res = await api.get('/mp/estado')
+      setEstadoMP(res.data)
+    } catch (err) { console.error(err) }
+  }
+
+  const conectarMP = async () => {
+    setConectandoMP(true)
+    try {
+      const res = await api.get('/mp/conectar/colegio')
+      window.location.href = res.data.url
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Error al iniciar la conexión')
+      setConectandoMP(false)
+    }
+  }
 
   const cargar = async () => {
     try {
@@ -210,6 +238,26 @@ export default function Configuracion() {
             Agregar
           </button>
         </div>
+      </Section>
+
+      <Section title="Mercado Pago">
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 14px' }}>
+          Conectá la cuenta de Mercado Pago del colegio para recibir las recargas de los padres.
+        </p>
+        {!estadoMP?.disponible ? (
+          <div style={{ padding: '10px 14px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 'var(--radius)', fontSize: 13, borderLeft: '3px solid var(--amber)' }}>
+            Todavía no está habilitada la conexión con Mercado Pago (falta configurar la aplicación).
+          </div>
+        ) : estadoMP?.colegio_conectado ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Cuenta del colegio conectada
+          </div>
+        ) : (
+          <button onClick={conectarMP} disabled={conectandoMP} style={{ padding: '10px 20px', border: 'none', borderRadius: 'var(--radius)', background: '#009EE3', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: conectandoMP ? 0.7 : 1 }}>
+            {conectandoMP ? 'Redirigiendo...' : 'Conectar Mercado Pago'}
+          </button>
+        )}
       </Section>
 
       <Section title="Notificaciones por email">

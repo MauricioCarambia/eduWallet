@@ -11,6 +11,20 @@ const getConfiguracion = async (req, res) => {
   }
 };
 
+// Branding para un empleado autenticado (admin o staff) — no exige soloAdmin
+// porque lo usa el layout de cualquier pantalla, incluida la del POS.
+const getMiColegio = async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      'SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1',
+      [req.empleado.colegio_id]
+    );
+    res.json(resultado.rows[0] || { nombre_colegio: 'EduWallet', logo: null });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 // Endpoint público — solo devuelve nombre y logo para los layouts
 const getBranding = async (req, res) => {
   try {
@@ -101,4 +115,4 @@ const testEmail = async (req, res) => {
   }
 };
 
-module.exports = { getConfiguracion, getBranding, actualizarConfiguracion, testEmail };
+module.exports = { getConfiguracion, getBranding, getMiColegio, actualizarConfiguracion, testEmail };

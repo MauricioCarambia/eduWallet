@@ -27,7 +27,7 @@ export default function Layout({ children }) {
   const [branding, setBranding] = useState({ nombre_colegio: 'EduWallet', logo: null })
 
   useEffect(() => {
-    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+    api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
   }, [])
 
   const handleLogout = () => { logout(); navigate('/') }

@@ -124,7 +124,7 @@ router.put('/:id', verificarToken, actualizarAlumno);
  *       200:
  *         description: Estado actualizado
  */
-router.patch('/:id/toggle', verificarToken, actualizarAlumno);
+router.patch('/:id/toggle', verificarToken, toggleAlumno);
 
 /**
  * @swagger

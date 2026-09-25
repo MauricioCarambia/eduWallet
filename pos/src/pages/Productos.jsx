@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
+import { useAuth } from '../context/AuthContext'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -31,6 +32,8 @@ function Campo({ label, children }) {
 const FORM_VACIO = { nombre: '', precio: '0', stock: '10', categoria: 'comida' }
 
 export default function Productos() {
+  const { sesion } = useAuth()
+  const esAdmin = sesion?.rol === 'admin'
   const { locales } = useLocales()
   const [productos, setProductos] = useState([])
   const [local, setLocal] = useState('')
@@ -96,7 +99,9 @@ export default function Productos() {
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Productos</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{productos.length} productos en total</p>
         </div>
-        <button onClick={() => setModal('nuevo')} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo producto</button>
+        {esAdmin && (
+          <button onClick={() => setModal('nuevo')} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo producto</button>
+        )}
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -119,7 +124,7 @@ export default function Productos() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
+              {(esAdmin ? ['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'] : ['Producto', 'Precio', 'Stock', 'Categoría']).map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
               ))}
             </tr>
@@ -139,9 +144,11 @@ export default function Productos() {
                   </div>
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
-                <td style={{ padding: '12px 16px' }}>
-                  <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
-                </td>
+                {esAdmin && (
+                  <td style={{ padding: '12px 16px' }}>
+                    <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -73,6 +73,26 @@ describe('Alumnos', () => {
     expect(Number(res.body.saldo)).toBe(500);
   });
 
+  test('togglear bloqueo no borra los demás campos del alumno', async () => {
+    const antes = await request(app)
+      .get(`/api/alumnos/${alumnoId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(antes.body.activo).toBe(true);
+
+    const res = await request(app)
+      .patch(`/api/alumnos/${alumnoId}/toggle`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.activo).toBe(false);
+    expect(res.body.nombre).toBe('Alumno de Prueba');
+    expect(res.body.curso).toBe('1ro A');
+
+    // vuelve a dejarlo activo para no afectar otros tests
+    await request(app)
+      .patch(`/api/alumnos/${alumnoId}/toggle`)
+      .set('Authorization', `Bearer ${token}`);
+  });
+
   test('404 al pedir un alumno inexistente', async () => {
     const res = await request(app)
       .get('/api/alumnos/999999999')

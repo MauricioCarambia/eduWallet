@@ -60,7 +60,7 @@ export default function Reportes() {
   useEffect(() => { cargar() }, [fechaDesde, fechaHasta, filtroLocal])
 
   useEffect(() => {
-    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+    api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
   }, [])
 
   const cargar = async () => {

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getConfiguracion, getBranding, actualizarConfiguracion, testEmail } = require('../controllers/configuracionController');
+const { getConfiguracion, getBranding, getMiColegio, actualizarConfiguracion, testEmail } = require('../controllers/configuracionController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
 
 /**
@@ -29,6 +29,7 @@ const { verificarToken, soloAdmin } = require('../middlewares/auth');
  *                 logo: { type: string, nullable: true, description: "Logo en base64" }
  */
 router.get('/branding', getBranding); // público — sin auth
+router.get('/mi-colegio', verificarToken, getMiColegio); // para el layout de admin/pos
 
 /**
  * @swagger

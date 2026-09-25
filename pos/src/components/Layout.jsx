@@ -29,7 +29,7 @@ export default function Layout({ children }) {
   const [mostrarAlertas, setMostrarAlertas] = useState(false)
 
   useEffect(() => {
-    api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
+    api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
   }, [])
 
   useEffect(() => {

@@ -91,30 +91,6 @@ const vincularAlumno = async (req, res) => {
   }
 };
 
-const recargarSaldo = async (req, res) => {
-  const { alumno_id, monto } = req.body;
-  const padreId = req.padre.id;
-  try {
-    const vinculo = await pool.query(
-      'SELECT a.colegio_id FROM padres_alumnos pa JOIN alumnos a ON a.id = pa.alumno_id WHERE pa.padre_id = $1 AND pa.alumno_id = $2',
-      [padreId, alumno_id]
-    );
-    if (vinculo.rows.length === 0) {
-      return res.status(403).json({ error: 'No tenés acceso a este alumno' });
-    }
-    await pool.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2', [monto, alumno_id]);
-    await pool.query(
-      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
-       VALUES ($1, $2, 'recarga', 'App Padres', 'Recarga desde app padres', $3)`,
-      [alumno_id, monto, vinculo.rows[0].colegio_id]
-    );
-    const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
-    res.json(alumno.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Error del servidor' });
-  }
-};
-
 const getTransaccionesAlumno = async (req, res) => {
   const { alumno_id } = req.params;
   const padreId = req.padre.id;
@@ -244,4 +220,4 @@ const resetearPassword = async (req, res) => {
   }
 };
 
-module.exports = { registro, login, getAlumnos, vincularAlumno, recargarSaldo, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };
+module.exports = { registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };

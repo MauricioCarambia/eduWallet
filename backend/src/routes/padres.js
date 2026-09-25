@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, getAlumnos, vincularAlumno, recargarSaldo, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
+const { registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
@@ -162,28 +162,6 @@ router.get('/alumnos/:alumno_id/transacciones', verificarPadre, getTransacciones
  *         description: Alumno vinculado
  */
 router.post('/alumnos/vincular', verificarPadre, vincularAlumno);
-
-/**
- * @swagger
- * /padres/alumnos/recargar:
- *   post:
- *     summary: Recargar saldo de un alumno vinculado (recarga manual)
- *     tags: [Padres]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [alumno_id, monto]
- *             properties:
- *               alumno_id: { type: integer }
- *               monto: { type: number }
- *     responses:
- *       200:
- *         description: Saldo actualizado
- */
-router.post('/alumnos/recargar', verificarPadre, recargarSaldo);
 
 /**
  * @swagger

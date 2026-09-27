@@ -5,6 +5,14 @@ import { SkeletonCards } from '../components/Skeleton'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
+// Mismo cálculo que el backend (modelo B): la comisión se suma al saldo
+// que se quiere cargar. El backend recalcula, esto es sólo para mostrar.
+const redondear = n => Math.round(n * 100) / 100
+const cotizar = (monto, pct) => {
+  const comision = redondear(monto * Number(pct || 0) / 100)
+  return { comision, total: redondear(monto + comision) }
+}
+
 const ESTADOS = {
   pendiente:  { label: 'Pendiente',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
   acreditado: { label: 'Acreditado', color: 'var(--green)', bg: 'var(--green-bg)' },
@@ -36,10 +44,8 @@ export default function Recargar() {
   useEffect(() => {
     const status = searchParams.get('status')
     const paymentId = searchParams.get('payment_id')
-    const alumno = searchParams.get('alumno')
-    const montoParam = searchParams.get('monto')
     if (status === 'success' && paymentId) {
-      verificarPago(paymentId, alumno, montoParam)
+      verificarPago(paymentId)
     } else if (status === 'failure') {
       showMsg('error', 'El pago fue rechazado. Intentá de nuevo.')
     } else if (status === 'pending') {
@@ -59,9 +65,9 @@ export default function Recargar() {
     }
   }
 
-  const verificarPago = async (paymentId, alumnoId, monto) => {
+  const verificarPago = async (paymentId) => {
     try {
-      const res = await api.get(`/pagos/verificar?payment_id=${paymentId}&alumno_id=${alumnoId}&monto=${monto}`)
+      const res = await api.get(`/pagos/verificar?payment_id=${paymentId}`)
       if (res.data.status === 'approved') { setPaso('exito'); cargar() }
       cargarHistorial()
     } catch (err) { console.error(err) }
@@ -145,11 +151,19 @@ export default function Recargar() {
           <input type="number" placeholder="Ingresá el monto" value={monto} onChange={e => setMonto(e.target.value)} />
         </div>
 
-        {monto && parseInt(monto) > 0 && alumnoActual && (
-          <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-            Nuevo saldo estimado: <b style={{ color: 'var(--text)', fontSize: 15 }}>{fmt(parseFloat(alumnoActual.saldo) + parseInt(monto))}</b>
-          </div>
-        )}
+        {monto && parseInt(monto) > 0 && alumnoActual && (() => {
+          const n = parseInt(monto)
+          const { comision, total } = cotizar(n, alumnoActual.comision_pct)
+          const fila = { display: 'flex', justifyContent: 'space-between', marginBottom: 4 }
+          return (
+            <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              <div style={fila}><span>Saldo a cargar</span><span>{fmt(n)}</span></div>
+              {comision > 0 && <div style={fila}><span>Cargo por servicio</span><span>{fmt(comision)}</span></div>}
+              <div style={{ ...fila, fontWeight: 600, color: 'var(--text)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 6 }}><span>Total a pagar</span><span style={{ fontSize: 15 }}>{fmt(total)}</span></div>
+              <div style={{ ...fila, marginBottom: 0, marginTop: 6 }}><span>Nuevo saldo estimado</span><b style={{ color: 'var(--text)' }}>{fmt(parseFloat(alumnoActual.saldo) + n)}</b></div>
+            </div>
+          )
+        })()}
 
         <button onClick={iniciarPago} disabled={!monto || parseInt(monto) <= 0 || procesando}
           style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 14, background: !monto || parseInt(monto) <= 0 ? 'var(--bg)' : '#009EE3', color: !monto || parseInt(monto) <= 0 ? 'var(--text-tertiary)' : 'white', fontSize: 16, fontWeight: 700, cursor: !monto || parseInt(monto) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity .15s' }}>
@@ -180,7 +194,10 @@ export default function Recargar() {
                 <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < historial.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                   <div>
                     <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmt(p.monto)}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{p.alumno_nombre} · {new Date(p.creado_en).toLocaleString('es-AR')}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>
+                      {p.alumno_nombre} · {new Date(p.creado_en).toLocaleString('es-AR')}
+                      {Number(p.comision) > 0 && ` · Pagado ${fmt(p.monto_total)}`}
+                    </p>
                   </div>
                   <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: e.color, background: e.bg }}>{e.label}</span>
                 </div>

@@ -13,6 +13,7 @@ const crearTablas = async () => {
         mp_access_token  TEXT,
         mp_refresh_token TEXT,
         mp_user_id       VARCHAR(50),
+        mp_token_expira  TIMESTAMP,
         creado_en        TIMESTAMP DEFAULT NOW()
       );
 
@@ -37,6 +38,7 @@ const crearTablas = async () => {
         mp_access_token  TEXT,
         mp_refresh_token TEXT,
         mp_user_id       VARCHAR(50),
+        mp_token_expira  TIMESTAMP,
         creado_en TIMESTAMP    DEFAULT NOW(),
         UNIQUE (colegio_id, usuario)
       );
@@ -148,6 +150,8 @@ const crearTablas = async () => {
         padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
         alumno_id          INTEGER NOT NULL REFERENCES alumnos(id) ON DELETE CASCADE,
         monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
+        comision           DECIMAL(10,2) NOT NULL DEFAULT 0,
+        monto_total        DECIMAL(10,2),
         estado             VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'acreditado', 'rechazado')),
         mp_payment_id      VARCHAR(50),
         external_reference VARCHAR(100),
@@ -181,6 +185,9 @@ const crearTablas = async () => {
       CREATE INDEX IF NOT EXISTS idx_auditoria_colegio_id     ON auditoria (colegio_id);
       CREATE INDEX IF NOT EXISTS idx_pagos_colegio_id         ON pagos (colegio_id);
       CREATE INDEX IF NOT EXISTS idx_empleados_local_id       ON empleados (local_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_pagos_external_reference ON pagos (external_reference);
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_transacciones_recarga_mp ON transacciones (descripcion)
+        WHERE tipo = 'recarga' AND descripcion LIKE 'MP:%';
     `);
 
     console.log('Tablas e índices creados correctamente');

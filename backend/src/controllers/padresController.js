@@ -48,8 +48,9 @@ const getAlumnos = async (req, res) => {
   const padreId = req.padre.id;
   try {
     const resultado = await pool.query(
-      `SELECT a.*, pa.relacion FROM alumnos a
+      `SELECT a.*, pa.relacion, c.comision_pct FROM alumnos a
        JOIN padres_alumnos pa ON pa.alumno_id = a.id
+       JOIN colegios c ON c.id = a.colegio_id
        WHERE pa.padre_id = $1`,
       [padreId]
     );

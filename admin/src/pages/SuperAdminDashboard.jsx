@@ -55,7 +55,7 @@ export default function SuperAdminDashboard() {
 
   const totalColegios = colegios.length
   const totalAlumnos = colegios.reduce((s, c) => s + parseInt(c.alumnos_count || 0), 0)
-  const totalComision = colegios.reduce((s, c) => s + parseFloat(c.comision_estimada || 0), 0)
+  const totalComision = colegios.reduce((s, c) => s + parseFloat(c.comision_cobrada || 0), 0)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0B1220', color: 'white', padding: '2rem' }}>
@@ -77,7 +77,7 @@ export default function SuperAdminDashboard() {
           {[
             { label: 'Colegios', valor: totalColegios },
             { label: 'Alumnos totales', valor: totalAlumnos },
-            { label: 'Comisión estimada acumulada', valor: fmt(totalComision) },
+            { label: 'Comisión cobrada acumulada', valor: fmt(totalComision) },
           ].map(k => (
             <div key={k.label} style={{ background: '#131C2E', borderRadius: 12, padding: '1rem 1.25rem', border: '1px solid #223049' }}>
               <p style={{ margin: '0 0 6px', fontSize: 11, color: '#8B95A8', textTransform: 'uppercase', letterSpacing: '.5px' }}>{k.label}</p>
@@ -95,7 +95,7 @@ export default function SuperAdminDashboard() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #223049' }}>
-                  {['Colegio', 'Código', 'Plan', 'Alumnos', 'Volumen recargas', 'Comisión %', 'Comisión $', 'Mercado Pago', 'Estado', ''].map(h => (
+                  {['Colegio', 'Código', 'Plan', 'Alumnos', 'Volumen recargas', 'Comisión %', 'Comisión cobrada', 'Mercado Pago', 'Estado', ''].map(h => (
                     <th key={h} style={{ textAlign: 'left', padding: '10px 14px', color: '#8B95A8', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px' }}>{h}</th>
                   ))}
                 </tr>
@@ -112,7 +112,7 @@ export default function SuperAdminDashboard() {
                       <input type="number" defaultValue={c.comision_pct} onBlur={e => e.target.value !== String(c.comision_pct) && cambiarComision(c, e.target.value)}
                         style={{ width: 56, padding: '4px 6px', borderRadius: 6, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 13 }} />
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 600 }}>{fmt(c.comision_estimada)}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600 }}>{fmt(c.comision_cobrada)}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: c.mp_conectado ? 'rgba(22,163,74,0.15)' : 'rgba(245,158,11,0.15)', color: c.mp_conectado ? '#4ADE80' : '#FBBF24' }}>
                         {c.mp_conectado ? 'Conectado' : 'Sin conectar'}

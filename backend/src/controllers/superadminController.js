@@ -33,14 +33,15 @@ const getColegios = async (req, res) => {
       SELECT c.*,
         (SELECT COUNT(*) FROM alumnos a WHERE a.colegio_id = c.id) AS alumnos_count,
         (SELECT COUNT(*) FROM empleados e WHERE e.colegio_id = c.id) AS empleados_count,
-        (SELECT COALESCE(SUM(t.monto), 0) FROM transacciones t WHERE t.colegio_id = c.id AND t.tipo = 'recarga') AS volumen_recargas
+        (SELECT COALESCE(SUM(t.monto), 0) FROM transacciones t WHERE t.colegio_id = c.id AND t.tipo = 'recarga') AS volumen_recargas,
+        -- comisión realmente cobrada en recargas por Mercado Pago (modelo B)
+        (SELECT COALESCE(SUM(p.comision), 0) FROM pagos p WHERE p.colegio_id = c.id AND p.estado = 'acreditado') AS comision_cobrada
       FROM colegios c
       ORDER BY c.creado_en DESC
     `);
     const colegios = resultado.rows.map(c => ({
       ...c,
       mp_conectado: !!c.mp_access_token,
-      comision_estimada: (parseFloat(c.volumen_recargas) * parseFloat(c.comision_pct) / 100).toFixed(2),
       mp_access_token: undefined,
       mp_refresh_token: undefined,
     }));

@@ -44,5 +44,15 @@ if (!tareasInicializadas) {
     }
   });
 
+  // Renovar tokens de Mercado Pago (OAuth) que vencen pronto — 4am
+  cron.schedule('0 4 * * *', async () => {
+    try {
+      const { renovarTokensPorVencer } = require('./services/mercadoPagoService');
+      await renovarTokensPorVencer();
+    } catch (err) {
+      console.error('Error renovando tokens de Mercado Pago:', err.message);
+    }
+  });
+
   console.log('Tareas programadas activas');
 }

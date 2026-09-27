@@ -1,5 +1,6 @@
 const pool = require('../db/conexion');
 const jwt = require('jsonwebtoken');
+const { vencimiento } = require('../services/mercadoPagoService');
 
 const REDIRECT_URI = `${process.env.BACKEND_URL}/api/mp/callback`;
 
@@ -56,14 +57,14 @@ const callback = async (req, res) => {
 
     if (payload.tipo === 'colegio') {
       await pool.query(
-        'UPDATE colegios SET mp_access_token = $1, mp_refresh_token = $2, mp_user_id = $3 WHERE id = $4',
-        [tokens.access_token, tokens.refresh_token, String(tokens.user_id), payload.colegio_id]
+        'UPDATE colegios SET mp_access_token = $1, mp_refresh_token = $2, mp_user_id = $3, mp_token_expira = $4 WHERE id = $5',
+        [tokens.access_token, tokens.refresh_token, String(tokens.user_id), vencimiento(tokens.expires_in), payload.colegio_id]
       );
       destino = `${process.env.ADMIN_URL || ''}/configuracion?mp=conectado`;
     } else if (payload.tipo === 'empleado') {
       await pool.query(
-        'UPDATE empleados SET mp_access_token = $1, mp_refresh_token = $2, mp_user_id = $3 WHERE id = $4',
-        [tokens.access_token, tokens.refresh_token, String(tokens.user_id), payload.empleado_id]
+        'UPDATE empleados SET mp_access_token = $1, mp_refresh_token = $2, mp_user_id = $3, mp_token_expira = $4 WHERE id = $5',
+        [tokens.access_token, tokens.refresh_token, String(tokens.user_id), vencimiento(tokens.expires_in), payload.empleado_id]
       );
       destino = `${process.env.POS_URL || ''}/?mp=conectado`;
     } else {

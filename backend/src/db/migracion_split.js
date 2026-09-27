@@ -10,24 +10,23 @@
  * - índices únicos para que un mismo pago de MP no se acredite dos veces
  *   (webhook y /verificar pueden llegar al mismo tiempo)
  *
- * Idempotente. Ejecutar con: node src/db/migracion_split.js
+ * Idempotente. Corre sola al iniciar el servidor (src/index.js); también
+ * se puede ejecutar a mano con: node src/db/migracion_split.js
  */
 
 const pool = require('./conexion');
 
-const migrar = async () => {
+const migrarSplit = async () => {
   const client = await pool.connect();
   try {
-    console.log('🔄 Preparando split de pagos...\n');
-
     await client.query(`ALTER TABLE pagos ADD COLUMN IF NOT EXISTS comision DECIMAL(10,2) NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE pagos ADD COLUMN IF NOT EXISTS monto_total DECIMAL(10,2)`);
     await client.query(`UPDATE pagos SET monto_total = monto WHERE monto_total IS NULL`);
     await client.query(`ALTER TABLE colegios ADD COLUMN IF NOT EXISTS mp_token_expira TIMESTAMP`);
     await client.query(`ALTER TABLE empleados ADD COLUMN IF NOT EXISTS mp_token_expira TIMESTAMP`);
-    console.log('✅ Columnas de comisión y vencimiento de token');
 
-    // Antes de crear los índices únicos, avisar si ya hay duplicados
+    // Antes de crear los índices únicos, avisar si ya hay duplicados: en ese
+    // caso no se crean (las columnas sí) y hay que revisarlos a mano
     const dupTx = await client.query(`
       SELECT descripcion, COUNT(*) FROM transacciones
       WHERE tipo = 'recarga' AND descripcion LIKE 'MP:%'
@@ -37,11 +36,10 @@ const migrar = async () => {
       WHERE external_reference IS NOT NULL
       GROUP BY external_reference HAVING COUNT(*) > 1`);
     if (dupTx.rows.length || dupPagos.rows.length) {
-      console.error('❌ Hay pagos acreditados más de una vez — revisalos a mano antes de migrar:');
+      console.error('❌ Split: hay pagos acreditados más de una vez, no se crearon los índices únicos:');
       dupTx.rows.forEach(r => console.error(`   transacciones ${r.descripcion}: ${r.count} veces`));
       dupPagos.rows.forEach(r => console.error(`   pagos ${r.external_reference}: ${r.count} veces`));
-      process.exitCode = 1;
-      return;
+      return false;
     }
 
     await client.query(`
@@ -49,16 +47,18 @@ const migrar = async () => {
         ON transacciones (descripcion)
         WHERE tipo = 'recarga' AND descripcion LIKE 'MP:%'`);
     await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_pagos_external_reference ON pagos (external_reference)`);
-    console.log('✅ Índices únicos contra doble acreditación');
-
-    console.log('\n✅ Migración completada.');
-  } catch (err) {
-    console.error('\n❌ Error en migración:', err.message);
-    process.exitCode = 1;
+    console.log('✅ Migración de split de pagos verificada');
+    return true;
   } finally {
     client.release();
-    await pool.end();
   }
 };
 
-migrar();
+if (require.main === module) {
+  migrarSplit()
+    .then(ok => { process.exitCode = ok ? 0 : 1; })
+    .catch(err => { console.error('❌ Error en migración:', err.message); process.exitCode = 1; })
+    .finally(() => pool.end());
+}
+
+module.exports = { migrarSplit };

@@ -95,14 +95,19 @@ export default function Recargas() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input placeholder="Buscar por alumno, padre o email..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
-        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Desde</label>
-        <input type="date" value={desde} max={hasta || undefined} onChange={e => cambiarFiltro(setDesde)(e.target.value)} />
-        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Hasta</label>
-        <input type="date" value={hasta} min={desde || undefined} onChange={e => cambiarFiltro(setHasta)(e.target.value)} />
+      <input placeholder="Buscar por alumno, padre o email..." value={busq} onChange={e => setBusq(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }} />
+
+      <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+          Desde
+          <input type="date" value={desde} max={hasta || undefined} onChange={e => cambiarFiltro(setDesde)(e.target.value)} />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+          Hasta
+          <input type="date" value={hasta} min={desde || undefined} onChange={e => cambiarFiltro(setHasta)(e.target.value)} />
+        </label>
         {(desde || hasta || busq || estado) && (
-          <button onClick={() => { setDesde(''); setHasta(''); setBusq(''); setEstado(''); setPage(1) }} style={{ ...btnPagina(false), padding: '8px 12px' }}>Limpiar</button>
+          <button onClick={() => { setDesde(''); setHasta(''); setBusq(''); setEstado(''); setPage(1) }} style={{ ...btnPagina(false), padding: '8px 12px' }}>Limpiar filtros</button>
         )}
       </div>
 

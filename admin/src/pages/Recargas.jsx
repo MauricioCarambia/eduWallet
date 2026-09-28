@@ -118,8 +118,8 @@ export default function Recargas() {
       filas.forEach(r => hoja.addRow({
         fecha: fechaExcel(r.creado_en),
         alumno: r.alumno_nombre,
-        padre: r.padre_nombre,
-        email: r.padre_email,
+        padre: r.origen === 'link' ? 'Link de pago' : r.padre_nombre,
+        email: r.padre_email || '',
         monto: Number(r.monto),
         comision: Number(r.comision),
         total: Number(r.monto_total),
@@ -246,8 +246,14 @@ export default function Recargas() {
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{new Date(r.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</td>
                     <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text)' }}>{r.alumno_nombre}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      <div style={{ color: 'var(--text)' }}>{r.padre_nombre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{r.padre_email}</div>
+                      {r.origen === 'link' ? (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Link de pago</span>
+                      ) : (
+                        <>
+                          <div style={{ color: 'var(--text)' }}>{r.padre_nombre}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{r.padre_email}</div>
+                        </>
+                      )}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text)' }}>{fmt(r.monto)}</td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-secondary)' }}>{fmt(r.comision)}</td>

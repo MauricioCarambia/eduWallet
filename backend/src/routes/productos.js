@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getProductos, crearProducto, actualizarStock, eliminarProducto, getStockBajo } = require('../controllers/productosController');
-const { verificarToken, soloAdmin } = require('../middlewares/auth');
+const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo } = require('../controllers/productosController');
+const { verificarToken } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -58,7 +58,32 @@ router.get('/', verificarToken, getProductos);
  *                   items: { $ref: '#/components/schemas/Producto' }
  */
 router.get('/stock-bajo', verificarToken, getStockBajo);
-router.post('/', verificarToken, soloAdmin, crearProducto);
+// Cada zona gestiona sus productos: un empleado con zona fija sólo los de su
+// zona; el admin y los empleados sin zona, todos (ver productosController)
+router.post('/', verificarToken, crearProducto);
+
+/**
+ * @swagger
+ * /productos/{id}:
+ *   put:
+ *     summary: Editar nombre, precio y categoría de un producto (el empleado con zona fija, sólo los de su zona)
+ *     tags: [Productos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nombre, precio]
+ *             properties:
+ *               nombre: { type: string }
+ *               precio: { type: number }
+ *               categoria: { type: string }
+ *     responses:
+ *       200:
+ *         description: Producto actualizado
+ */
+router.put('/:id', verificarToken, actualizarProducto);
 
 /**
  * @swagger
@@ -104,6 +129,6 @@ router.patch('/:id/stock', verificarToken, actualizarStock);
  *       200:
  *         description: Producto eliminado
  */
-router.delete('/:id', verificarToken, soloAdmin, eliminarProducto);
+router.delete('/:id', verificarToken, eliminarProducto);
 
 module.exports = router;

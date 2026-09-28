@@ -29,11 +29,10 @@ function Campo({ label, children }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', precio: '0', stock: '10', categoria: 'comida' }
+const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida' }
 
 export default function Productos() {
   const { sesion } = useAuth()
-  const esAdmin = sesion?.rol === 'admin'
   const { locales } = useLocales()
   const [productos, setProductos] = useState([])
   const [local, setLocal] = useState('')
@@ -63,7 +62,16 @@ export default function Productos() {
       const res = await api.post('/productos', { ...form, local })
       setProductos(prev => [...prev, res.data])
       showMsg('ok', `Producto ${form.nombre} agregado`); cerrarModal()
-    } catch (err) { showMsg('error', 'Error al agregar producto') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al agregar producto') }
+  }
+
+  const guardarEdicion = async () => {
+    if (!form.nombre) return
+    try {
+      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria })
+      setProductos(prev => prev.map(p => p.id === res.data.id ? res.data : p))
+      showMsg('ok', `Producto ${res.data.nombre} actualizado`); cerrarModal()
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar el producto') }
   }
 
   const eliminar = async id => {
@@ -100,7 +108,7 @@ export default function Productos() {
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Productos</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{productos.length} productos en total</p>
         </div>
-        {esAdmin && (
+        {local && (
           <button onClick={() => setModal('nuevo')} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo producto</button>
         )}
       </div>
@@ -127,7 +135,7 @@ export default function Productos() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {(esAdmin ? ['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'] : ['Producto', 'Precio', 'Stock', 'Categoría']).map(h => (
+              {['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
               ))}
             </tr>
@@ -147,8 +155,9 @@ export default function Productos() {
                   </div>
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
-                {esAdmin && (
-                  <td style={{ padding: '12px 16px' }}>
+                {(
+                  <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
+                    <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
                     <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
                   </td>
                 )}
@@ -176,6 +185,26 @@ export default function Productos() {
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
             <button onClick={guardarNuevo} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Agregar</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'editar' && seleccionado && (
+        <Modal title={`Editar — ${seleccionado.nombre}`} onClose={cerrarModal}>
+          <Campo label="Nombre"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
+          <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
+          <Campo label="Categoría">
+            <select value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
+              <option value="comida">Comida</option>
+              <option value="bebida">Bebida</option>
+              <option value="golosina">Golosina</option>
+              <option value="útil">Útil escolar</option>
+              <option value="otro">Otro</option>
+            </select>
+          </Campo>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
+            <button onClick={guardarEdicion} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Guardar</button>
           </div>
         </Modal>
       )}

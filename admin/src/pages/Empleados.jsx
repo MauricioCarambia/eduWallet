@@ -28,7 +28,9 @@ function Campo({ label, children }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', usuario: '', pin: '', rol: 'staff', local_id: '' }
+const FORM_VACIO = { nombre: '', usuario: '', rol: 'staff', local_id: '' }
+
+const vence = iso => new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
 
 export default function Empleados() {
   const { locales } = useLocales()
@@ -38,7 +40,8 @@ export default function Empleados() {
   const [modal, setModal] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
   const [form, setForm] = useState(FORM_VACIO)
-  const [pinReset, setPinReset] = useState('')
+  const [activacion, setActivacion] = useState(null) // { nombre, usuario, codigo_activacion, expira }
+  const [copiado, setCopiado] = useState(false)
   const [zonaSel, setZonaSel] = useState('')
   const [msg, setMsg] = useState(null)
 
@@ -54,14 +57,30 @@ export default function Empleados() {
     finally { setCargando(false) }
   }
 
-  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO); setPinReset(''); setZonaSel('') }
+  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO); setZonaSel(''); setActivacion(null); setCopiado(false) }
+
+  // El admin nunca pone ni ve el PIN: se genera un código de un solo uso y
+  // el empleado elige su PIN al activar la cuenta
+  const mostrarCodigo = (empleado, datos) => {
+    setActivacion({ nombre: empleado.nombre, usuario: empleado.usuario, codigo_activacion: datos.codigo_activacion, expira: datos.expira })
+    setModal('codigo')
+  }
+
+  const colegio = (() => { try { return localStorage.getItem('admin_colegio') || '' } catch { return '' } })()
+  const textoActivacion = a => `Hola ${a.nombre}. Para activar tu cuenta del punto de venta de EduWallet: entrá al POS, tocá "Activar cuenta" y completá colegio: ${colegio}, usuario: ${a.usuario} y el código ${a.codigo_activacion}. Ahí elegís tu PIN. El código vence el ${vence(a.expira)}.`
+
+  const copiarCodigo = async () => {
+    try { await navigator.clipboard.writeText(textoActivacion(activacion)); setCopiado(true); setTimeout(() => setCopiado(false), 2000) }
+    catch { showMsg('error', 'No se pudo copiar') }
+  }
 
   const guardarNuevo = async () => {
-    if (!form.nombre || !form.usuario || !form.pin) return
+    if (!form.nombre || !form.usuario) return
     try {
       const res = await api.post('/empleados', { ...form, local_id: form.rol === 'staff' && form.local_id ? form.local_id : null })
       cargar()
-      showMsg('ok', `Empleado ${form.nombre} registrado`); cerrarModal()
+      setForm(FORM_VACIO)
+      mostrarCodigo(res.data, res.data)
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al registrar') }
   }
 
@@ -80,12 +99,13 @@ export default function Empleados() {
     } catch { showMsg('error', 'Error') }
   }
 
-  const resetearPin = async () => {
-    if (!pinReset || pinReset.length < 4) { showMsg('error', 'PIN debe tener al menos 4 caracteres'); return }
+  const nuevoCodigo = async empleado => {
+    if (!confirm(`¿Generar un código nuevo para ${empleado.nombre}? Su PIN actual deja de funcionar hasta que active la cuenta con el código nuevo.`)) return
     try {
-      await api.patch(`/empleados/${seleccionado.id}/resetear-pin`, { pin_nuevo: pinReset })
-      showMsg('ok', 'PIN reseteado correctamente'); cerrarModal()
-    } catch { showMsg('error', 'Error al resetear PIN') }
+      const res = await api.patch(`/empleados/${empleado.id}/resetear-pin`)
+      cargar()
+      mostrarCodigo(empleado, res.data)
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al generar el código') }
   }
 
   const cajasEmpleado = seleccionado ? cajas.filter(c => c.empleado_id === seleccionado.id) : []
@@ -119,6 +139,11 @@ export default function Empleados() {
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{e.nombre}</p>
                   <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? '#EDE9FE' : 'var(--brand-light)', color: e.rol === 'admin' ? '#7C3AED' : 'var(--accent)' }}>{e.rol}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: e.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: e.activo ? 'var(--green)' : 'var(--red)' }}>{e.activo ? 'Activo' : 'Inactivo'}</span>
+                  {e.pendiente_activacion && (
+                    <span title={e.codigo_activacion_expira ? `El código vence el ${vence(e.codigo_activacion_expira)}` : ''} style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>
+                      {e.codigo_activacion_expira && new Date(e.codigo_activacion_expira) < new Date() ? 'Código vencido' : 'Pendiente de activación'}
+                    </span>
+                  )}
                   {e.local_nombre
                     ? <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>📍 {e.local_nombre}</span>
                     : e.rol === 'staff' && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin zona</span>}
@@ -129,7 +154,7 @@ export default function Empleados() {
                 {[
                   { label: 'Ver turnos', onClick: () => { setSeleccionado(e); setModal('cajas') }, bg: 'var(--bg)', color: 'var(--text-secondary)' },
                   ...(e.rol === 'staff' ? [{ label: 'Zona', onClick: () => { setSeleccionado(e); setZonaSel(e.local_id || ''); setModal('zona') }, bg: 'var(--brand-light)', color: 'var(--accent)' }] : []),
-                  { label: 'Reset PIN', onClick: () => { setSeleccionado(e); setModal('resetPin') }, bg: 'var(--amber-bg)', color: 'var(--amber)' },
+                  { label: e.pendiente_activacion ? 'Nuevo código' : 'Olvidó el PIN', onClick: () => nuevoCodigo(e), bg: 'var(--amber-bg)', color: 'var(--amber)' },
                   { label: e.activo ? 'Deshabilitar' : 'Habilitar', onClick: () => toggleEmpleado(e.id), bg: e.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: e.activo ? 'var(--red)' : 'var(--green)' },
                 ].map(b => (
                   <button key={b.label} onClick={b.onClick} style={{ padding: '6px 12px', border: 'none', borderRadius: 'var(--radius)', background: b.bg, color: b.color, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{b.label}</button>
@@ -144,7 +169,6 @@ export default function Empleados() {
         <Modal title="Nuevo empleado" onClose={cerrarModal}>
           <Campo label="Nombre completo"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Usuario"><input value={form.usuario} onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))} /></Campo>
-          <Campo label="PIN"><input type="password" value={form.pin} onChange={e => setForm(p => ({ ...p, pin: e.target.value }))} /></Campo>
           <Campo label="Rol">
             <select value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}>
               <option value="staff">Cajero</option>
@@ -159,6 +183,7 @@ export default function Empleados() {
               </select>
             </Campo>
           )}
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 12px' }}>No hace falta cargar un PIN: al registrarlo se genera un código de activación y el empleado elige su propio PIN. Así nadie más lo conoce.</p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
             <button onClick={guardarNuevo} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
@@ -182,15 +207,22 @@ export default function Empleados() {
         </Modal>
       )}
 
-      {modal === 'resetPin' && seleccionado && (
-        <Modal title={`Reset PIN — ${seleccionado.nombre}`} onClose={cerrarModal}>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Ingresá el nuevo PIN para este empleado.</p>
-          <Campo label="Nuevo PIN">
-            <input type="password" value={pinReset} onChange={e => setPinReset(e.target.value)} placeholder="Mínimo 4 caracteres" />
-          </Campo>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={resetearPin} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Resetear</button>
+      {modal === 'codigo' && activacion && (
+        <Modal title={`Código de activación — ${activacion.nombre}`} onClose={cerrarModal}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Pasale este código al empleado. Se usa una sola vez y vence el <b>{vence(activacion.expira)}</b>. No se vuelve a mostrar: si se pierde, generá uno nuevo.</p>
+          <div style={{ textAlign: 'center', padding: '16px', borderRadius: 'var(--radius)', background: 'var(--bg)', border: '1.5px dashed var(--border)', marginBottom: 12 }}>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Código</p>
+            <p style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', color: 'var(--text)' }}>{activacion.codigo_activacion}</p>
+          </div>
+          <ol style={{ margin: '0 0 16px', paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', display: 'grid', gap: 4 }}>
+            <li>El empleado entra al <b>POS</b> y toca <b>"Activar cuenta"</b>.</li>
+            <li>Completa colegio <b>{colegio}</b>, usuario <b>{activacion.usuario}</b> y este código.</li>
+            <li>Elige su PIN de 4 a 6 números. Desde ahí entra con su usuario y su PIN.</li>
+          </ol>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <button onClick={copiarCodigo} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>{copiado ? '¡Copiado!' : 'Copiar instrucciones'}</button>
+            <a href={`https://wa.me/?text=${encodeURIComponent(textoActivacion(activacion))}`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 16px', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Enviar por WhatsApp</a>
+            <button onClick={cerrarModal} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Listo</button>
           </div>
         </Modal>
       )}

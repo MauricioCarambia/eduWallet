@@ -1,7 +1,34 @@
 const pool = require('../db/conexion');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { registrar } = require('./auditoriaController');
+
+// ─── Activación de cuentas ──────────────────────────────────────────────────
+// El admin da de alta al empleado sin PIN; el sistema genera un código de un
+// solo uso y el empleado elige su propio PIN. Así el admin nunca lo conoce.
+const HORAS_CODIGO = 48;
+const LETRAS_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I
+
+const nuevoCodigo = () => {
+  const bytes = crypto.randomBytes(8);
+  const c = [...bytes].map(b => LETRAS_CODIGO[b % LETRAS_CODIGO.length]).join('');
+  return `${c.slice(0, 4)}-${c.slice(4)}`;
+};
+const normalizarCodigo = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const pinValido = pin => /^\d{4,6}$/.test(String(pin || ''));
+
+// Genera y guarda un código nuevo; devuelve el código en claro (se muestra una sola vez)
+const generarCodigoActivacion = async (empleadoId, db = pool) => {
+  const codigo = nuevoCodigo();
+  const hash = await bcrypt.hash(normalizarCodigo(codigo), 10);
+  const expira = new Date(Date.now() + HORAS_CODIGO * 3600 * 1000);
+  await db.query(
+    'UPDATE empleados SET pin = NULL, codigo_activacion = $1, codigo_activacion_expira = $2 WHERE id = $3',
+    [hash, expira, empleadoId]
+  );
+  return { codigo_activacion: codigo, expira };
+};
 
 const login = async (req, res) => {
   const { colegio, usuario, pin, app } = req.body;
@@ -32,9 +59,12 @@ const login = async (req, res) => {
     }
 
     const empleado = resultado.rows[0];
-    const pinValido = await bcrypt.compare(pin, empleado.pin);
+    if (!empleado.pin) {
+      return res.status(403).json({ error: 'Tu cuenta todavía no está activada. Usá "Activar cuenta" con el código que te dio el administrador.', pendiente_activacion: true });
+    }
+    const pinCorrecto = await bcrypt.compare(String(pin || ''), empleado.pin);
 
-    if (!pinValido) {
+    if (!pinCorrecto) {
       return res.status(401).json({ error: 'PIN incorrecto' });
     }
 
@@ -76,7 +106,8 @@ const getEmpleados = async (req, res) => {
   try {
     const resultado = await pool.query(
       `SELECT e.id, e.nombre, e.usuario, e.rol, e.activo, e.local_id, l.nombre AS local_nombre,
-              (e.mp_access_token IS NOT NULL) AS mp_conectado
+              (e.mp_access_token IS NOT NULL) AS mp_conectado,
+              (e.pin IS NULL) AS pendiente_activacion, e.codigo_activacion_expira
        FROM empleados e
        LEFT JOIN locales l ON l.id = e.local_id
        WHERE e.colegio_id = $1 ORDER BY e.id`,
@@ -89,7 +120,9 @@ const getEmpleados = async (req, res) => {
 };
 
 const crearEmpleado = async (req, res) => {
-  const { nombre, usuario, pin, rol, local_id } = req.body;
+  const { nombre, usuario, rol, local_id } = req.body;
+  if (!nombre?.trim() || !usuario?.trim()) return res.status(400).json({ error: 'Nombre y usuario son obligatorios' });
+  if (!['admin', 'staff'].includes(rol)) return res.status(400).json({ error: 'Rol inválido' });
   try {
     let localId = null;
     if (local_id) {
@@ -97,13 +130,43 @@ const crearEmpleado = async (req, res) => {
       if (local.rows.length === 0) return res.status(400).json({ error: 'Local inválido' });
       localId = local_id;
     }
-    const hash = await bcrypt.hash(pin, 10);
     const resultado = await pool.query(
-      'INSERT INTO empleados (nombre, usuario, pin, rol, colegio_id, local_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, nombre, usuario, rol, local_id',
-      [nombre, usuario, hash, rol, req.empleado.colegio_id, localId]
+      'INSERT INTO empleados (nombre, usuario, pin, rol, colegio_id, local_id) VALUES ($1, $2, NULL, $3, $4, $5) RETURNING id, nombre, usuario, rol, local_id, activo',
+      [nombre.trim(), usuario.trim(), rol, req.empleado.colegio_id, localId]
     );
-    await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo empleado', nombre);
-    res.json(resultado.rows[0]);
+    const activacion = await generarCodigoActivacion(resultado.rows[0].id);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo empleado', `${nombre.trim()} (pendiente de activación)`);
+    res.json({ ...resultado.rows[0], pendiente_activacion: true, codigo_activacion_expira: activacion.expira, ...activacion });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Ya existe un empleado con ese usuario' });
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// El empleado activa su cuenta con el código y elige su propio PIN (público)
+const activarCuenta = async (req, res) => {
+  const { colegio, usuario, codigo, pin } = req.body;
+  if (!pinValido(pin)) return res.status(400).json({ error: 'El PIN tiene que tener entre 4 y 6 números' });
+  try {
+    const r = await pool.query(
+      `SELECT e.id, e.colegio_id, e.nombre, e.codigo_activacion, e.codigo_activacion_expira
+       FROM empleados e JOIN colegios c ON c.id = e.colegio_id
+       WHERE c.slug = $1 AND c.activo = true AND LOWER(e.usuario) = LOWER($2) AND e.activo = true`,
+      [String(colegio || '').trim().toLowerCase(), String(usuario || '').trim()]
+    );
+    const e = r.rows[0];
+    const invalido = () => res.status(400).json({ error: 'Código inválido o vencido. Pedile uno nuevo al administrador.' });
+    if (!e || !e.codigo_activacion) return invalido();
+    if (new Date(e.codigo_activacion_expira) < new Date()) return invalido();
+    if (!(await bcrypt.compare(normalizarCodigo(codigo), e.codigo_activacion))) return invalido();
+
+    const hash = await bcrypt.hash(String(pin), 10);
+    await pool.query(
+      'UPDATE empleados SET pin = $1, codigo_activacion = NULL, codigo_activacion_expira = NULL WHERE id = $2',
+      [hash, e.id]
+    );
+    await registrar(e.id, e.colegio_id, 'Cuenta activada', e.nombre);
+    res.json({ mensaje: 'Cuenta activada. Ya podés iniciar sesión con tu PIN.' });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -148,6 +211,8 @@ const toggleEmpleado = async (req, res) => {
 const cambiarPin = async (req, res) => {
   const { id } = req.params;
   const { pin_actual, pin_nuevo } = req.body;
+  if (Number(id) !== req.empleado.id) return res.status(403).json({ error: 'Sólo podés cambiar tu propio PIN' });
+  if (!pinValido(pin_nuevo)) return res.status(400).json({ error: 'El PIN tiene que tener entre 4 y 6 números' });
   try {
     const resultado = await pool.query(
       'SELECT * FROM empleados WHERE id = $1 AND colegio_id = $2',
@@ -159,9 +224,9 @@ const cambiarPin = async (req, res) => {
     }
 
     const empleado = resultado.rows[0];
-    const pinValido = await bcrypt.compare(pin_actual, empleado.pin);
+    const pinCorrecto = empleado.pin && await bcrypt.compare(String(pin_actual || ''), empleado.pin);
 
-    if (!pinValido) {
+    if (!pinCorrecto) {
       return res.status(401).json({ error: 'PIN actual incorrecto' });
     }
 
@@ -178,23 +243,23 @@ const cambiarPin = async (req, res) => {
   }
 };
 
+// Si el empleado olvidó su PIN: el admin genera un código nuevo (el PIN
+// anterior deja de funcionar) y el empleado vuelve a elegir el suyo
 const resetearPin = async (req, res) => {
   const { id } = req.params;
-  const { pin_nuevo } = req.body;
   try {
     const resultado = await pool.query(
-      'SELECT * FROM empleados WHERE id = $1 AND colegio_id = $2', [id, req.empleado.colegio_id]
+      'SELECT id, nombre FROM empleados WHERE id = $1 AND colegio_id = $2', [id, req.empleado.colegio_id]
     );
     if (resultado.rows.length === 0) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
-    const hash = await bcrypt.hash(pin_nuevo, 10);
-    await pool.query('UPDATE empleados SET pin = $1 WHERE id = $2', [hash, id]);
-    await registrar(req.empleado.id, req.empleado.colegio_id, 'Reset de PIN', `Empleado ID: ${id}`);
-    res.json({ mensaje: 'PIN reseteado correctamente' });
+    const activacion = await generarCodigoActivacion(id);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo código de activación', `${resultado.rows[0].nombre} (el PIN anterior dejó de funcionar)`);
+    res.json({ mensaje: 'Código generado', ...activacion });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
 
-module.exports = { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin, asignarZona };
+module.exports = { login, getEmpleados, crearEmpleado, activarCuenta, toggleEmpleado, cambiarPin, resetearPin, asignarZona };

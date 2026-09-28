@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { login, getEmpleados, crearEmpleado, toggleEmpleado, cambiarPin, resetearPin, asignarZona } = require('../controllers/empleadosController');
+const { login, getEmpleados, crearEmpleado, activarCuenta, toggleEmpleado, cambiarPin, resetearPin, asignarZona } = require('../controllers/empleadosController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
 const { loginEmpleadosLimiter } = require('../middlewares/rateLimiter');
 
@@ -37,6 +37,33 @@ router.post('/login', loginEmpleadosLimiter, login);
 
 /**
  * @swagger
+ * /empleados/activar:
+ *   post:
+ *     summary: El empleado activa su cuenta con el código que le dio el admin y elige su PIN (4 a 6 números)
+ *     tags: [Empleados]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [colegio, usuario, codigo, pin]
+ *             properties:
+ *               colegio: { type: string }
+ *               usuario: { type: string }
+ *               codigo: { type: string, example: "K7QM-2XPT" }
+ *               pin: { type: string, example: "4821" }
+ *     responses:
+ *       200:
+ *         description: Cuenta activada
+ *       400:
+ *         description: Código inválido o vencido, o PIN inválido
+ */
+router.post('/activar', loginEmpleadosLimiter, activarCuenta);
+
+/**
+ * @swagger
  * /empleados:
  *   get:
  *     summary: Listar empleados
@@ -50,7 +77,7 @@ router.post('/login', loginEmpleadosLimiter, login);
  *               type: array
  *               items: { $ref: '#/components/schemas/Empleado' }
  *   post:
- *     summary: Crear un nuevo empleado (solo admin)
+ *     summary: Crear un empleado sin PIN (solo admin). Devuelve un codigo_activacion de un solo uso (48 h) para que el empleado elija su PIN
  *     tags: [Empleados]
  *     requestBody:
  *       required: true
@@ -58,11 +85,12 @@ router.post('/login', loginEmpleadosLimiter, login);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [nombre, pin]
+ *             required: [nombre, usuario, rol]
  *             properties:
  *               nombre: { type: string }
- *               pin: { type: string }
- *               rol: { type: string, enum: [admin, empleado] }
+ *               usuario: { type: string }
+ *               rol: { type: string, enum: [admin, staff] }
+ *               local_id: { type: integer, description: "Zona fija (opcional)" }
  *     responses:
  *       201:
  *         description: Empleado creado
@@ -118,7 +146,7 @@ router.patch('/:id/cambiar-pin', verificarToken, cambiarPin);
  * @swagger
  * /empleados/{id}/resetear-pin:
  *   patch:
- *     summary: Resetear el PIN de un empleado (solo admin)
+ *     summary: Generar un código de activación nuevo (solo admin). El PIN anterior deja de funcionar y el empleado elige uno nuevo
  *     tags: [Empleados]
  *     parameters:
  *       - in: path
@@ -127,7 +155,7 @@ router.patch('/:id/cambiar-pin', verificarToken, cambiarPin);
  *         schema: { type: integer }
  *     responses:
  *       200:
- *         description: PIN reseteado
+ *         description: "{ codigo_activacion, expira }"
  */
 router.patch('/:id/resetear-pin', verificarToken, soloAdmin, resetearPin);
 

@@ -1,6 +1,7 @@
 {
   "nav": {
     "venta": "Sale",
+    "resumen": "Summary",
     "productos": "Products",
     "caja": "Register",
     "historial": "History",

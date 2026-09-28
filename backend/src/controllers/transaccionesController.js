@@ -327,4 +327,111 @@ const anularVenta = async (req, res) => {
     client.release();
   }
 };
-module.exports = { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta };
+// ─── Resumen del día (dashboard del POS) ────────────────────────────────────
+// Las fechas se guardan en UTC: los días y las horas son los de Argentina
+const FECHA_AR = col => `(${col} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')`;
+
+// "Alfajor ×2, Gaseosa" -> [{ nombre: 'Alfajor', qty: 2 }, { nombre: 'Gaseosa', qty: 1 }]
+const itemsDeVenta = descripcion => (descripcion || '').replace(/^\[ANULADA\] /, '').split(', ').filter(Boolean).map(item => {
+  const m = item.match(/ ×(\d+)$/);
+  return { nombre: item.replace(/ ×\d+$/, '').trim(), qty: m ? parseInt(m[1]) : 1 };
+});
+
+const getResumenDia = async (req, res) => {
+  const fecha = req.query.fecha || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).json({ error: 'Fecha inválida' });
+
+  try {
+    // Un empleado con zona fija ve su zona; uno sin zona, la que elija o todas
+    let local = req.query.local || null;
+    if (req.empleado.local_id) {
+      const z = await pool.query('SELECT nombre FROM locales WHERE id = $1 AND colegio_id = $2', [req.empleado.local_id, req.empleado.colegio_id]);
+      local = z.rows[0]?.nombre || null;
+    }
+
+    const params = [req.empleado.colegio_id, fecha, local];
+    const [ventasRes, cajasRes, semanaPasadaRes] = await Promise.all([
+      pool.query(
+        `SELECT t.id, t.fecha, t.monto, t.descripcion, t.lugar, t.empleado_id,
+                a.nombre AS alumno_nombre, a.curso AS alumno_curso, e.nombre AS empleado_nombre,
+                EXTRACT(HOUR FROM ${FECHA_AR('t.fecha')})::int AS hora
+         FROM transacciones t
+         LEFT JOIN alumnos a ON a.id = t.alumno_id
+         LEFT JOIN empleados e ON e.id = t.empleado_id
+         WHERE t.colegio_id = $1 AND t.tipo = 'compra'
+           AND ${FECHA_AR('t.fecha')}::date = $2::date
+           AND ($3::text IS NULL OR t.lugar = $3)
+         ORDER BY t.fecha DESC`,
+        params
+      ),
+      pool.query(
+        `SELECT c.id, c.local, c.fondo, c.ventas, c.tx_count, c.abierta, c.apertura, c.cierre, e.nombre AS empleado_nombre
+         FROM cajas c LEFT JOIN empleados e ON e.id = c.empleado_id
+         WHERE c.colegio_id = $1 AND ${FECHA_AR('c.apertura')}::date = $2::date
+           AND ($3::text IS NULL OR c.local = $3)
+         ORDER BY c.apertura`,
+        params
+      ),
+      // Mismo día de la semana anterior, para comparar
+      pool.query(
+        `SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*)::int AS cantidad
+         FROM transacciones
+         WHERE colegio_id = $1 AND tipo = 'compra' AND descripcion NOT LIKE '[ANULADA]%'
+           AND ${FECHA_AR('fecha')}::date = $2::date - 7
+           AND ($3::text IS NULL OR lugar = $3)`,
+        params
+      ),
+    ]);
+
+    const ventas = ventasRes.rows.map(v => ({ ...v, monto: Number(v.monto), anulada: v.descripcion?.startsWith('[ANULADA]') || false }));
+    const validas = ventas.filter(v => !v.anulada);
+    const anuladas = ventas.filter(v => v.anulada);
+    const total = validas.reduce((s, v) => s + v.monto, 0);
+
+    const porHora = Array.from({ length: 24 }, (_, hora) => ({ hora, total: 0, cantidad: 0 }));
+    const productos = new Map();
+    const empleados = new Map();
+    const zonas = new Map();
+    for (const v of validas) {
+      porHora[v.hora].total += v.monto;
+      porHora[v.hora].cantidad += 1;
+      for (const it of itemsDeVenta(v.descripcion)) {
+        const p = productos.get(it.nombre) || { nombre: it.nombre, cantidad: 0 };
+        p.cantidad += it.qty;
+        productos.set(it.nombre, p);
+      }
+      const e = empleados.get(v.empleado_nombre) || { nombre: v.empleado_nombre || 'Sin empleado', total: 0, cantidad: 0 };
+      e.total += v.monto; e.cantidad += 1;
+      empleados.set(v.empleado_nombre, e);
+      const z = zonas.get(v.lugar) || { local: v.lugar, total: 0, cantidad: 0 };
+      z.total += v.monto; z.cantidad += 1;
+      zonas.set(v.lugar, z);
+    }
+
+    res.json({
+      fecha,
+      local,
+      zona_fija: !!req.empleado.local_id,
+      resumen: {
+        total,
+        cantidad: validas.length,
+        ticket_promedio: validas.length ? Math.round(total / validas.length) : 0,
+        alumnos: new Set(validas.map(v => v.alumno_nombre)).size,
+        anuladas: anuladas.length,
+        monto_anulado: anuladas.reduce((s, v) => s + v.monto, 0),
+      },
+      semana_pasada: { total: Number(semanaPasadaRes.rows[0].total), cantidad: semanaPasadaRes.rows[0].cantidad },
+      por_hora: porHora,
+      productos: [...productos.values()].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10),
+      por_empleado: [...empleados.values()].sort((a, b) => b.total - a.total),
+      por_zona: [...zonas.values()].sort((a, b) => b.total - a.total),
+      cajas: cajasRes.rows,
+      ventas,
+    });
+  } catch (err) {
+    console.error('Error getResumenDia:', err.message);
+    res.status(500).json({ error: 'Error al cargar el resumen' });
+  }
+};
+
+module.exports = { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia };

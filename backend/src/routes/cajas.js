@@ -65,6 +65,6 @@ router.post('/', verificarToken, soloPersonalPos, abrirCaja);
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Caja' }
  */
-router.patch('/:id/cerrar', verificarToken, cerrarCaja);
+router.patch('/:id/cerrar', verificarToken, soloPersonalPos, cerrarCaja);
 
 module.exports = router;

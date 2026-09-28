@@ -29,8 +29,8 @@ const cerrarCaja = async (req, res) => {
   try {
     const resultado = await pool.query(
       `UPDATE cajas SET abierta = false, cierre = NOW()
-       WHERE id = $1 AND colegio_id = $2 AND ($3 OR empleado_id = $4) RETURNING *`,
-      [id, req.empleado.colegio_id, req.empleado.rol === 'admin', req.empleado.id]
+       WHERE id = $1 AND colegio_id = $2 AND empleado_id = $3 RETURNING *`,
+      [id, req.empleado.colegio_id, req.empleado.id]
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: 'Caja no encontrada' });
     res.json(resultado.rows[0]);

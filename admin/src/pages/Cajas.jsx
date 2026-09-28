@@ -27,9 +27,7 @@ export default function Cajas() {
   const [seleccionada, setSeleccionada] = useState(null)
   const [filtroLocal, setFiltroLocal] = useState('Todos')
   const [filtroEstado, setFiltroEstado] = useState('Todos')
-  const [msg, setMsg] = useState(null)
 
-  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
 
@@ -41,14 +39,6 @@ export default function Cajas() {
     finally { setCargando(false) }
   }
 
-  const cerrarCaja = async id => {
-    if (!confirm('¿Cerrar esta caja?')) return
-    try {
-      await api.patch(`/cajas/${id}/cerrar`)
-      setCajas(p => p.map(c => c.id === id ? { ...c, abierta: false, cierre: new Date().toISOString() } : c))
-      showMsg('ok', 'Caja cerrada correctamente')
-    } catch { showMsg('error', 'Error al cerrar caja') }
-  }
 
   const cajasFiltradas = cajas.filter(c =>
     (filtroLocal === 'Todos' || c.local === filtroLocal) &&
@@ -78,7 +68,6 @@ export default function Cajas() {
         <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Historial de turnos</p>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
         {[
@@ -104,7 +93,6 @@ export default function Cajas() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>{fmt(c.ventas)}</p>
-                <button onClick={() => cerrarCaja(c.id)} style={{ padding: '7px 14px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cerrar caja</button>
               </div>
             </div>
           ))}
@@ -135,7 +123,6 @@ export default function Cajas() {
               <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => setSeleccionada(c)} style={{ padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>Ver detalle</button>
-                {c.abierta && <button onClick={() => cerrarCaja(c.id)} style={{ padding: '6px 12px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cerrar</button>}
               </div>
             </div>
           </div>

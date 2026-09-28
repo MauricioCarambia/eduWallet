@@ -7,6 +7,7 @@ import Productos from './pages/Productos'
 import Caja from './pages/Caja'
 import Historial from './pages/Historial'
 import Cuenta from './pages/Cuenta'
+import Resumen from './pages/Resumen'
 
 function PrivateRoute({ children }) {
   const { sesion, cargando } = useAuth()
@@ -20,6 +21,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={sesion ? <Navigate to="/venta" replace /> : <Login />} />
       <Route path="/venta" element={<PrivateRoute><Layout><Venta /></Layout></PrivateRoute>} />
+      <Route path="/resumen" element={<PrivateRoute><Layout><Resumen /></Layout></PrivateRoute>} />
       <Route path="/productos" element={<PrivateRoute><Layout><Productos /></Layout></PrivateRoute>} />
       <Route path="/caja" element={<PrivateRoute><Layout><Caja /></Layout></PrivateRoute>} />
       <Route path="/historial" element={<PrivateRoute><Layout><Historial /></Layout></PrivateRoute>} />

@@ -1,6 +1,7 @@
 {
   "nav": {
     "venta": "Venta",
+    "resumen": "Resumen",
     "productos": "Productos",
     "caja": "Caja",
     "historial": "Historial",

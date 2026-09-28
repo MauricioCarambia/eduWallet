@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
-const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta } = require('../controllers/transaccionesController');
+const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia } = require('../controllers/transaccionesController');
 
 /**
  * @swagger
@@ -43,6 +43,26 @@ const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta } = requir
  *             schema: { $ref: '#/components/schemas/TransaccionesPaginadas' }
  */
 router.get('/', verificarToken, getTransacciones);
+
+/**
+ * @swagger
+ * /transacciones/resumen-dia:
+ *   get:
+ *     summary: Resumen de ventas de un día para el dashboard del POS (días y horas de Argentina). El empleado con zona fija ve sólo su zona
+ *     tags: [Transacciones]
+ *     parameters:
+ *       - in: query
+ *         name: fecha
+ *         schema: { type: string, format: date, example: "2026-09-28" }
+ *       - in: query
+ *         name: local
+ *         description: Zona (sólo para empleados sin zona fija; vacío = todas)
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: "{ fecha, local, resumen, semana_pasada, por_hora, productos, por_empleado, por_zona, cajas, ventas }"
+ */
+router.get('/resumen-dia', verificarToken, soloPersonalPos, getResumenDia);
 
 /**
  * @swagger

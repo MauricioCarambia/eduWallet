@@ -59,6 +59,8 @@ const crearTablas = async () => {
         tutor_tel    VARCHAR(50),
         contacto2    VARCHAR(100),
         contacto2_tel VARCHAR(50),
+        nfc_uid      VARCHAR(40),
+        nfc_claves   TEXT[],
         creado_en    TIMESTAMP      DEFAULT NOW()
       );
 

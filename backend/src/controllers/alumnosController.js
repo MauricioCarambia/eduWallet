@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
 const { registrarPadreEnColegio } = require("../db/migracion_padres_colegios");
+const { variantesUid } = require("../services/tarjetasService");
 const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
 
@@ -306,7 +307,70 @@ const importarAlumnos = async (req, res) => {
   }
 };
 
+// ─── Tarjetas NFC ────────────────────────────────────────────────────────────
+
+// Asignar (o reemplazar) la tarjeta NFC de un alumno. La misma tarjeta no
+// puede estar en dos alumnos del colegio.
+const asignarTarjeta = async (req, res) => {
+  const { id } = req.params;
+  const claves = variantesUid(req.body.uid);
+  if (claves.length === 0) return res.status(400).json({ error: 'No se pudo leer la tarjeta. Probá de nuevo.' });
+  try {
+    const duena = await pool.query(
+      'SELECT id, nombre FROM alumnos WHERE colegio_id = $1 AND nfc_claves && $2::text[] AND id <> $3',
+      [req.empleado.colegio_id, claves, id]
+    );
+    if (duena.rows.length > 0) {
+      return res.status(409).json({ error: `Esa tarjeta ya está asignada a ${duena.rows[0].nombre}`, alumno: duena.rows[0] });
+    }
+    const r = await pool.query(
+      'UPDATE alumnos SET nfc_uid = $1, nfc_claves = $2 WHERE id = $3 AND colegio_id = $4 RETURNING *',
+      [claves[0], claves, id, req.empleado.colegio_id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Tarjeta asignada', `${r.rows[0].nombre} — ${claves[0]}`);
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Quitar la tarjeta (perdida o rota): deja de servir en el acto; el saldo
+// es del alumno, no de la tarjeta
+const quitarTarjeta = async (req, res) => {
+  try {
+    const r = await pool.query(
+      'UPDATE alumnos SET nfc_uid = NULL, nfc_claves = NULL WHERE id = $1 AND colegio_id = $2 RETURNING *',
+      [req.params.id, req.empleado.colegio_id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Tarjeta quitada', r.rows[0].nombre);
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// POS: buscar el alumno por la tarjeta que se acaba de leer (con cualquier lector)
+const buscarPorTarjeta = async (req, res) => {
+  const claves = variantesUid(req.query.uid);
+  if (claves.length === 0) return res.status(400).json({ error: 'No se pudo leer la tarjeta. Probá de nuevo.' });
+  try {
+    const r = await pool.query(
+      'SELECT * FROM alumnos WHERE colegio_id = $1 AND nfc_claves && $2::text[] LIMIT 1',
+      [req.empleado.colegio_id, claves]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Tarjeta no asignada a ningún alumno' });
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 module.exports = {
+  asignarTarjeta,
+  quitarTarjeta,
+  buscarPorTarjeta,
   getAlumnos,
   getAlumno,
   crearAlumno,

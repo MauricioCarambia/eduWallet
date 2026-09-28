@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import { useLocales } from '../hooks/useLocales'
+import useLectorTarjeta, { nfcDisponible, escucharNfc } from '../hooks/useLectorTarjeta'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -15,7 +16,6 @@ export default function Venta() {
   const [alumnos, setAlumnos] = useState([])
   const [carrito, setCarrito] = useState([])
   const [alumno, setAlumno] = useState(null)
-  const [scanning, setScanning] = useState(false)
   const [busq, setBusq] = useState('')
   const [descPct, setDescPct] = useState(0)
   const [fondoCaja, setFondoCaja] = useState('500')
@@ -76,15 +76,6 @@ export default function Venta() {
     if (!confirm(`¿Cerrar caja? Total del turno: ${fmt(caja?.ventas || 0)}`)) return
     try { await cerrarCaja(); setCarrito([]); setAlumno(null); setVistaVentas(false); showMsg('ok', 'Caja cerrada') }
     catch (err) { showMsg('error', 'Error al cerrar caja') }
-  }
-
-  const simularScan = () => {
-    setScanning(true)
-    setTimeout(() => {
-      const activos = alumnos.filter(a => a.activo)
-      setAlumno(activos[Math.floor(Math.random() * activos.length)])
-      setScanning(false)
-    }, 1000)
   }
 
   const addProd = p => {
@@ -156,17 +147,35 @@ export default function Venta() {
     setEscaneandoQR(false)
   }
 
-  const iniciarNFC = async () => {
-    if (!('NDEFReader' in window)) { showMsg('error', 'NFC no disponible en este dispositivo'); return }
+  // Tarjeta NFC: la búsqueda la hace el backend, que reconoce el número en
+  // cualquier formato (celular, lector USB en hex o decimal)
+  const buscarPorTarjeta = async uid => {
     try {
+      const res = await api.get('/alumnos/por-tarjeta', { params: { uid } })
+      const encontrado = alumnos.find(a => a.id === res.data.id) || res.data
+      if (!encontrado.activo) { showMsg('error', `Tarjeta de ${encontrado.nombre}: está bloqueada`); return }
+      setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false)
+      showMsg('ok', `✓ ${encontrado.nombre}`)
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Error al leer la tarjeta')
+    }
+  }
+
+  // Lector USB: funciona siempre en esta pantalla, tenga el cursor donde tenga
+  useLectorTarjeta(buscarPorTarjeta, !!caja)
+
+  // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva
+  const nfcAbortRef = useRef(null)
+  const detenerNFC = () => { nfcAbortRef.current?.abort(); nfcAbortRef.current = null }
+  useEffect(() => detenerNFC, [])
+  const iniciarNFC = async () => {
+    if (!nfcDisponible()) { showMsg('error', 'Este dispositivo no tiene NFC (sólo Chrome en Android). Usá un lector USB.'); return }
+    try {
+      detenerNFC()
+      const ctrl = new AbortController()
+      nfcAbortRef.current = ctrl
+      await escucharNfc(buscarPorTarjeta, ctrl.signal)
       setModoEscaneo('nfc')
-      const ndef = new window.NDEFReader()
-      await ndef.scan()
-      showMsg('ok', 'NFC activo — acercá la tarjeta')
-      ndef.onreading = ({ serialNumber }) => {
-        buscarPorCodigo('NFC-' + serialNumber.replace(/:/g, '').toUpperCase())
-        setModoEscaneo('manual')
-      }
     } catch (err) { showMsg('error', 'Error al activar NFC: ' + err.message); setModoEscaneo('manual') }
   }
 
@@ -327,20 +336,20 @@ export default function Venta() {
             </div>
           ) : (
             <div>
-              <button onClick={simularScan} disabled={scanning} style={{ width: '100%', padding: '14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-tertiary)', fontWeight: 500, cursor: 'pointer', marginBottom: 8 }}>
-                {scanning ? 'Leyendo tarjeta...' : '📲 Acercar tarjeta NFC / QR'}
-              </button>
+              <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
+                💳 Pasá la tarjeta por el lector{nfcDisponible() ? ' o tocá NFC' : ''}, escaneá el QR o buscá por nombre
+              </div>
               <div id="alumno-search">
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                  {[{ id: 'manual', label: '🔍 Nombre' }, { id: 'qr', label: '📷 QR' }, { id: 'nfc', label: '📶 NFC' }].map(m => (
+                  {[{ id: 'manual', label: '🔍 Nombre' }, { id: 'qr', label: '📷 QR' }, ...(nfcDisponible() ? [{ id: 'nfc', label: '📶 NFC' }] : [])].map(m => (
                     <button key={m.id} onClick={() => {
-                      if (m.id === 'qr') { iniciarQR(); setModoEscaneo('qr') }
-                      else if (m.id === 'nfc') iniciarNFC()
-                      else { detenerQR(); setModoEscaneo('manual') }
+                      if (m.id === 'qr') { detenerNFC(); iniciarQR(); setModoEscaneo('qr') }
+                      else if (m.id === 'nfc') { detenerQR(); iniciarNFC() }
+                      else { detenerQR(); detenerNFC(); setModoEscaneo('manual') }
                     }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}>{m.label}</button>
                   ))}
                 </div>
-                <input placeholder="Escaneá QR o buscá por nombre..." value={busqAlumno}
+                <input placeholder="Buscá por nombre o pasá la tarjeta..." value={busqAlumno}
                   onChange={e => { setBusqAlumno(e.target.value); setShowSugerencias(true) }}
                   onKeyDown={e => { if (e.key === 'Enter' && busqAlumno.startsWith('QR-')) { buscarPorCodigo(busqAlumno); setBusqAlumno(''); setShowSugerencias(false) } }}
                   onFocus={() => setShowSugerencias(true)} style={{ marginBottom: 6 }} autoFocus />

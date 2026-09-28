@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion } = require('../controllers/alumnosController');
+const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion, asignarTarjeta, quitarTarjeta, buscarPorTarjeta } = require('../controllers/alumnosController');
 
 /**
  * @swagger
@@ -37,6 +37,25 @@ const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, elim
  *         description: Alumno creado
  */
 router.get('/', verificarToken, getAlumnos);
+
+/**
+ * @swagger
+ * /alumnos/por-tarjeta:
+ *   get:
+ *     summary: Buscar el alumno por la tarjeta NFC leída (POS). Acepta cualquier formato de lector (hex, bytes invertidos, decimal)
+ *     tags: [Alumnos]
+ *     parameters:
+ *       - in: query
+ *         name: uid
+ *         required: true
+ *         schema: { type: string, example: "04:a2:3f:1b" }
+ *     responses:
+ *       200:
+ *         description: Alumno
+ *       404:
+ *         description: Tarjeta no asignada
+ */
+router.get('/por-tarjeta', verificarToken, buscarPorTarjeta);
 
 /**
  * @swagger
@@ -182,5 +201,33 @@ router.get('/:id/qr', verificarToken, getQR);
  *             schema: { $ref: '#/components/schemas/Alumno' }
  */
 router.patch('/:id/codigo-vinculacion', verificarToken, soloAdmin, regenerarCodigoVinculacion);
+
+/**
+ * @swagger
+ * /alumnos/{id}/tarjeta:
+ *   put:
+ *     summary: Asignar o reemplazar la tarjeta NFC del alumno (solo admin). 409 si ya es de otro alumno
+ *     tags: [Alumnos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [uid]
+ *             properties:
+ *               uid: { type: string, example: "04:a2:3f:1b" }
+ *     responses:
+ *       200:
+ *         description: Alumno actualizado
+ *   delete:
+ *     summary: Quitar la tarjeta NFC del alumno (perdida o rota) (solo admin)
+ *     tags: [Alumnos]
+ *     responses:
+ *       200:
+ *         description: Alumno actualizado
+ */
+router.put('/:id/tarjeta', verificarToken, soloAdmin, asignarTarjeta);
+router.delete('/:id/tarjeta', verificarToken, soloAdmin, quitarTarjeta);
 
 module.exports = router;

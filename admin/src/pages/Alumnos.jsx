@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import { ModalTarjeta, ModalAsignarTarjetas } from '../components/TarjetasNfc'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -241,6 +242,7 @@ export default function Alumnos() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Importar CSV
           </button>
+          <button onClick={() => setModal('asignarTarjetas')} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)' }}>💳 Asignar tarjetas</button>
           <Btn onClick={() => { setForm(FORM_VACIO); setModal('nuevo') }}>+ Nuevo alumno</Btn>
         </div>
       </div>
@@ -293,6 +295,7 @@ export default function Alumnos() {
                       <button onClick={() => { setSeleccionado(a); setModal('historial') }} style={btnStyle('var(--bg)', 'var(--text)')}>Historial</button>
                       <button onClick={() => { setSeleccionado(a); setMontoLink(''); setLink(null); setModal('link') }} disabled={!a.activo} title={a.activo ? 'Generar un link de pago de Mercado Pago para la familia' : 'El alumno está bloqueado'} style={{ ...btnStyle('var(--green-bg)', 'var(--green)'), opacity: a.activo ? 1 : 0.5, cursor: a.activo ? 'pointer' : 'not-allowed' }}>Link de pago</button>
                       <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', contacto2: a.contacto2 || '', contacto2_tel: a.contacto2_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
+                      <button onClick={() => { setSeleccionado(a); setModal('tarjeta') }} title={a.nfc_uid ? `Tarjeta ${a.nfc_uid}` : 'Sin tarjeta asignada'} style={btnStyle(a.nfc_uid ? 'var(--green-bg)' : 'var(--bg)', a.nfc_uid ? 'var(--green)' : 'var(--text-tertiary)')}>{a.nfc_uid ? '💳 Tarjeta' : '💳 Sin tarjeta'}</button>
                       <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--accent)')}>QR</button>
                       <button onClick={() => toggleBloqueo(a)} style={btnStyle(a.activo ? 'var(--red-bg)' : 'var(--green-bg)', a.activo ? 'var(--red)' : 'var(--green)')}>{a.activo ? 'Bloquear' : 'Activar'}</button>
                       <button onClick={() => eliminar(a.id)} style={btnStyle('var(--red-bg)', 'var(--red)')}>×</button>
@@ -354,6 +357,16 @@ export default function Alumnos() {
               </div>
             ))}
         </Modal>
+      )}
+
+      {modal === 'tarjeta' && seleccionado && (
+        <ModalTarjeta alumno={seleccionado} onClose={cerrarModal}
+          onActualizado={a => { setAlumnos(p => p.map(x => x.id === a.id ? a : x)); setSeleccionado(a) }} />
+      )}
+
+      {modal === 'asignarTarjetas' && (
+        <ModalAsignarTarjetas alumnos={alumnos} onClose={cerrarModal}
+          onActualizado={a => setAlumnos(p => p.map(x => x.id === a.id ? a : x))} />
       )}
 
       {modal === 'link' && seleccionado && (

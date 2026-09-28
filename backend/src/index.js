@@ -8,13 +8,14 @@ const { migrarPagosVencidos } = require('./db/migracion_pagos_vencidos');
 const { migrarLinkPago } = require('./db/migracion_link_pago');
 const { migrarContacto2 } = require('./db/migracion_contacto2');
 const { migrarPadresColegios } = require('./db/migracion_padres_colegios');
+const { migrarTarjetasNfc } = require('./db/migracion_tarjetas_nfc');
 
 const PORT = process.env.PORT || 3001;
 
 // Las columnas de comisión y el estado 'vencido' tienen que existir antes
 // de aceptar recargas
 const migrar = async () => {
-  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios]]) {
+  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios], ['tarjetas NFC', migrarTarjetasNfc]]) {
     try {
       await fn();
     } catch (err) {

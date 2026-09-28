@@ -3,7 +3,8 @@ const pool = require('../db/conexion');
 const getPadres = async (req, res) => {
   try {
     const resultado = await pool.query(`
-      SELECT p.*,
+      -- Sólo datos públicos del padre: nunca password, reset_token, etc.
+      SELECT p.id, p.nombre, p.email, p.activo, p.creado_en,
         json_agg(
           json_build_object(
             'id', a.id,

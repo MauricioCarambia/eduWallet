@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { iniciarColegio, iniciarEmpleado, callback, estado } = require('../controllers/mpOauthController');
+const { iniciarColegio, iniciarEmpleado, callback, estado, desconectarColegio, desconectarEmpleado } = require('../controllers/mpOauthController');
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
 
 /**
@@ -58,5 +58,29 @@ router.get('/conectar/empleado', verificarToken, iniciarEmpleado);
  *         description: Redirige de vuelta al panel correspondiente
  */
 router.get('/callback', callback);
+
+/**
+ * @swagger
+ * /mp/colegio:
+ *   delete:
+ *     summary: Desconectar la cuenta de Mercado Pago del colegio (solo admin)
+ *     tags: [MercadoPagoOAuth]
+ *     responses:
+ *       200:
+ *         description: Cuenta desconectada
+ */
+router.delete('/colegio', verificarToken, soloAdmin, desconectarColegio);
+
+/**
+ * @swagger
+ * /mp/empleado:
+ *   delete:
+ *     summary: Desconectar la cuenta de Mercado Pago propia del empleado
+ *     tags: [MercadoPagoOAuth]
+ *     responses:
+ *       200:
+ *         description: Cuenta desconectada
+ */
+router.delete('/empleado', verificarToken, desconectarEmpleado);
 
 module.exports = router;

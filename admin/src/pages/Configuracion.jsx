@@ -70,6 +70,17 @@ export default function Configuracion() {
     }
   }
 
+  const desconectarMP = async () => {
+    if (!window.confirm('¿Desconectar la cuenta de Mercado Pago del colegio? Hasta que conectes otra, las recargas no se van a dividir con el colegio.')) return
+    try {
+      await api.delete('/mp/colegio')
+      showMsg('ok', 'Cuenta de Mercado Pago desconectada')
+      cargarEstadoMP()
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Error al desconectar')
+    }
+  }
+
   const cargar = async () => {
     try {
       const res = await api.get('/configuracion')
@@ -249,9 +260,22 @@ export default function Configuracion() {
             Todavía no está habilitada la conexión con Mercado Pago (falta configurar la aplicación).
           </div>
         ) : estadoMP?.colegio_conectado ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Cuenta del colegio conectada
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, marginBottom: 10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cuenta del colegio conectada
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button onClick={conectarMP} disabled={conectandoMP} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: conectandoMP ? 0.7 : 1 }}>
+                {conectandoMP ? 'Redirigiendo...' : 'Cambiar cuenta'}
+              </button>
+              <button onClick={desconectarMP} style={{ padding: '8px 16px', border: '1px solid var(--red)', borderRadius: 'var(--radius)', background: 'transparent', color: 'var(--red)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                Desconectar
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '8px 0 0' }}>
+              Para cambiar de cuenta, primero cerrá sesión en mercadopago.com.ar o usá una ventana de incógnito.
+            </p>
           </div>
         ) : (
           <button onClick={conectarMP} disabled={conectandoMP} style={{ padding: '10px 20px', border: 'none', borderRadius: 'var(--radius)', background: '#009EE3', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: conectandoMP ? 0.7 : 1 }}>

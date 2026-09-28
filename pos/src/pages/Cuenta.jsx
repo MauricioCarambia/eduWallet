@@ -38,6 +38,17 @@ export default function Cuenta() {
     }
   }
 
+  const desconectar = async () => {
+    if (!window.confirm('¿Desconectar tu cuenta de Mercado Pago?')) return
+    try {
+      await api.delete('/mp/empleado')
+      setMsg({ tipo: 'ok', texto: 'Cuenta de Mercado Pago desconectada' })
+      cargar()
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: err.response?.data?.error || 'Error al desconectar' })
+    }
+  }
+
   if (cargando) return <div style={{ padding: '1rem', color: 'var(--text-tertiary)' }}>Cargando...</div>
 
   return (
@@ -62,9 +73,19 @@ export default function Cuenta() {
             Todavía no está habilitada la conexión con Mercado Pago en este colegio.
           </div>
         ) : estado?.empleado_conectado ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 8, fontSize: 13, fontWeight: 500 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Cuenta conectada
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 8, fontSize: 13, fontWeight: 500, marginBottom: 10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cuenta conectada
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={conectar} disabled={conectando} style={{ flex: 1, padding: '10px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: conectando ? 0.7 : 1 }}>
+                {conectando ? 'Redirigiendo...' : 'Cambiar cuenta'}
+              </button>
+              <button onClick={desconectar} style={{ flex: 1, padding: '10px', border: '1px solid var(--red)', borderRadius: 10, background: 'transparent', color: 'var(--red)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                Desconectar
+              </button>
+            </div>
           </div>
         ) : (
           <button onClick={conectar} disabled={conectando} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: '#009EE3', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: conectando ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

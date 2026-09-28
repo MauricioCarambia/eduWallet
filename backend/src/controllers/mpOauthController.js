@@ -94,4 +94,30 @@ const estado = async (req, res) => {
   }
 };
 
-module.exports = { iniciarColegio, iniciarEmpleado, callback, estado, mpConfigurado };
+// Quitar la cuenta conectada (para cambiarla por otra o dejar de cobrar
+// con split). Las recargas vuelven a entrar a la cuenta de la plataforma.
+const desconectarColegio = async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE colegios SET mp_access_token = NULL, mp_refresh_token = NULL, mp_user_id = NULL, mp_token_expira = NULL WHERE id = $1',
+      [req.empleado.colegio_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const desconectarEmpleado = async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE empleados SET mp_access_token = NULL, mp_refresh_token = NULL, mp_user_id = NULL, mp_token_expira = NULL WHERE id = $1',
+      [req.empleado.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = { iniciarColegio, iniciarEmpleado, callback, estado, desconectarColegio, desconectarEmpleado, mpConfigurado };

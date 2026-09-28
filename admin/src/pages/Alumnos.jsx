@@ -151,7 +151,8 @@ export default function Alumnos() {
   }
 
   // Link de pago de Mercado Pago para padres que no usan la app: pagan como
-  // invitados (tarjeta, Rapipago, Pago Fácil) y el saldo se acredita solo
+  // invitados (cualquier tarjeta, incluidas las de billeteras como Ualá o
+  // Naranja X, o efectivo en Rapipago / Pago Fácil) y el saldo se acredita solo
   const generarLink = async () => {
     const n = parseInt(montoLink); if (!n || n <= 0) return
     setGenerandoLink(true)
@@ -163,7 +164,7 @@ export default function Alumnos() {
     } finally { setGenerandoLink(false) }
   }
 
-  const textoLink = l => `Link para recargar ${fmt(l.monto)} de saldo a ${l.alumno} en EduWallet (total a pagar ${fmt(l.total)}, incluye cargo por servicio). Podés pagar con tarjeta o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago: ${l.url}`
+  const textoLink = l => `Link para recargar ${fmt(l.monto)} de saldo a ${l.alumno} en EduWallet (total a pagar ${fmt(l.total)}, incluye cargo por servicio). Podés pagar con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras) o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago: ${l.url}`
 
   const copiarLink = async () => {
     try {
@@ -357,7 +358,7 @@ export default function Alumnos() {
             <>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 6px' }}>Saldo actual: <b style={{ color: 'var(--text)' }}>{fmt(seleccionado.saldo)}</b></p>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 14px' }}>
-                Generá un link de Mercado Pago para mandarle a la familia. Pueden pagar con tarjeta o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago. El saldo se acredita solo cuando se paga. El link vence en 72 h.
+                Generá un link de Mercado Pago para mandarle a la familia. Pueden pagar con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras) o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago. El saldo se acredita solo cuando se paga. El link vence en 72 h.
               </p>
               <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                 {[1000, 2000, 5000, 10000].map(n => (

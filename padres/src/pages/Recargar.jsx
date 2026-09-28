@@ -190,7 +190,7 @@ export default function Recargar() {
           <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Pago seguro con Mercado Pago</span>
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 6 }}>
-          Aceptamos tarjeta de crédito, débito, transferencia y saldo MP
+          Pagá con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras), en efectivo en Rapipago / Pago Fácil o con saldo de Mercado Pago. No necesitás cuenta de Mercado Pago.
         </p>
       </div>
 

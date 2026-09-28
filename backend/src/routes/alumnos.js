@@ -126,7 +126,7 @@ router.post('/', verificarToken, soloAdmin, crearAlumno);
  *         description: Resultado de la importación (creados, errores)
  */
 router.post('/importar', verificarToken, soloAdmin, importarAlumnos);
-router.put('/:id', verificarToken, actualizarAlumno);
+router.put('/:id', verificarToken, soloAdmin, actualizarAlumno);
 
 /**
  * @swagger
@@ -143,7 +143,7 @@ router.put('/:id', verificarToken, actualizarAlumno);
  *       200:
  *         description: Estado actualizado
  */
-router.patch('/:id/toggle', verificarToken, toggleAlumno);
+router.patch('/:id/toggle', verificarToken, soloAdmin, toggleAlumno);
 
 router.delete('/:id', verificarToken, soloAdmin, eliminarAlumno);
 

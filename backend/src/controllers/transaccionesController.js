@@ -71,8 +71,20 @@ const getTransaccionesAlumno = async (req, res) => {
 };
 
 const cobrar = async (req, res) => {
-  const { alumno_id, empleado_id, caja_id, items, descuento } = req.body;
+  const { alumno_id, caja_id, items } = req.body;
   let { lugar } = req.body;
+  // El empleado es el de la sesión, nunca el que mande el cliente
+  const empleado_id = req.empleado.id;
+
+  // Cantidades enteras positivas y descuento entre 0 y 100: una cantidad
+  // negativa haría que el cobro sume saldo en vez de restarlo
+  const descuento = Number(req.body.descuento) || 0;
+  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'El carrito está vacío' });
+  if (items.some(i => !Number.isInteger(Number(i.qty)) || Number(i.qty) <= 0 || Number(i.qty) > 100)) {
+    return res.status(400).json({ error: 'Cantidad inválida' });
+  }
+  if (descuento < 0 || descuento > 100) return res.status(400).json({ error: 'Descuento inválido' });
+
   const client = await pool.connect();
 
   try {
@@ -105,8 +117,29 @@ const cobrar = async (req, res) => {
       return res.status(400).json({ error: 'Tarjeta bloqueada' });
     }
 
-    const subtotal = items.reduce((s, i) => s + i.precio * i.qty, 0);
-    const total = Math.round(subtotal * (1 - (descuento || 0) / 100));
+    // Precios y nombres salen de la base, no de lo que manda el POS
+    const ids = [...new Set(items.map(i => Number(i.id)))];
+    const prods = await client.query(
+      'SELECT id, nombre, precio, local FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2 AND activo = true',
+      [ids, req.empleado.colegio_id]
+    );
+    const porId = new Map(prods.rows.map(p => [p.id, p]));
+    if (porId.size !== ids.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Algún producto ya no existe. Recargá la página.' });
+    }
+    if (prods.rows.some(p => p.local !== lugar)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `Sólo se pueden cobrar productos de ${lugar}` });
+    }
+    const lineas = items.map(i => ({ ...porId.get(Number(i.id)), qty: Number(i.qty) }));
+
+    const subtotal = lineas.reduce((s, l) => s + Number(l.precio) * l.qty, 0);
+    const total = Math.round(subtotal * (1 - descuento / 100));
+    if (total <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'El total tiene que ser mayor a 0' });
+    }
 
     if (parseFloat(a.saldo) < total) {
       await client.query('ROLLBACK');
@@ -125,26 +158,26 @@ const cobrar = async (req, res) => {
     );
 
     // descontar stock
-    for (const item of items) {
+    for (const l of lineas) {
       await client.query(
         'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 AND colegio_id = $3',
-        [item.qty, item.id, req.empleado.colegio_id]
+        [l.qty, l.id, req.empleado.colegio_id]
       );
     }
 
     // registrar transacción
-    const desc = items.map(i => `${i.nombre}${i.qty > 1 ? ` ×${i.qty}` : ''}`).join(', ');
+    const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
     const tx = await client.query(
       `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
        VALUES ($1, $2, $3, 'compra', $4, $5, $6) RETURNING *`,
       [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id]
     );
 
-    // actualizar caja
+    // actualizar la caja abierta del propio empleado
     if (caja_id) {
       await client.query(
-        'UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3',
-        [total, caja_id, req.empleado.colegio_id]
+        'UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3 AND empleado_id = $4 AND abierta = true',
+        [total, caja_id, req.empleado.colegio_id, empleado_id]
       );
     }
 
@@ -213,8 +246,10 @@ const anularVenta = async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // FOR UPDATE: dos pedidos de anulación simultáneos no pueden devolver
+    // la plata dos veces
     const tx = await client.query(
-      'SELECT * FROM transacciones WHERE id = $1 AND tipo = $2 AND colegio_id = $3',
+      'SELECT * FROM transacciones WHERE id = $1 AND tipo = $2 AND colegio_id = $3 FOR UPDATE',
       [id, 'compra', req.empleado.colegio_id]
     );
 
@@ -224,6 +259,16 @@ const anularVenta = async (req, res) => {
     }
 
     const t = tx.rows[0];
+
+    if (t.descripcion?.startsWith('[ANULADA]')) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Esta venta ya fue anulada' });
+    }
+
+    if (req.empleado.rol !== 'admin' && t.empleado_id !== req.empleado.id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Sólo podés anular tus propias ventas' });
+    }
 
     const hace24hs = new Date(Date.now() - 24 * 60 * 60 * 1000);
     if (new Date(t.fecha) < hace24hs) {

@@ -1,8 +1,10 @@
 const pool = require('../db/conexion');
 
 const abrirCaja = async (req, res) => {
-  const { empleado_id, fondo } = req.body;
+  const { fondo } = req.body;
   let { local } = req.body;
+  // La caja es del empleado de la sesión, nunca del que mande el cliente
+  const empleado_id = req.empleado.id;
   try {
     // si el empleado tiene una zona fija asignada, se ignora lo que mande
     // el cliente y se fuerza esa zona — así no se puede eludir desde la API
@@ -27,8 +29,8 @@ const cerrarCaja = async (req, res) => {
   try {
     const resultado = await pool.query(
       `UPDATE cajas SET abierta = false, cierre = NOW()
-       WHERE id = $1 AND colegio_id = $2 RETURNING *`,
-      [id, req.empleado.colegio_id]
+       WHERE id = $1 AND colegio_id = $2 AND ($3 OR empleado_id = $4) RETURNING *`,
+      [id, req.empleado.colegio_id, req.empleado.rol === 'admin', req.empleado.id]
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: 'Caja no encontrada' });
     res.json(resultado.rows[0]);

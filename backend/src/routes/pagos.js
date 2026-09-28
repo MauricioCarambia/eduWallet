@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos } = require('../controllers/pagosController');
-const { verificarPadre } = require('../middlewares/auth');
+const { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio } = require('../controllers/pagosController');
+const { verificarPadre, verificarToken, soloAdmin } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -123,5 +123,37 @@ router.get('/verificar', verificarPadre, verificarPago);
  *               items: { $ref: '#/components/schemas/Pago' }
  */
 router.get('/historial', verificarPadre, getHistorialPagos);
+
+/**
+ * @swagger
+ * /pagos/colegio:
+ *   get:
+ *     summary: Recargas por Mercado Pago de todo el colegio (solo admin), paginadas y con resumen por estado
+ *     tags: [Pagos]
+ *     parameters:
+ *       - in: query
+ *         name: estado
+ *         schema: { type: string, enum: [pendiente, acreditado, rechazado, vencido] }
+ *       - in: query
+ *         name: q
+ *         description: Busca por nombre del alumno, nombre o email del padre
+ *         schema: { type: string }
+ *       - in: query
+ *         name: desde
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: hasta
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: "{ data, total, page, limit, pages, resumen }"
+ */
+router.get('/colegio', verificarToken, soloAdmin, getRecargasColegio);
 
 module.exports = router;

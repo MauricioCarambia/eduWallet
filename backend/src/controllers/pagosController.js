@@ -369,4 +369,69 @@ const getHistorialPagos = async (req, res) => {
   }
 };
 
-module.exports = { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, acreditarPago, vencerPagosPendientes };
+// Historial de recargas por Mercado Pago de todo el colegio (panel admin).
+// Filtros: estado, q (alumno, padre o email), desde/hasta (YYYY-MM-DD).
+// El resumen por estado ignora el filtro de estado (para los contadores).
+const getRecargasColegio = async (req, res) => {
+  const { estado, q, desde, hasta, page = 1, limit = 50 } = req.query;
+  if (estado && !ESTADOS_PAGO.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+  const fecha = /^\d{4}-\d{2}-\d{2}$/;
+  if ((desde && !fecha.test(desde)) || (hasta && !fecha.test(hasta))) return res.status(400).json({ error: 'Fecha inválida' });
+
+  const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+  const pageNum = Math.max(parseInt(page) || 1, 1);
+
+  // creado_en se guarda en UTC: los días del filtro son días de Argentina
+  const fechaAR = `(p.creado_en AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date`;
+  // Filtros comunes ($1..$4); el de estado se agrega sólo a la lista
+  const params = [req.empleado.colegio_id, q ? `%${q.trim()}%` : null, desde || null, hasta || null];
+  const where = `
+    p.colegio_id = $1
+    AND ($2::text IS NULL OR a.nombre ILIKE $2 OR pa.nombre ILIKE $2 OR pa.email ILIKE $2)
+    AND ($3::date IS NULL OR ${fechaAR} >= $3::date)
+    AND ($4::date IS NULL OR ${fechaAR} <= $4::date)`;
+  const from = `FROM pagos p JOIN alumnos a ON a.id = p.alumno_id JOIN padres pa ON pa.id = p.padre_id`;
+
+  try {
+    const [lista, resumen] = await Promise.all([
+      pool.query(
+        `SELECT p.id, p.monto, p.comision, p.monto_total, p.estado, p.detalle, p.mp_payment_id,
+                p.creado_en, p.actualizado_en,
+                a.id AS alumno_id, a.nombre AS alumno_nombre, pa.nombre AS padre_nombre, pa.email AS padre_email,
+                COUNT(*) OVER() AS total_filtrado
+         ${from}
+         WHERE ${where} AND ($5::text IS NULL OR p.estado = $5)
+         ORDER BY p.creado_en DESC
+         LIMIT $6 OFFSET $7`,
+        [...params, estado || null, limitNum, (pageNum - 1) * limitNum]
+      ),
+      pool.query(
+        `SELECT p.estado, COUNT(*)::int AS cantidad,
+                COALESCE(SUM(p.monto), 0) AS monto, COALESCE(SUM(p.comision), 0) AS comision,
+                COALESCE(SUM(p.monto_total), 0) AS monto_total
+         ${from}
+         WHERE ${where}
+         GROUP BY p.estado`,
+        params
+      ),
+    ]);
+
+    const total = lista.rows.length ? parseInt(lista.rows[0].total_filtrado) : 0;
+    const porEstado = Object.fromEntries(ESTADOS_PAGO.map(e => [e, { cantidad: 0, monto: '0', comision: '0', monto_total: '0' }]));
+    resumen.rows.forEach(r => { porEstado[r.estado] = { cantidad: r.cantidad, monto: r.monto, comision: r.comision, monto_total: r.monto_total }; });
+
+    res.json({
+      data: lista.rows.map(({ total_filtrado, ...r }) => r),
+      total,
+      page: pageNum,
+      limit: limitNum,
+      pages: Math.max(Math.ceil(total / limitNum), 1),
+      resumen: porEstado,
+    });
+  } catch (err) {
+    console.error('Error getRecargasColegio:', err.message);
+    res.status(500).json({ error: 'Error al obtener las recargas' });
+  }
+};
+
+module.exports = { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio, acreditarPago, vencerPagosPendientes };

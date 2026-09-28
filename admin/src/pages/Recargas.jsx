@@ -1,0 +1,157 @@
+import { useState, useEffect } from 'react'
+import api from '../api/axios'
+import { SkeletonTable } from '../components/Skeleton'
+
+const LIMIT = 50
+
+const fmt = n => `$${Number(n || 0).toLocaleString('es-AR')}`
+
+const ESTADOS = {
+  acreditado: { label: 'Acreditada', filtro: 'Acreditadas', color: 'var(--green)', bg: 'var(--green-bg)' },
+  pendiente:  { label: 'Pendiente',  filtro: 'Pendientes',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
+  rechazado:  { label: 'Rechazada',  filtro: 'Rechazadas',  color: 'var(--red)',   bg: 'var(--red-bg)' },
+  vencido:    { label: 'Vencida',    filtro: 'Vencidas',    color: 'var(--text-tertiary)', bg: 'var(--bg)' },
+}
+
+const btnPagina = (deshabilitado) => ({
+  padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12,
+  cursor: deshabilitado ? 'not-allowed' : 'pointer', color: deshabilitado ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+})
+
+export default function Recargas() {
+  const [recargas, setRecargas] = useState([])
+  const [resumen, setResumen]   = useState(null)
+  const [total, setTotal]       = useState(0)
+  const [pages, setPages]       = useState(1)
+  const [page, setPage]         = useState(1)
+  const [estado, setEstado]     = useState('')
+  const [busq, setBusq]         = useState('')
+  const [busqAplicada, setBusqAplicada] = useState('')
+  const [desde, setDesde]       = useState('')
+  const [hasta, setHasta]       = useState('')
+  const [cargando, setCargando] = useState(true)
+
+  // La búsqueda se aplica medio segundo después de dejar de escribir
+  useEffect(() => {
+    const t = setTimeout(() => { setBusqAplicada(busq.trim()); setPage(1) }, 500)
+    return () => clearTimeout(t)
+  }, [busq])
+
+  useEffect(() => {
+    let vigente = true
+    const cargar = async () => {
+      setCargando(true)
+      try {
+        const params = { page, limit: LIMIT }
+        if (estado) params.estado = estado
+        if (busqAplicada) params.q = busqAplicada
+        if (desde) params.desde = desde
+        if (hasta) params.hasta = hasta
+        const res = await api.get('/pagos/colegio', { params })
+        if (!vigente) return
+        setRecargas(res.data.data)
+        setResumen(res.data.resumen)
+        setTotal(res.data.total)
+        setPages(res.data.pages)
+      } catch (err) { console.error(err) }
+      finally { if (vigente) setCargando(false) }
+    }
+    cargar()
+    return () => { vigente = false }
+  }, [page, estado, busqAplicada, desde, hasta])
+
+  const cambiarFiltro = (setter) => (valor) => { setter(valor); setPage(1) }
+  const totalResumen = resumen ? Object.values(resumen).reduce((s, r) => s + r.cantidad, 0) : 0
+
+  const tarjetas = [
+    { label: 'Recaudado (acreditado)', value: fmt(resumen?.acreditado.monto), sub: `${resumen?.acreditado.cantidad || 0} recargas` },
+    { label: 'Pagado por los padres', value: fmt(resumen?.acreditado.monto_total), sub: `Incluye ${fmt(resumen?.acreditado.comision)} de cargo por servicio` },
+    { label: 'Pendientes', value: resumen?.pendiente.cantidad || 0, sub: fmt(resumen?.pendiente.monto) },
+    { label: 'Rechazadas / vencidas', value: (resumen?.rechazado.cantidad || 0) + (resumen?.vencido.cantidad || 0), sub: 'Sin cobrar' },
+  ]
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Recargas</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Recargas de saldo que hicieron los padres con Mercado Pago</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+        {tarjetas.map(s => (
+          <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
+            <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{s.value}</p>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+        {[['', 'Todas', totalResumen], ...Object.entries(ESTADOS).map(([k, e]) => [k, e.filtro, resumen?.[k].cantidad || 0])].map(([valor, label, cantidad]) => (
+          <button key={valor} onClick={() => cambiarFiltro(setEstado)(valor)} style={{ padding: '6px 14px', border: `1.5px solid ${estado === valor ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: estado === valor ? 'var(--brand)' : 'var(--bg-card)', color: estado === valor ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: estado === valor ? 600 : 400, cursor: 'pointer' }}>
+            {label} <span style={{ opacity: 0.75 }}>({cantidad})</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input placeholder="Buscar por alumno, padre o email..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Desde</label>
+        <input type="date" value={desde} max={hasta || undefined} onChange={e => cambiarFiltro(setDesde)(e.target.value)} />
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Hasta</label>
+        <input type="date" value={hasta} min={desde || undefined} onChange={e => cambiarFiltro(setHasta)(e.target.value)} />
+        {(desde || hasta || busq || estado) && (
+          <button onClick={() => { setDesde(''); setHasta(''); setBusq(''); setEstado(''); setPage(1) }} style={{ ...btnPagina(false), padding: '8px 12px' }}>Limpiar</button>
+        )}
+      </div>
+
+      <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--border)', overflowX: 'auto', boxShadow: 'var(--shadow)' }}>
+        {cargando ? (
+          <SkeletonTable rows={8} cols={6} />
+        ) : recargas.length === 0 ? (
+          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>No hay recargas con estos filtros</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
+            <thead>
+              <tr style={{ borderBottom: '1.5px solid var(--border)' }}>
+                {['Fecha', 'Alumno', 'Padre', 'Saldo cargado', 'Cargo', 'Total pagado', 'Estado'].map(h => (
+                  <th key={h} style={{ textAlign: ['Saldo cargado', 'Cargo', 'Total pagado'].includes(h) ? 'right' : 'left', padding: '10px 14px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.4px', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recargas.map((r, i) => {
+                const e = ESTADOS[r.estado] || ESTADOS.pendiente
+                return (
+                  <tr key={r.id} style={{ borderBottom: i < recargas.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{new Date(r.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text)' }}>{r.alumno_nombre}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <div style={{ color: 'var(--text)' }}>{r.padre_nombre}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{r.padre_email}</div>
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text)' }}>{fmt(r.monto)}</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-secondary)' }}>{fmt(r.comision)}</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-secondary)' }}>{r.estado === 'acreditado' ? fmt(r.monto_total) : '—'}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <span title={[r.detalle, r.mp_payment_id && `Pago MP ${r.mp_payment_id}`].filter(Boolean).join(' · ')} style={{ padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: e.color, background: e.bg, whiteSpace: 'nowrap' }}>{e.label}</span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {pages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 }}>
+          <button onClick={() => setPage(p => p - 1)} disabled={page === 1} style={btnPagina(page === 1)}>‹ Anterior</button>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Página {page} de {pages} · {total} recargas</span>
+          <button onClick={() => setPage(p => p + 1)} disabled={page === pages} style={btnPagina(page === pages)}>Siguiente ›</button>
+        </div>
+      )}
+    </div>
+  )
+}

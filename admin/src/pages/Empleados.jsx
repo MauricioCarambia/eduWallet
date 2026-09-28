@@ -30,6 +30,9 @@ function Campo({ label, children }) {
 
 const FORM_VACIO = { nombre: '', usuario: '', rol: 'staff', local_id: '' }
 
+// Nombre del rol como lo ve la gente (en la base es 'admin' / 'staff')
+const nombreRol = rol => rol === 'admin' ? 'Administrador' : 'Cajero'
+
 const vence = iso => new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
 
 export default function Empleados() {
@@ -137,7 +140,7 @@ export default function Empleados() {
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{e.nombre}</p>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? '#EDE9FE' : 'var(--brand-light)', color: e.rol === 'admin' ? '#7C3AED' : 'var(--accent)' }}>{e.rol}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? '#EDE9FE' : 'var(--brand-light)', color: e.rol === 'admin' ? '#7C3AED' : 'var(--accent)' }}>{nombreRol(e.rol)}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: e.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: e.activo ? 'var(--green)' : 'var(--red)' }}>{e.activo ? 'Activo' : 'Inactivo'}</span>
                   {e.pendiente_activacion && (
                     <span title={e.codigo_activacion_expira ? `El código vence el ${vence(e.codigo_activacion_expira)}` : ''} style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>

@@ -95,7 +95,7 @@ export default function Layout({ children }) {
           {!collapsed && (
             <div style={{ marginBottom: 10, padding: '8px 0' }}>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'white' }}>{sesion?.nombre}</p>
-              <p style={{ margin: 0, fontSize: 10, color: sidebarText }}>{sesion?.rol}</p>
+              <p style={{ margin: 0, fontSize: 10, color: sidebarText }}>{sesion?.rol === 'admin' ? 'Administrador' : ['Cajero', sesion?.local].filter(Boolean).join(' · ')}</p>
             </div>
           )}
           <div style={{ display: 'flex', gap: 6, justifyContent: collapsed ? 'center' : 'flex-start' }}>

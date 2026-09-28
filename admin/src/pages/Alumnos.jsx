@@ -35,9 +35,13 @@ function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', curso: '', limite_diario: '500', tutor: '', tutor_tel: '', alergias: 'Ninguna' }
-const CSV_COLUMNAS = ['nombre', 'curso', 'limite_diario', 'tutor', 'tutor_tel', 'alergias', 'padre_email', 'padre2_email']
-const CSV_PLANTILLA = 'nombre,curso,limite_diario,tutor,tutor_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,1000,María Pérez,11-1234-5678,Ninguna,maria@mail.com,\nAna García,2B,500,Carlos García,,Maní,carlos@mail.com,laura@mail.com'
+const FORM_VACIO = { nombre: '', curso: '', limite_diario: '500', tutor: '', tutor_tel: '', contacto2: '', contacto2_tel: '', alergias: 'Ninguna' }
+// En el CSV los contactos se llaman tutor/tutor_tel y tutor2/tutor2_tel (se leen por encabezado)
+const CSV_COLUMNAS = ['nombre', 'curso', 'limite_diario', 'tutor', 'tutor_tel', 'tutor2', 'tutor2_tel', 'alergias', 'padre_email', 'padre2_email']
+const CSV_PLANTILLA = 'nombre,curso,limite_diario,tutor,tutor_tel,tutor2,tutor2_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,1000,María Pérez,11-1234-5678,Jorge Pérez,11-8765-4321,Ninguna,maria@mail.com,jorge@mail.com\nAna García,2B,500,Carlos García,,,,Maní,carlos@mail.com,'
+
+// Contactos de la ficha (padre / madre), para mostrar en una línea
+const contactos = a => [a.tutor, a.contacto2].filter(Boolean).join(' y ')
 
 // Movimientos que suman saldo (el resto, compras, lo restan)
 const SUMAN_SALDO = ['recarga', 'ajuste', 'anulacion']
@@ -271,7 +275,7 @@ export default function Alumnos() {
                       <div>
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
                         <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>
-                          {a.tutor}{a.alergias !== 'Ninguna' && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>⚠ {a.alergias}</span>}
+                          {contactos(a)}{a.alergias !== 'Ninguna' && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>⚠ {a.alergias}</span>}
                         </p>
                       </div>
                     </div>
@@ -288,7 +292,7 @@ export default function Alumnos() {
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       <button onClick={() => { setSeleccionado(a); setModal('historial') }} style={btnStyle('var(--bg)', 'var(--text)')}>Historial</button>
                       <button onClick={() => { setSeleccionado(a); setMontoLink(''); setLink(null); setModal('link') }} disabled={!a.activo} title={a.activo ? 'Generar un link de pago de Mercado Pago para la familia' : 'El alumno está bloqueado'} style={{ ...btnStyle('var(--green-bg)', 'var(--green)'), opacity: a.activo ? 1 : 0.5, cursor: a.activo ? 'pointer' : 'not-allowed' }}>Link de pago</button>
-                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
+                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', contacto2: a.contacto2 || '', contacto2_tel: a.contacto2_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
                       <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--accent)')}>QR</button>
                       <button onClick={() => toggleBloqueo(a)} style={btnStyle(a.activo ? 'var(--red-bg)' : 'var(--green-bg)', a.activo ? 'var(--red)' : 'var(--green)')}>{a.activo ? 'Bloquear' : 'Activar'}</button>
                       <button onClick={() => eliminar(a.id)} style={btnStyle('var(--red-bg)', 'var(--red)')}>×</button>
@@ -304,7 +308,7 @@ export default function Alumnos() {
 
       {(modal === 'nuevo' || modal === 'editar') && (
         <Modal title={modal === 'nuevo' ? 'Nuevo alumno' : 'Editar alumno'} onClose={cerrarModal}>
-          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Límite diario', 'limite_diario', 'number'], ['Tutor', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Alergias', 'alergias', 'text']].map(([label, key, type]) => (
+          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Límite diario', 'limite_diario', 'number'], ['Padre / madre', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Otro padre / madre (opcional)', 'contacto2', 'text'], ['Teléfono', 'contacto2_tel', 'text'], ['Alergias', 'alergias', 'text']].map(([label, key, type]) => (
             <Campo key={key} label={label}>
               <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
             </Campo>
@@ -414,7 +418,7 @@ export default function Alumnos() {
             <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Formato requerido</p>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>El CSV debe tener estos encabezados en la primera fila:</p>
             <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
-              nombre, curso, limite_diario, tutor, tutor_tel, alergias, padre_email, padre2_email
+              nombre, curso, limite_diario, tutor, tutor_tel, tutor2, tutor2_tel, alergias, padre_email, padre2_email
             </code>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>
               Si cargás <code>padre_email</code> (y opcionalmente <code>padre2_email</code>), el sistema crea la cuenta del padre/madre automáticamente y les manda un email para activarla — no hace falta código de vinculación.
@@ -451,7 +455,7 @@ export default function Alumnos() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-                      {['Nombre', 'Curso', 'Límite/día', 'Tutor'].map(h => (
+                      {['Nombre', 'Curso', 'Límite/día', 'Padre / madre'].map(h => (
                         <th key={h} style={{ padding: '7px 10px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
@@ -462,7 +466,7 @@ export default function Alumnos() {
                         <td style={{ padding: '7px 10px', color: 'var(--text)', fontWeight: 500 }}>{f.nombre}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.curso}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>${f.limite_diario || 500}</td>
-                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.tutor || '—'}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{[f.tutor, f.tutor2].filter(Boolean).join(' y ') || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

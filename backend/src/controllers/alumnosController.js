@@ -34,14 +34,14 @@ const getAlumno = async (req, res) => {
 // El alumno arranca siempre con saldo 0: el saldo sólo entra por Mercado
 // Pago (app de padres o link de pago), así se cobra siempre la comisión
 const crearAlumno = async (req, res) => {
-  const { nombre, curso, limite_diario, tutor, tutor_tel, alergias } =
+  const { nombre, curso, limite_diario, tutor, tutor_tel, contacto2, contacto2_tel, alergias } =
     req.body;
   try {
     const qr = "QR-" + Date.now();
     const codigoVinculacion = generarCodigoVinculacion();
     const resultado = await pool.query(
-      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id, contacto2, contacto2_tel)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         nombre,
@@ -54,6 +54,8 @@ const crearAlumno = async (req, res) => {
         qr,
         codigoVinculacion,
         req.empleado.colegio_id,
+        contacto2 || null,
+        contacto2_tel || null,
       ],
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, "Nuevo alumno", nombre);
@@ -65,12 +67,13 @@ const crearAlumno = async (req, res) => {
 
 const actualizarAlumno = async (req, res) => {
   const { id } = req.params;
-  const { nombre, curso, limite_diario, tutor, tutor_tel, alergias } = req.body;
+  const { nombre, curso, limite_diario, tutor, tutor_tel, contacto2, contacto2_tel, alergias } = req.body;
   try {
     const resultado = await pool.query(
-      `UPDATE alumnos SET nombre=$1, curso=$2, limite_diario=$3, tutor=$4, tutor_tel=$5, alergias=$6
+      `UPDATE alumnos SET nombre=$1, curso=$2, limite_diario=$3, tutor=$4, tutor_tel=$5, alergias=$6,
+              contacto2=$9, contacto2_tel=$10
        WHERE id=$7 AND colegio_id=$8 RETURNING *`,
-      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id, req.empleado.colegio_id],
+      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id, req.empleado.colegio_id, contacto2 || null, contacto2_tel || null],
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     res.json(resultado.rows[0]);
@@ -245,15 +248,17 @@ const importarAlumnos = async (req, res) => {
       const limiteDiario = Math.max(1, parseFloat(f.limite_diario) || 500);
       const tutor      = f.tutor?.trim() || null;
       const tutorTel   = f.tutor_tel?.trim() || null;
+      const contacto2  = f.tutor2?.trim() || null;
+      const contacto2Tel = f.tutor2_tel?.trim() || null;
       const alergias   = f.alergias?.trim() || 'Ninguna';
       const qr         = 'QR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
       const codigoVinculacion = generarCodigoVinculacion();
 
       try {
         const res = await client.query(
-          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, nombre`,
-          [nombre, curso, 0, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id]
+          `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id, contacto2, contacto2_tel)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, nombre`,
+          [nombre, curso, 0, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id, contacto2, contacto2Tel]
         );
         creados.push(res.rows[0]);
 
@@ -261,7 +266,7 @@ const importarAlumnos = async (req, res) => {
           padresAVincular.push({ email: f.padre_email, nombreSugerido: tutor, alumnoId: res.rows[0].id, alumnoNombre: nombre });
         }
         if (f.padre2_email?.trim()) {
-          padresAVincular.push({ email: f.padre2_email, nombreSugerido: null, alumnoId: res.rows[0].id, alumnoNombre: nombre });
+          padresAVincular.push({ email: f.padre2_email, nombreSugerido: contacto2, alumnoId: res.rows[0].id, alumnoNombre: nombre });
         }
       } catch (err) {
         errores.push({ fila, error: `${nombre}: ${err.message}` });

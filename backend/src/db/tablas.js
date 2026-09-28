@@ -57,6 +57,8 @@ const crearTablas = async () => {
         alergias     VARCHAR(100)   DEFAULT 'Ninguna',
         tutor        VARCHAR(100),
         tutor_tel    VARCHAR(50),
+        contacto2    VARCHAR(100),
+        contacto2_tel VARCHAR(50),
         creado_en    TIMESTAMP      DEFAULT NOW()
       );
 

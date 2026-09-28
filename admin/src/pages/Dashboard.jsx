@@ -197,7 +197,7 @@ export default function Dashboard() {
             <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.nombre}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{a.tutor} · {a.tutor_tel}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{[[a.tutor, a.tutor_tel].filter(Boolean).join(' '), [a.contacto2, a.contacto2_tel].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)' }}>{fmt(a.saldo)}</span>
             </div>

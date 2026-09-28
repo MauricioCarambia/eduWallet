@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verificarToken } = require('../middlewares/auth');
+const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
 const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta } = require('../controllers/transaccionesController');
 
 /**
@@ -102,7 +102,7 @@ router.get('/alumno/:id', verificarToken, getTransaccionesAlumno);
  *       404:
  *         description: Alumno no encontrado
  */
-router.post('/cobrar', verificarToken, cobrar);
+router.post('/cobrar', verificarToken, soloPersonalPos, cobrar);
 
 /**
  * @swagger
@@ -123,6 +123,6 @@ router.post('/cobrar', verificarToken, cobrar);
  *       404:
  *         description: Transacción no encontrada
  */
-router.delete('/:id/anular', verificarToken, anularVenta);
+router.delete('/:id/anular', verificarToken, soloPersonalPos, anularVenta);
 
 module.exports = router;

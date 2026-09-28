@@ -21,7 +21,7 @@ export default function Login() {
     setCargando(true); setError('')
     try {
       localStorage.setItem('admin_colegio', colegio)
-      const res = await api.post('/empleados/login', { colegio, usuario, pin })
+      const res = await api.post('/empleados/login', { colegio, usuario, pin, app: 'admin' })
       if (res.data.empleado.rol !== 'admin') {
         setError(t('login.error_acceso'))
         setCargando(false); return

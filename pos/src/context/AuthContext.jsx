@@ -9,7 +9,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('pos_token')
     const empleado = localStorage.getItem('pos_sesion')
-    if (token && empleado) setSesion(JSON.parse(empleado))
+    if (token && empleado) {
+      const datos = JSON.parse(empleado)
+      // El admin del colegio ya no opera el POS: una sesión suya guardada de
+      // antes se descarta y tiene que usar el panel admin
+      if (datos.rol === 'admin') {
+        localStorage.removeItem('pos_token')
+        localStorage.removeItem('pos_sesion')
+      } else {
+        setSesion(datos)
+      }
+    }
     setCargando(false)
   }, [])
 

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { registrar } = require('./auditoriaController');
 
 const login = async (req, res) => {
-  const { colegio, usuario, pin } = req.body;
+  const { colegio, usuario, pin, app } = req.body;
 
   if (!colegio?.trim()) {
     return res.status(400).json({ error: 'Colegio requerido' });
@@ -36,6 +36,14 @@ const login = async (req, res) => {
 
     if (!pinValido) {
       return res.status(401).json({ error: 'PIN incorrecto' });
+    }
+
+    // El POS es para el personal de las zonas; el panel admin, para el admin
+    if (app === 'pos' && empleado.rol === 'admin') {
+      return res.status(403).json({ error: 'Los administradores del colegio entran por el panel admin, no por el POS.' });
+    }
+    if (app === 'admin' && empleado.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo los administradores pueden entrar al panel admin.' });
     }
 
     const token = jwt.sign(

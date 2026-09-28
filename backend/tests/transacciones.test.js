@@ -59,7 +59,6 @@ const { cobrar, anularVenta } = require('../src/controllers/transaccionesControl
 const respuesta = () => { const res = { status: jest.fn(() => res), json: jest.fn() }; return res; };
 const kiosquero = { id: 10, rol: 'staff', colegio_id: 3, local_id: null };
 const otroEmpleado = { id: 11, rol: 'staff', colegio_id: 3, local_id: null };
-const admin = { id: 1, rol: 'admin', colegio_id: 3, local_id: null };
 
 const cobrarA = (empleado, items, extra = {}) => {
   const res = respuesta();
@@ -110,13 +109,10 @@ describe('anular venta', () => {
     expect(db.alumnos[0].saldo).toBe(10000);
   });
 
-  test('otro empleado no puede anular ventas ajenas; el admin sí', async () => {
+  test('otro empleado no puede anular ventas ajenas', async () => {
     await cobrarA(kiosquero, [{ id: 1, qty: 1 }]);
     const ajena = await anular(otroEmpleado, 1);
     expect(ajena.status).toHaveBeenCalledWith(403);
     expect(db.alumnos[0].saldo).toBe(9200);
-    const delAdmin = await anular(admin, 1);
-    expect(delAdmin.status).not.toHaveBeenCalled();
-    expect(db.alumnos[0].saldo).toBe(10000);
   });
 });

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { abrirCaja, cerrarCaja, getCajas } = require('../controllers/cajasController');
-const { verificarToken } = require('../middlewares/auth');
+const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -45,7 +45,7 @@ const { verificarToken } = require('../middlewares/auth');
  *             schema: { $ref: '#/components/schemas/Caja' }
  */
 router.get('/', verificarToken, getCajas);
-router.post('/', verificarToken, abrirCaja);
+router.post('/', verificarToken, soloPersonalPos, abrirCaja);
 
 /**
  * @swagger

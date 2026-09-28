@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo } = require('../controllers/productosController');
-const { verificarToken } = require('../middlewares/auth');
+const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -58,9 +58,9 @@ router.get('/', verificarToken, getProductos);
  *                   items: { $ref: '#/components/schemas/Producto' }
  */
 router.get('/stock-bajo', verificarToken, getStockBajo);
-// Cada zona gestiona sus productos: un empleado con zona fija sólo los de su
-// zona; el admin y los empleados sin zona, todos (ver productosController)
-router.post('/', verificarToken, crearProducto);
+// Los productos los gestiona el personal del POS: un empleado con zona fija
+// sólo los de su zona; uno sin zona, todos. El admin del colegio sólo los ve.
+router.post('/', verificarToken, soloPersonalPos, crearProducto);
 
 /**
  * @swagger
@@ -83,7 +83,7 @@ router.post('/', verificarToken, crearProducto);
  *       200:
  *         description: Producto actualizado
  */
-router.put('/:id', verificarToken, actualizarProducto);
+router.put('/:id', verificarToken, soloPersonalPos, actualizarProducto);
 
 /**
  * @swagger
@@ -112,7 +112,7 @@ router.put('/:id', verificarToken, actualizarProducto);
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Producto' }
  */
-router.patch('/:id/stock', verificarToken, actualizarStock);
+router.patch('/:id/stock', verificarToken, soloPersonalPos, actualizarStock);
 
 /**
  * @swagger
@@ -129,6 +129,6 @@ router.patch('/:id/stock', verificarToken, actualizarStock);
  *       200:
  *         description: Producto eliminado
  */
-router.delete('/:id', verificarToken, eliminarProducto);
+router.delete('/:id', verificarToken, soloPersonalPos, eliminarProducto);
 
 module.exports = router;

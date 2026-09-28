@@ -1,5 +1,6 @@
 // Cada zona gestiona sus productos: el empleado con zona fija sólo los de
-// su zona; el admin y los empleados sin zona, todos. Base mockeada.
+// su zona; los empleados sin zona, todos. (El admin del colegio no llega al
+// controlador: lo corta soloPersonalPos, ver permisosPos.test.js.)
 
 const db = { productos: [], locales: [{ id: 1, colegio_id: 3, nombre: 'Kiosco' }, { id: 2, colegio_id: 3, nombre: 'Librería' }] };
 
@@ -38,7 +39,6 @@ const { crearProducto, actualizarProducto, eliminarProducto } = require('../src/
 const respuesta = () => { const res = { status: jest.fn(() => res), json: jest.fn() }; return res; };
 const kiosquero = { id: 10, rol: 'staff', colegio_id: 3, local_id: 1 };
 const sinZona = { id: 11, rol: 'staff', colegio_id: 3, local_id: null };
-const admin = { id: 1, rol: 'admin', colegio_id: 3, local_id: null };
 
 beforeEach(() => {
   db.productos = [
@@ -72,18 +72,16 @@ test('el kiosquero no puede tocar productos de otra zona', async () => {
   expect(db.productos[1]).toMatchObject({ precio: '3000', activo: true });
 });
 
-test('el admin y los empleados sin zona gestionan todas las zonas', async () => {
-  for (const empleado of [admin, sinZona]) {
-    const res = respuesta();
-    await actualizarProducto({ empleado, params: { id: '2' }, body: { nombre: 'Cuaderno', precio: 3500 } }, res);
-    expect(res.status).not.toHaveBeenCalled();
-  }
+test('un empleado sin zona gestiona todas las zonas', async () => {
+  const res = respuesta();
+  await actualizarProducto({ empleado: sinZona, params: { id: '2' }, body: { nombre: 'Cuaderno', precio: 3500 } }, res);
+  expect(res.status).not.toHaveBeenCalled();
 });
 
 test('valida nombre, precio y zona', async () => {
   for (const body of [{ nombre: '', precio: 100, local: 'Kiosco' }, { nombre: 'X', precio: 0, local: 'Kiosco' }, { nombre: 'X', precio: 100, local: 'Buffet' }]) {
     const res = respuesta();
-    await crearProducto({ empleado: admin, body }, res);
+    await crearProducto({ empleado: sinZona, body }, res);
     expect(res.status).toHaveBeenCalledWith(400);
   }
 });

@@ -15,13 +15,14 @@ const getProductos = async (req, res) => {
 
 // Zona fija del empleado (kiosco, librería, comedor...) o null si no tiene
 const zonaDelEmpleado = async (empleado) => {
-  if (empleado.rol === 'admin' || !empleado.local_id) return null;
+  if (!empleado.local_id) return null;
   const r = await pool.query('SELECT nombre FROM locales WHERE id = $1 AND colegio_id = $2', [empleado.local_id, empleado.colegio_id]);
   return r.rows[0]?.nombre || null;
 };
 
 // Cada zona gestiona sus productos: un empleado con zona fija sólo puede
-// tocar los de su zona. El admin y los empleados sin zona, todos.
+// tocar los de su zona; uno sin zona, todos. El admin del colegio no llega
+// acá (lo corta soloPersonalPos en las rutas).
 const puedeGestionar = async (empleado, local) => {
   const zona = await zonaDelEmpleado(empleado);
   return zona === null || zona === local;

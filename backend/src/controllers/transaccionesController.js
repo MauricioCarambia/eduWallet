@@ -265,7 +265,7 @@ const anularVenta = async (req, res) => {
       return res.status(400).json({ error: 'Esta venta ya fue anulada' });
     }
 
-    if (req.empleado.rol !== 'admin' && t.empleado_id !== req.empleado.id) {
+    if (t.empleado_id !== req.empleado.id) {
       await client.query('ROLLBACK');
       return res.status(403).json({ error: 'Sólo podés anular tus propias ventas' });
     }

@@ -21,7 +21,7 @@ export default function Login() {
     setCargando(true); setError('')
     try {
       localStorage.setItem('pos_colegio', colegio)
-      const res = await api.post('/empleados/login', { colegio, usuario, pin })
+      const res = await api.post('/empleados/login', { colegio, usuario, pin, app: 'pos' })
       login(res.data.empleado, res.data.token)
       navigate('/venta')
     } catch (err) {

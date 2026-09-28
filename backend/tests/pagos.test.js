@@ -1,7 +1,7 @@
 // Acreditación de recargas de Mercado Pago (modelo B) con la base mockeada:
 // verifica que un pago se acredite una sola vez y por el monto de `pagos`.
 
-const estadoDb = { pagos: [], transacciones: [], saldos: {} };
+const estadoDb = { pagos: [], transacciones: [], saldos: {}, alumnos: [], padresAlumnos: [] };
 
 const fakeQuery = async (sql, params = []) => {
   if (/^(BEGIN|COMMIT|ROLLBACK)/.test(sql)) return { rows: [] };
@@ -19,10 +19,22 @@ const fakeQuery = async (sql, params = []) => {
     return { rows: [{ id: estadoDb.transacciones.length }] };
   }
   if (sql.includes("SET estado = 'vencido'")) {
-    const limite = Date.now() - 24 * 3600 * 1000;
-    const vencen = estadoDb.pagos.filter(p => p.estado === 'pendiente' && !p.mp_payment_id && p.creado_en < limite);
+    const horas = p => (p.origen === 'link' ? 72 : 24);
+    const vencen = estadoDb.pagos.filter(p => p.estado === 'pendiente' && !p.mp_payment_id && p.creado_en < Date.now() - horas(p) * 3600 * 1000);
     vencen.forEach(p => { p.estado = 'vencido'; });
     return { rows: [], rowCount: vencen.length };
+  }
+  if (sql.includes('FROM alumnos a JOIN colegios c')) {
+    return { rows: estadoDb.alumnos.filter(a => a.id === Number(params[0]) && a.colegio_id === params[1]) };
+  }
+  if (sql.includes('INSERT INTO pagos') && sql.includes("'link'")) {
+    const [alumno_id, monto, comision, monto_total, external_reference, colegio_id] = params;
+    estadoDb.pagos.push({ id: estadoDb.pagos.length + 1, padre_id: null, alumno_id, monto, comision, monto_total, estado: 'pendiente', external_reference, colegio_id, origen: 'link', creado_en: Date.now() });
+    return { rows: [] };
+  }
+  if (sql.includes('SELECT nombre, saldo FROM alumnos')) return { rows: [{ nombre: 'Alumno', saldo: estadoDb.saldos[params[0]] || 0 }] };
+  if (sql.includes('SELECT padre_id FROM padres_alumnos')) {
+    return { rows: estadoDb.padresAlumnos.filter(pa => pa.alumno_id === params[0]).map(pa => ({ padre_id: pa.padre_id })) };
   }
   if (sql.startsWith('UPDATE alumnos SET saldo')) {
     estadoDb.saldos[params[1]] = (estadoDb.saldos[params[1]] || 0) + Number(params[0]);
@@ -36,8 +48,18 @@ jest.mock('../src/db/conexion', () => ({
   connect: async () => ({ query: (...a) => fakeQuery(...a), release: () => {} }),
 }));
 jest.mock('../src/services/pushService', () => ({ enviarPush: jest.fn() }));
+// Mercado Pago: se captura el body de la preferencia en vez de llamar a la API
+const preferenciasCreadas = [];
+jest.mock('mercadopago', () => ({
+  MercadoPagoConfig: jest.fn(),
+  Payment: jest.fn(),
+  Preference: jest.fn(() => ({
+    create: async ({ body }) => { preferenciasCreadas.push(body); return { id: 'pref-1', init_point: 'https://mp.test/checkout?pref_id=pref-1' }; },
+  })),
+}));
+const { enviarPush } = require('../src/services/pushService');
 
-const { acreditarPago, vencerPagosPendientes, getHistorialPagos } = require('../src/controllers/pagosController');
+const { acreditarPago, vencerPagosPendientes, getHistorialPagos, crearLinkPago } = require('../src/controllers/pagosController');
 const { calcularRecarga } = require('../src/services/mercadoPagoService');
 
 const REF = '7_42_20000_1700000000000';
@@ -50,7 +72,13 @@ beforeEach(() => {
   }];
   estadoDb.transacciones = [];
   estadoDb.saldos = {};
+  estadoDb.alumnos = [{ id: 42, nombre: 'Juan', colegio_id: 3, activo: true, comision_pct: '5' }];
+  estadoDb.padresAlumnos = [{ padre_id: 7, alumno_id: 42 }, { padre_id: 8, alumno_id: 42 }];
+  preferenciasCreadas.length = 0;
+  enviarPush.mockClear();
 });
+
+const respuesta = () => { const res = { status: jest.fn(() => res), json: jest.fn() }; return res; };
 
 describe('calcularRecarga (modelo B)', () => {
   test('la comisión se suma encima del saldo', () => {
@@ -120,5 +148,56 @@ describe('recargas vencidas', () => {
     const res = { status: jest.fn(() => res), json: jest.fn() };
     await getHistorialPagos({ padre: { id: 7 }, query: { estado: 'cualquiera' } }, res);
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+describe('link de pago del colegio', () => {
+  const admin = { id: 1, colegio_id: 3 };
+
+  test('genera la preferencia con el modelo B, sin padre y con vencimiento', async () => {
+    const res = respuesta();
+    await crearLinkPago({ empleado: admin, body: { alumno_id: 42, monto: 5000 } }, res);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://mp.test/checkout?pref_id=pref-1', monto: 5000, comision: 250, total: 5250 }));
+    const pref = preferenciasCreadas[0];
+    expect(pref.items.map(i => i.unit_price)).toEqual([5000, 250]);
+    expect(pref.expires).toBe(true);
+    expect(pref.payer).toBeUndefined();
+    const pago = estadoDb.pagos.find(p => p.origen === 'link');
+    expect(pago).toMatchObject({ padre_id: null, monto: 5000, comision: 250, monto_total: 5250, estado: 'pendiente' });
+    expect(pago.external_reference).toMatch(/^link_42_5000_/);
+  });
+
+  test('no genera links para alumnos de otro colegio ni montos inválidos', async () => {
+    const otro = respuesta();
+    await crearLinkPago({ empleado: { id: 1, colegio_id: 99 }, body: { alumno_id: 42, monto: 5000 } }, otro);
+    expect(otro.status).toHaveBeenCalledWith(404);
+    const invalido = respuesta();
+    await crearLinkPago({ empleado: admin, body: { alumno_id: 42, monto: -10 } }, invalido);
+    expect(invalido.status).toHaveBeenCalledWith(400);
+    expect(preferenciasCreadas).toHaveLength(0);
+  });
+
+  test('al pagarse, acredita el saldo y avisa a todos los padres vinculados', async () => {
+    await crearLinkPago({ empleado: admin, body: { alumno_id: 42, monto: 5000 } }, respuesta());
+    const ref = estadoDb.pagos.find(p => p.origen === 'link').external_reference;
+    const r = await acreditarPago({ id: 777, status: 'approved', external_reference: ref, transaction_amount: 5250 });
+    expect(r.acreditado).toBe(true);
+    expect(estadoDb.saldos[42]).toBe(5000);
+    expect(enviarPush.mock.calls.map(c => c[0]).sort()).toEqual([7, 8]);
+  });
+
+  test('un link sin pagar vence a las 72 h, no a las 24 h', async () => {
+    estadoDb.pagos = [
+      { id: 1, estado: 'pendiente', origen: 'link', mp_payment_id: null, creado_en: Date.now() - 48 * 3600 * 1000 },
+      { id: 2, estado: 'pendiente', origen: 'link', mp_payment_id: null, creado_en: Date.now() - 80 * 3600 * 1000 },
+    ];
+    expect(await vencerPagosPendientes()).toBe(1);
+    expect(estadoDb.pagos.map(p => p.estado)).toEqual(['pendiente', 'vencido']);
+  });
+
+  test('una referencia de link sin fila en pagos no se reconstruye', async () => {
+    const r = await acreditarPago({ id: 778, status: 'approved', external_reference: 'link_42_5000_123', transaction_amount: 5250 });
+    expect(r.acreditado).toBe(false);
+    expect(estadoDb.saldos[42]).toBeUndefined();
   });
 });

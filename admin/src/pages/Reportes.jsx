@@ -7,7 +7,6 @@ import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
-import { useAuth } from '../context/AuthContext'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const tooltipStyle = {
@@ -27,7 +26,6 @@ const hoy = () => toISO(new Date())
 const haceN = n => { const d = new Date(); d.setDate(d.getDate() - n); return toISO(d) }
 
 export default function Reportes() {
-  const { sesion } = useAuth()
   const [txs, setTxs] = useState([])
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -43,9 +41,6 @@ export default function Reportes() {
   const [filtroLocal, setFiltroLocal] = useState('Todos')
   const [filtroCurso, setFiltroCurso] = useState('Todos')
 
-  // recarga masiva
-  const [montoRecarga, setMontoRecarga] = useState('')
-  const [cursoRecarga, setCursoRecarga] = useState('Todos')
   const [msg, setMsg] = useState(null)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
@@ -311,20 +306,6 @@ export default function Reportes() {
     } finally {
       setGenerandoPDF(false)
     }
-  }
-
-  // recarga masiva
-  const recargaMasiva = async () => {
-    const m = parseInt(montoRecarga); if (!m || m <= 0) return
-    const targets = cursoRecarga === 'Todos' ? alumnos : alumnos.filter(a => a.curso === cursoRecarga)
-    if (!confirm(`¿Recargar ${fmt(m)} a ${targets.length} alumnos?`)) return
-    try {
-      for (const a of targets)
-        await api.post(`/alumnos/${a.id}/recargar`, { monto: m, empleado_id: sesion.id, descripcion: `Recarga masiva (${cursoRecarga})` })
-      const aRes = await api.get('/alumnos'); setAlumnos(aRes.data)
-      showMsg('ok', `Recarga de ${fmt(m)} aplicada a ${targets.length} alumnos`)
-      setMontoRecarga('')
-    } catch { showMsg('error', 'Error en recarga masiva') }
   }
 
   if (cargando) return <div><SkeletonCards count={4} /><SkeletonTable rows={6} cols={4} /></div>
@@ -690,29 +671,6 @@ export default function Reportes() {
             </table>
           </div>
 
-          {/* recarga masiva */}
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 6px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Recarga masiva</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 14px' }}>Cargá saldo a todos los alumnos de un curso de una sola vez.</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>Curso</label>
-                <select value={cursoRecarga} onChange={e => setCursoRecarga(e.target.value)} style={{ minWidth: 160 }}>
-                  {cursos.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>Monto por alumno</label>
-                <input type="number" placeholder="Ej: 500" value={montoRecarga} onChange={e => setMontoRecarga(e.target.value)} style={{ width: 140 }}/>
-              </div>
-              <div>
-                <p style={{ margin: '0 0 5px', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  {cursoRecarga === 'Todos' ? alumnos.length : alumnos.filter(a => a.curso === cursoRecarga).length} alumnos · Total: {fmt((parseInt(montoRecarga) || 0) * (cursoRecarga === 'Todos' ? alumnos.length : alumnos.filter(a => a.curso === cursoRecarga).length))}
-                </p>
-                <button onClick={recargaMasiva} style={{ padding: '9px 20px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Aplicar recarga</button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

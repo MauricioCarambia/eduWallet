@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio } = require('../controllers/pagosController');
+const { crearPreferencia, crearLinkPago, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio } = require('../controllers/pagosController');
 const { verificarPadre, verificarToken, soloAdmin } = require('../middlewares/auth');
 
 /**
@@ -155,5 +155,28 @@ router.get('/historial', verificarPadre, getHistorialPagos);
  *         description: "{ data, total, page, limit, pages, resumen }"
  */
 router.get('/colegio', verificarToken, soloAdmin, getRecargasColegio);
+
+/**
+ * @swagger
+ * /pagos/link:
+ *   post:
+ *     summary: Generar un link de pago de Mercado Pago para recargar a un alumno (solo admin)
+ *     description: Para padres que no usan la app. Pagan como invitados (tarjeta, Rapipago, Pago Fácil); el saldo se acredita por webhook. Vence a las 72 h.
+ *     tags: [Pagos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [alumno_id, monto]
+ *             properties:
+ *               alumno_id: { type: integer }
+ *               monto: { type: number, example: 5000 }
+ *     responses:
+ *       200:
+ *         description: "{ url, expira, alumno, monto, comision, total }"
+ */
+router.post('/link', verificarToken, soloAdmin, crearLinkPago);
 
 module.exports = router;

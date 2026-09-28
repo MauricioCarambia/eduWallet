@@ -2,8 +2,7 @@ const pool = require("../db/conexion");
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
-const { enviarEmailRecarga, enviarEmailInvitacion } = require("../services/emailService");
-const { enviarPush } = require("../services/pushService");
+const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
 
 const generarCodigoVinculacion = () => Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -32,8 +31,10 @@ const getAlumno = async (req, res) => {
   }
 };
 
+// El alumno arranca siempre con saldo 0: el saldo sólo entra por Mercado
+// Pago (app de padres o link de pago), así se cobra siempre la comisión
 const crearAlumno = async (req, res) => {
-  const { nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias } =
+  const { nombre, curso, limite_diario, tutor, tutor_tel, alergias } =
     req.body;
   try {
     const qr = "QR-" + Date.now();
@@ -45,7 +46,7 @@ const crearAlumno = async (req, res) => {
       [
         nombre,
         curso,
-        saldo || 0,
+        0,
         limite_diario || 500,
         tutor,
         tutor_tel,
@@ -87,64 +88,6 @@ const toggleAlumno = async (req, res) => {
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     res.json(resultado.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
-  }
-};
-
-const recargarSaldo = async (req, res) => {
-  const { id } = req.params;
-  const { monto, empleado_id, descripcion } = req.body;
-  try {
-    const actualizado = await pool.query(
-      "UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2 AND colegio_id = $3 RETURNING id",
-      [monto, id, req.empleado.colegio_id],
-    );
-    if (actualizado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
-    await pool.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
-       VALUES ($1, $2, $3, 'recarga', 'Sistema', $4, $5)`,
-      [id, empleado_id, monto, descripcion || "Recarga", req.empleado.colegio_id],
-    );
-    try {
-      const padresRes = await pool.query(
-        `SELECT p.id, p.nombre, p.email FROM padres p
-     JOIN padres_alumnos pa ON pa.padre_id = p.id
-     WHERE pa.alumno_id = $1`,
-        [id],
-      );
-      const alumnoActualizado = await pool.query(
-        "SELECT * FROM alumnos WHERE id = $1",
-        [id],
-      );
-      for (const padre of padresRes.rows) {
-        await enviarEmailRecarga({
-          colegioId: req.empleado.colegio_id,
-          nombrePadre: padre.nombre,
-          emailPadre: padre.email,
-          nombreAlumno: alumnoActualizado.rows[0].nombre,
-          monto,
-          nuevoSaldo: alumnoActualizado.rows[0].saldo,
-        });
-        await enviarPush(padre.id, {
-          title: `Recarga acreditada — ${alumnoActualizado.rows[0].nombre}`,
-          body: `+$${Number(monto).toLocaleString('es-AR')} · Nuevo saldo: $${Number(alumnoActualizado.rows[0].saldo).toLocaleString('es-AR')}`,
-          url: '/inicio'
-        });
-      }
-    } catch (emailErr) {
-      console.error("Error enviando email recarga:", emailErr.message);
-    }
-    await registrar(
-      req.empleado.id,
-      req.empleado.colegio_id,
-      "Recarga de saldo",
-      `Alumno ID: ${id} — $${monto}`,
-    );
-    const alumno = await pool.query("SELECT * FROM alumnos WHERE id = $1", [
-      id,
-    ]);
-    res.json(alumno.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
   }
@@ -299,7 +242,6 @@ const importarAlumnos = async (req, res) => {
 
       const nombre     = f.nombre.trim();
       const curso      = f.curso.trim();
-      const saldo      = Math.max(0, parseFloat(f.saldo) || 0);
       const limiteDiario = Math.max(1, parseFloat(f.limite_diario) || 500);
       const tutor      = f.tutor?.trim() || null;
       const tutorTel   = f.tutor_tel?.trim() || null;
@@ -311,7 +253,7 @@ const importarAlumnos = async (req, res) => {
         const res = await client.query(
           `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, nombre`,
-          [nombre, curso, saldo, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id]
+          [nombre, curso, 0, limiteDiario, tutor, tutorTel, alergias, qr, codigoVinculacion, req.empleado.colegio_id]
         );
         creados.push(res.rows[0]);
 
@@ -364,7 +306,6 @@ module.exports = {
   actualizarAlumno,
   getQR,
   toggleAlumno,
-  recargarSaldo,
   eliminarAlumno,
   getGastoSemanal,
   importarAlumnos,

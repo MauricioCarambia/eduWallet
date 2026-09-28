@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
-import { useAuth } from '../context/AuthContext'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -36,22 +35,28 @@ function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', curso: '', saldo: '0', limite_diario: '500', tutor: '', tutor_tel: '', alergias: 'Ninguna' }
-const CSV_COLUMNAS = ['nombre', 'curso', 'saldo', 'limite_diario', 'tutor', 'tutor_tel', 'alergias', 'padre_email', 'padre2_email']
-const CSV_PLANTILLA = 'nombre,curso,saldo,limite_diario,tutor,tutor_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,500,1000,María Pérez,11-1234-5678,Ninguna,maria@mail.com,\nAna García,2B,0,500,Carlos García,,Maní,carlos@mail.com,laura@mail.com'
+const FORM_VACIO = { nombre: '', curso: '', limite_diario: '500', tutor: '', tutor_tel: '', alergias: 'Ninguna' }
+const CSV_COLUMNAS = ['nombre', 'curso', 'limite_diario', 'tutor', 'tutor_tel', 'alergias', 'padre_email', 'padre2_email']
+const CSV_PLANTILLA = 'nombre,curso,limite_diario,tutor,tutor_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,1000,María Pérez,11-1234-5678,Ninguna,maria@mail.com,\nAna García,2B,500,Carlos García,,Maní,carlos@mail.com,laura@mail.com'
+
+// Movimientos que suman saldo (el resto, compras, lo restan)
+const SUMAN_SALDO = ['recarga', 'ajuste', 'anulacion']
 
 const parsearCSV = (texto) => {
   const lineas = texto.trim().split('\n').filter(l => l.trim())
   if (lineas.length < 2) return { filas: [], errores: ['El archivo debe tener encabezado y al menos una fila de datos'] }
 
-  const encabezado = lineas[0].split(',').map(c => c.trim().toLowerCase())
+  const encabezado = lineas[0].split(',').map(c => c.trim().toLowerCase().replace(/^"|"$/g, ''))
+  if (!encabezado.includes('nombre') || !encabezado.includes('curso')) {
+    return { filas: [], errores: ['El encabezado debe incluir al menos las columnas "nombre" y "curso"'] }
+  }
   const errores = []
   const filas = []
 
   for (let i = 1; i < lineas.length; i++) {
     const valores = lineas[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
     const fila = {}
-    CSV_COLUMNAS.forEach((col, idx) => { fila[col] = valores[idx] || '' })
+    CSV_COLUMNAS.forEach(col => { const idx = encabezado.indexOf(col); fila[col] = idx >= 0 ? (valores[idx] || '') : '' })
     if (!fila.nombre) { errores.push(`Fila ${i + 1}: nombre vacío`); continue }
     if (!fila.curso)  { errores.push(`Fila ${i + 1}: curso vacío`); continue }
     filas.push(fila)
@@ -61,7 +66,6 @@ const parsearCSV = (texto) => {
 }
 
 export default function Alumnos() {
-  const { sesion } = useAuth()
   const [alumnos, setAlumnos] = useState([])
   const [txs, setTxs] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -70,7 +74,10 @@ export default function Alumnos() {
   const [modal, setModal] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
   const [form, setForm] = useState(FORM_VACIO)
-  const [montoRecarga, setMontoRecarga] = useState('')
+  const [montoLink, setMontoLink] = useState('')
+  const [link, setLink] = useState(null)
+  const [generandoLink, setGenerandoLink] = useState(false)
+  const [copiado, setCopiado] = useState(false)
   const [msg, setMsg] = useState(null)
   const [qrModal, setQrModal] = useState(null)
   // importación
@@ -143,14 +150,26 @@ export default function Alumnos() {
     } catch { showMsg('error', 'Error') }
   }
 
-  const recargar = async () => {
-    const n = parseInt(montoRecarga); if (!n || n <= 0) return
+  // Link de pago de Mercado Pago para padres que no usan la app: pagan como
+  // invitados (tarjeta, Rapipago, Pago Fácil) y el saldo se acredita solo
+  const generarLink = async () => {
+    const n = parseInt(montoLink); if (!n || n <= 0) return
+    setGenerandoLink(true)
     try {
-      const res = await api.post(`/alumnos/${seleccionado.id}/recargar`, { monto: n, empleado_id: sesion.id, descripcion: 'Recarga desde admin' })
-      setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
-      const tRes = await api.get('/transacciones'); setTxs(tRes.data.data ?? tRes.data)
-      showMsg('ok', `Recarga de ${fmt(n)} aplicada`); cerrarModal()
-    } catch { showMsg('error', 'Error al recargar') }
+      const res = await api.post('/pagos/link', { alumno_id: seleccionado.id, monto: n })
+      setLink(res.data)
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Error al generar el link de pago')
+    } finally { setGenerandoLink(false) }
+  }
+
+  const textoLink = l => `Link para recargar ${fmt(l.monto)} de saldo a ${l.alumno} en EduWallet (total a pagar ${fmt(l.total)}, incluye cargo por servicio). Podés pagar con tarjeta o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago: ${l.url}`
+
+  const copiarLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link.url)
+      setCopiado(true); setTimeout(() => setCopiado(false), 2000)
+    } catch { showMsg('error', 'No se pudo copiar, seleccioná el link a mano') }
   }
 
   const verQR = async alumno => {
@@ -267,8 +286,8 @@ export default function Alumnos() {
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       <button onClick={() => { setSeleccionado(a); setModal('historial') }} style={btnStyle('var(--bg)', 'var(--text)')}>Historial</button>
-                      <button onClick={() => { setSeleccionado(a); setMontoRecarga(''); setModal('recargar') }} style={btnStyle('var(--green-bg)', 'var(--green)')}>Recargar</button>
-                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, saldo: a.saldo, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
+                      <button onClick={() => { setSeleccionado(a); setMontoLink(''); setLink(null); setModal('link') }} disabled={!a.activo} title={a.activo ? 'Generar un link de pago de Mercado Pago para la familia' : 'El alumno está bloqueado'} style={{ ...btnStyle('var(--green-bg)', 'var(--green)'), opacity: a.activo ? 1 : 0.5, cursor: a.activo ? 'pointer' : 'not-allowed' }}>Link de pago</button>
+                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
                       <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--accent)')}>QR</button>
                       <button onClick={() => toggleBloqueo(a)} style={btnStyle(a.activo ? 'var(--red-bg)' : 'var(--green-bg)', a.activo ? 'var(--red)' : 'var(--green)')}>{a.activo ? 'Bloquear' : 'Activar'}</button>
                       <button onClick={() => eliminar(a.id)} style={btnStyle('var(--red-bg)', 'var(--red)')}>×</button>
@@ -284,7 +303,7 @@ export default function Alumnos() {
 
       {(modal === 'nuevo' || modal === 'editar') && (
         <Modal title={modal === 'nuevo' ? 'Nuevo alumno' : 'Editar alumno'} onClose={cerrarModal}>
-          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Saldo inicial', 'saldo', 'number'], ['Límite diario', 'limite_diario', 'number'], ['Tutor', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Alergias', 'alergias', 'text']].map(([label, key, type]) => (
+          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Límite diario', 'limite_diario', 'number'], ['Tutor', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Alergias', 'alergias', 'text']].map(([label, key, type]) => (
             <Campo key={key} label={label}>
               <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
             </Campo>
@@ -324,29 +343,53 @@ export default function Alumnos() {
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion}</p>
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: t.tipo === 'recarga' ? 'var(--green)' : 'var(--text)' }}>
-                  {t.tipo === 'recarga' ? '+' : '-'}{fmt(t.monto)}
+                <span style={{ fontSize: 13, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>
+                  {SUMAN_SALDO.includes(t.tipo) ? '+' : '-'}{fmt(t.monto)}
                 </span>
               </div>
             ))}
         </Modal>
       )}
 
-      {modal === 'recargar' && seleccionado && (
-        <Modal title={`Recargar — ${seleccionado.nombre}`} onClose={cerrarModal}>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>Saldo actual: <b style={{ color: 'var(--text)' }}>{fmt(seleccionado.saldo)}</b></p>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-            {[200, 500, 1000, 2000].map(n => (
-              <button key={n} onClick={() => setMontoRecarga(String(n))} style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${montoRecarga == n ? '#1E3A5F' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: montoRecarga == n ? '#1E3A5F' : 'var(--bg-card)', color: montoRecarga == n ? 'white' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', fontWeight: montoRecarga == n ? 600 : 400 }}>{fmt(n)}</button>
-            ))}
-          </div>
-          <Campo label="Otro monto">
-            <input type="number" placeholder="Ingresá el monto" value={montoRecarga} onChange={e => setMontoRecarga(e.target.value)} />
-          </Campo>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <Btn onClick={recargar} color="var(--green)">Recargar</Btn>
-          </div>
+      {modal === 'link' && seleccionado && (
+        <Modal title={`Link de pago — ${seleccionado.nombre}`} onClose={cerrarModal}>
+          {!link ? (
+            <>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 6px' }}>Saldo actual: <b style={{ color: 'var(--text)' }}>{fmt(seleccionado.saldo)}</b></p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 14px' }}>
+                Generá un link de Mercado Pago para mandarle a la familia. Pueden pagar con tarjeta o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago. El saldo se acredita solo cuando se paga. El link vence en 72 h.
+              </p>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                {[1000, 2000, 5000, 10000].map(n => (
+                  <button key={n} onClick={() => setMontoLink(String(n))} style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${montoLink == n ? '#1E3A5F' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: montoLink == n ? '#1E3A5F' : 'var(--bg-card)', color: montoLink == n ? 'white' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', fontWeight: montoLink == n ? 600 : 400 }}>{fmt(n)}</button>
+                ))}
+              </div>
+              <Campo label="Saldo a cargar">
+                <input type="number" placeholder="Ingresá el monto" value={montoLink} onChange={e => setMontoLink(e.target.value)} />
+              </Campo>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
+                <Btn onClick={generarLink} color="var(--green)" disabled={generandoLink || !(parseInt(montoLink) > 0)}>{generandoLink ? 'Generando...' : 'Generar link'}</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 14px', border: '1px solid var(--border)', marginBottom: 14, fontSize: 13, color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Saldo a cargar</span><span>{fmt(link.monto)}</span></div>
+                {Number(link.comision) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Cargo por servicio</span><span>{fmt(link.comision)}</span></div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 6 }}><span>Total que paga la familia</span><span>{fmt(link.total)}</span></div>
+              </div>
+              <Campo label="Link de pago">
+                <input type="text" readOnly value={link.url} onFocus={e => e.target.select()} style={{ fontSize: 12 }} />
+              </Campo>
+              <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '-4px 0 14px' }}>Vence el {new Date(link.expira).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}. Lo vas a ver en Recargas como pendiente hasta que se pague.</p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button onClick={copiarLink} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>{copiado ? '¡Copiado!' : 'Copiar link'}</button>
+                <a href={`https://wa.me/?text=${encodeURIComponent(textoLink(link))}`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 16px', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Enviar por WhatsApp</a>
+                <Btn onClick={cerrarModal}>Listo</Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
 
@@ -370,7 +413,7 @@ export default function Alumnos() {
             <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Formato requerido</p>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>El CSV debe tener estos encabezados en la primera fila:</p>
             <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
-              nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, padre_email, padre2_email
+              nombre, curso, limite_diario, tutor, tutor_tel, alergias, padre_email, padre2_email
             </code>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>
               Si cargás <code>padre_email</code> (y opcionalmente <code>padre2_email</code>), el sistema crea la cuenta del padre/madre automáticamente y les manda un email para activarla — no hace falta código de vinculación.
@@ -407,7 +450,7 @@ export default function Alumnos() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-                      {['Nombre', 'Curso', 'Saldo', 'Límite/día', 'Tutor'].map(h => (
+                      {['Nombre', 'Curso', 'Límite/día', 'Tutor'].map(h => (
                         <th key={h} style={{ padding: '7px 10px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
@@ -417,7 +460,6 @@ export default function Alumnos() {
                       <tr key={i} style={{ borderBottom: i < 4 && i < csvFilas.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                         <td style={{ padding: '7px 10px', color: 'var(--text)', fontWeight: 500 }}>{f.nombre}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.curso}</td>
-                        <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>${f.saldo || 0}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>${f.limite_diario || 500}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{f.tutor || '—'}</td>
                       </tr>

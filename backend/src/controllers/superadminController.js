@@ -96,4 +96,58 @@ const actualizarColegio = async (req, res) => {
   }
 };
 
-module.exports = { login, getColegios, crearColegio, actualizarColegio };
+// Buscar alumnos de un colegio (para elegir a quién ajustar el saldo)
+const buscarAlumnos = async (req, res) => {
+  const { q } = req.query;
+  try {
+    const r = await pool.query(
+      `SELECT id, nombre, curso, saldo, activo FROM alumnos
+       WHERE colegio_id = $1 AND ($2::text IS NULL OR nombre ILIKE $2 OR curso ILIKE $2)
+       ORDER BY nombre LIMIT 20`,
+      [req.params.id, q?.trim() ? `%${q.trim()}%` : null]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Ajuste de saldo (sólo el dueño de la plataforma): para correcciones
+// puntuales, ya que los colegios no pueden cargar saldo sin Mercado Pago.
+// Sólo suma saldo y siempre deja movimiento + auditoría con el motivo.
+const ajustarSaldo = async (req, res) => {
+  const { monto, motivo } = req.body;
+  const n = Number(monto);
+  if (!Number.isFinite(n) || n <= 0 || n > 1000000) return res.status(400).json({ error: 'Monto inválido' });
+  if (!motivo?.trim()) return res.status(400).json({ error: 'El motivo es obligatorio' });
+
+  const db = await pool.connect();
+  try {
+    await db.query('BEGIN');
+    const r = await db.query('SELECT id, nombre, colegio_id FROM alumnos WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (r.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'Alumno no encontrado' });
+    }
+    const alumno = r.rows[0];
+    const actualizado = await db.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2 RETURNING saldo', [n, alumno.id]);
+    await db.query(
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'ajuste', 'Ajuste EduWallet', $3, $4)`,
+      [alumno.id, n, motivo.trim().slice(0, 200), alumno.colegio_id]
+    );
+    await db.query(
+      'INSERT INTO auditoria (empleado_id, colegio_id, accion, detalle) VALUES (NULL, $1, $2, $3)',
+      [alumno.colegio_id, 'Ajuste de saldo (EduWallet)', `${alumno.nombre} +${n} — ${motivo.trim().slice(0, 200)}`]
+    );
+    await db.query('COMMIT');
+    res.json({ id: alumno.id, nombre: alumno.nombre, saldo: actualizado.rows[0].saldo });
+  } catch (err) {
+    await db.query('ROLLBACK').catch(() => {});
+    res.status(500).json({ error: 'Error del servidor' });
+  } finally {
+    db.release();
+  }
+};
+
+module.exports = { login, getColegios, crearColegio, actualizarColegio, buscarAlumnos, ajustarSaldo };

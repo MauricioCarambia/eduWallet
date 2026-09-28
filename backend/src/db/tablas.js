@@ -147,7 +147,7 @@ const crearTablas = async () => {
       CREATE TABLE IF NOT EXISTS pagos (
         id                 SERIAL PRIMARY KEY,
         colegio_id         INTEGER NOT NULL REFERENCES colegios(id),
-        padre_id           INTEGER NOT NULL REFERENCES padres(id)  ON DELETE CASCADE,
+        padre_id           INTEGER REFERENCES padres(id)  ON DELETE CASCADE,
         alumno_id          INTEGER NOT NULL REFERENCES alumnos(id) ON DELETE CASCADE,
         monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
         comision           DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -156,6 +156,7 @@ const crearTablas = async () => {
         mp_payment_id      VARCHAR(50),
         external_reference VARCHAR(100),
         detalle            VARCHAR(100),
+        origen             VARCHAR(10) NOT NULL DEFAULT 'app' CHECK (origen IN ('app', 'link')),
         creado_en          TIMESTAMP DEFAULT NOW(),
         actualizado_en     TIMESTAMP DEFAULT NOW()
       );

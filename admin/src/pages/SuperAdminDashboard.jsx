@@ -13,6 +13,8 @@ export default function SuperAdminDashboard() {
   const [nombreNuevo, setNombreNuevo] = useState('')
   const [comisionNueva, setComisionNueva] = useState('5')
   const [creando, setCreando] = useState(false)
+  // ajuste de saldo (correcciones puntuales: los colegios no pueden cargar saldo sin Mercado Pago)
+  const [ajuste, setAjuste] = useState(null) // { colegio, q, resultados, alumno, monto, motivo, guardando }
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
@@ -51,6 +53,37 @@ export default function SuperAdminDashboard() {
       cargar()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al crear el colegio') }
     finally { setCreando(false) }
+  }
+
+  const abrirAjuste = (colegio) => setAjuste({ colegio, q: '', resultados: [], alumno: null, monto: '', motivo: '', guardando: false })
+
+  // Búsqueda de alumnos del colegio, medio segundo después de dejar de escribir
+  const colegioAjusteId = ajuste?.colegio.id
+  const qAjuste = ajuste?.q
+  useEffect(() => {
+    if (!colegioAjusteId) return
+    const t = setTimeout(async () => {
+      try {
+        const res = await superadminApi.get(`/superadmin/colegios/${colegioAjusteId}/alumnos`, { params: { q: qAjuste || undefined } })
+        setAjuste(a => a && { ...a, resultados: res.data })
+      } catch { showMsg('error', 'Error al buscar alumnos') }
+    }, 500)
+    return () => clearTimeout(t)
+  }, [colegioAjusteId, qAjuste])
+
+  const guardarAjuste = async () => {
+    const monto = parseFloat(ajuste.monto)
+    if (!ajuste.alumno || !(monto > 0) || !ajuste.motivo.trim()) return
+    if (!confirm(`¿Sumar ${fmt(monto)} al saldo de ${ajuste.alumno.nombre}? Queda registrado como ajuste de EduWallet.`)) return
+    setAjuste(a => ({ ...a, guardando: true }))
+    try {
+      const res = await superadminApi.post(`/superadmin/alumnos/${ajuste.alumno.id}/ajuste`, { monto, motivo: ajuste.motivo.trim() })
+      showMsg('ok', `Ajuste aplicado — nuevo saldo de ${res.data.nombre}: ${fmt(res.data.saldo)}`)
+      setAjuste(null)
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Error al aplicar el ajuste')
+      setAjuste(a => a && { ...a, guardando: false })
+    }
   }
 
   const totalColegios = colegios.length
@@ -124,9 +157,14 @@ export default function SuperAdminDashboard() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <button onClick={() => toggleActivo(c)} style={{ padding: '5px 12px', border: '1px solid #223049', borderRadius: 6, background: 'transparent', color: '#8B95A8', fontSize: 12, cursor: 'pointer' }}>
-                        {c.activo ? 'Suspender' : 'Reactivar'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => abrirAjuste(c)} style={{ padding: '5px 12px', border: '1px solid #223049', borderRadius: 6, background: 'transparent', color: '#8B95A8', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          Ajustar saldo
+                        </button>
+                        <button onClick={() => toggleActivo(c)} style={{ padding: '5px 12px', border: '1px solid #223049', borderRadius: 6, background: 'transparent', color: '#8B95A8', fontSize: 12, cursor: 'pointer' }}>
+                          {c.activo ? 'Suspender' : 'Reactivar'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -135,6 +173,52 @@ export default function SuperAdminDashboard() {
           )}
         </div>
       </div>
+
+      {ajuste && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+          <div style={{ background: '#131C2E', border: '1px solid #223049', borderRadius: 14, padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Ajustar saldo — {ajuste.colegio.nombre}</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#8B95A8' }}>Sólo para correcciones puntuales (ej. devolver un cobro duplicado). Suma saldo sin pasar por Mercado Pago y queda registrado con el motivo en los movimientos del alumno y en la auditoría del colegio.</p>
+
+            {!ajuste.alumno ? (
+              <>
+                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Alumno</label>
+                <input autoFocus value={ajuste.q} onChange={e => { const q = e.target.value; setAjuste(a => ({ ...a, q })) }} placeholder="Buscar por nombre o curso..." style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+                <div style={{ border: '1px solid #223049', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+                  {ajuste.resultados.length === 0 ? (
+                    <p style={{ margin: 0, padding: 12, fontSize: 13, color: '#8B95A8' }}>Sin resultados</p>
+                  ) : ajuste.resultados.map(a => (
+                    <button key={a.id} onClick={() => setAjuste(x => ({ ...x, alumno: a }))} style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '10px 12px', border: 'none', borderBottom: '1px solid #1A2436', background: 'transparent', color: 'white', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}>
+                      <span>{a.nombre} <span style={{ color: '#8B95A8' }}>· {a.curso}</span></span>
+                      <span style={{ color: '#8B95A8' }}>{fmt(a.saldo)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid #223049', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>
+                  <span>{ajuste.alumno.nombre} <span style={{ color: '#8B95A8' }}>· saldo {fmt(ajuste.alumno.saldo)}</span></span>
+                  <button onClick={() => setAjuste(a => ({ ...a, alumno: null }))} style={{ border: 'none', background: 'transparent', color: '#F59E0B', fontSize: 12, cursor: 'pointer' }}>Cambiar</button>
+                </div>
+                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Monto a sumar</label>
+                <input type="number" min="1" value={ajuste.monto} onChange={e => { const monto = e.target.value; setAjuste(a => ({ ...a, monto })) }} placeholder="500" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Motivo (obligatorio)</label>
+                <input value={ajuste.motivo} maxLength={200} onChange={e => { const motivo = e.target.value; setAjuste(a => ({ ...a, motivo })) }} placeholder="Devolución por cobro duplicado del 27/09" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setAjuste(null)} style={{ padding: '9px 16px', border: '1px solid #223049', borderRadius: 8, background: 'transparent', color: '#8B95A8', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+              {ajuste.alumno && (
+                <button onClick={guardarAjuste} disabled={ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim()} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: '#F59E0B', color: '#0B1220', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim() ? 0.5 : 1 }}>
+                  {ajuste.guardando ? 'Aplicando...' : 'Aplicar ajuste'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalNuevo && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>

@@ -2,18 +2,25 @@ const { Preference, Payment } = require("mercadopago");
 const pool = require("../db/conexion");
 const { enviarPush } = require("../services/pushService");
 const { calcularRecarga, clienteColegio, buscarPago } = require("../services/mercadoPagoService");
+const { registrar } = require("./auditoriaController");
 require("dotenv").config();
 
-// Notifica al padre que su recarga por Mercado Pago fue acreditada
+// Notifica que la recarga por Mercado Pago fue acreditada: al padre que la
+// hizo o, si vino por un link de pago del colegio, a todos los vinculados
 const notificarRecargaMP = async (padreId, alumnoId, monto) => {
   try {
     const alumno = await pool.query('SELECT nombre, saldo FROM alumnos WHERE id = $1', [alumnoId]);
     if (alumno.rows.length === 0) return;
-    await enviarPush(padreId, {
-      title: `Recarga acreditada — ${alumno.rows[0].nombre}`,
-      body: `+$${Number(monto).toLocaleString('es-AR')} · Nuevo saldo: $${Number(alumno.rows[0].saldo).toLocaleString('es-AR')}`,
-      url: '/inicio'
-    });
+    const padres = padreId
+      ? [padreId]
+      : (await pool.query('SELECT padre_id FROM padres_alumnos WHERE alumno_id = $1', [alumnoId])).rows.map(r => r.padre_id);
+    for (const id of padres) {
+      await enviarPush(id, {
+        title: `Recarga acreditada — ${alumno.rows[0].nombre}`,
+        body: `+${Number(monto).toLocaleString('es-AR')} · Nuevo saldo: ${Number(alumno.rows[0].saldo).toLocaleString('es-AR')}`,
+        url: '/inicio'
+      });
+    }
   } catch (err) { console.error('Error notificarRecargaMP:', err.message); }
 };
 
@@ -28,16 +35,20 @@ const MONTO_MAXIMO = 1000000;
 
 // Un intento de recarga que no se pagó en este plazo pasa a 'vencido'. La
 // preferencia de MP vence al mismo tiempo, así el link ya no se puede pagar.
+// Los links de pago del colegio viajan por WhatsApp/email: tienen más tiempo.
 const HORAS_VENCIMIENTO = 24;
+const HORAS_VENCIMIENTO_LINK = 72;
+
+const vencimientoPreferencia = (horas) => new Date(Date.now() + horas * 3600 * 1000).toISOString();
 
 // Marca como vencidos los intentos que nunca llegaron a tener un pago en MP
 // (checkout abierto y abandonado). Los que tienen mp_payment_id quedan
 // pendientes: son pagos en proceso (ej. efectivo) que MP todavía puede aprobar.
 const vencerPagosPendientes = async () => {
   const r = await pool.query(
-    `UPDATE pagos SET estado = 'vencido', detalle = 'Sin pagar en ${HORAS_VENCIMIENTO} h', actualizado_en = NOW()
+`UPDATE pagos SET estado = 'vencido', detalle = 'Sin pagar a tiempo', actualizado_en = NOW()
      WHERE estado = 'pendiente' AND mp_payment_id IS NULL
-       AND creado_en < NOW() - INTERVAL '${HORAS_VENCIMIENTO} hours'`
+       AND creado_en < NOW() - make_interval(hours => CASE WHEN origen = 'link' THEN ${HORAS_VENCIMIENTO_LINK} ELSE ${HORAS_VENCIMIENTO} END)`
   );
   return r.rowCount;
 };
@@ -86,6 +97,10 @@ const acreditarPago = async (pagoData) => {
     if (r.rows.length === 0) {
       // Pago sin registro previo (anterior al registro de intentos): se
       // reconstruye desde la referencia, que generamos nosotros
+      if (!/^\d+_\d+_/.test(ref)) {
+        await db.query('ROLLBACK');
+        return { estado: null, acreditado: false, pago: null };
+      }
       const [padreId, alumnoId, monto] = ref.split('_');
       const al = await db.query('SELECT colegio_id FROM alumnos WHERE id = $1', [alumnoId]);
       if (al.rows.length === 0 || !montoValido(monto)) {
@@ -206,7 +221,7 @@ const crearPreferencia = async (req, res) => {
       external_reference: externalReference,
       notification_url: notificationUrl(alumno.colegio_id),
       expires: true,
-      expiration_date_to: new Date(Date.now() + HORAS_VENCIMIENTO * 3600 * 1000).toISOString(),
+      expiration_date_to: vencimientoPreferencia(HORAS_VENCIMIENTO),
     };
     if (split && calc.comision > 0) body.marketplace_fee = calc.comision;
 
@@ -390,12 +405,12 @@ const getRecargasColegio = async (req, res) => {
     AND ($2::text IS NULL OR a.nombre ILIKE $2 OR pa.nombre ILIKE $2 OR pa.email ILIKE $2)
     AND ($3::date IS NULL OR ${fechaAR} >= $3::date)
     AND ($4::date IS NULL OR ${fechaAR} <= $4::date)`;
-  const from = `FROM pagos p JOIN alumnos a ON a.id = p.alumno_id JOIN padres pa ON pa.id = p.padre_id`;
+  const from = `FROM pagos p JOIN alumnos a ON a.id = p.alumno_id LEFT JOIN padres pa ON pa.id = p.padre_id`;
 
   try {
     const [lista, resumen] = await Promise.all([
       pool.query(
-        `SELECT p.id, p.monto, p.comision, p.monto_total, p.estado, p.detalle, p.mp_payment_id,
+        `SELECT p.id, p.monto, p.comision, p.monto_total, p.estado, p.detalle, p.mp_payment_id, p.origen,
                 p.creado_en, p.actualizado_en,
                 a.id AS alumno_id, a.nombre AS alumno_nombre, pa.nombre AS padre_nombre, pa.email AS padre_email,
                 COUNT(*) OVER() AS total_filtrado
@@ -434,4 +449,84 @@ const getRecargasColegio = async (req, res) => {
   }
 };
 
-module.exports = { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio, acreditarPago, vencerPagosPendientes };
+// El colegio genera un link de pago para un alumno (padres que no usan la
+// app): mismo circuito que la app — modelo B, split y comisión — pero sin
+// padre asociado. El padre paga como invitado (tarjeta, Rapipago, Pago
+// Fácil) y el webhook acredita el saldo.
+const crearLinkPago = async (req, res) => {
+  const { alumno_id, monto } = req.body;
+  if (!montoValido(monto)) return res.status(400).json({ error: 'Monto inválido' });
+
+  try {
+    const r = await pool.query(
+      `SELECT a.id, a.nombre, a.colegio_id, a.activo, c.comision_pct
+       FROM alumnos a JOIN colegios c ON c.id = a.colegio_id
+       WHERE a.id = $1 AND a.colegio_id = $2`,
+      [alumno_id, req.empleado.colegio_id]
+    );
+    const alumno = r.rows[0];
+    if (!alumno) return res.status(404).json({ error: 'Alumno no encontrado' });
+    if (!alumno.activo) return res.status(400).json({ error: 'El alumno está inactivo' });
+
+    const calc = calcularRecarga(monto, alumno.comision_pct);
+    const { client, split } = await clienteColegio(alumno.colegio_id);
+    const externalReference = `link_${alumno.id}_${calc.monto}_${Date.now()}`;
+    const expira = vencimientoPreferencia(HORAS_VENCIMIENTO_LINK);
+
+    const items = [{
+      id: `recarga_${alumno.id}`,
+      title: `Recarga EduWallet — ${alumno.nombre}`,
+      description: `Saldo para consumos en el colegio de ${alumno.nombre}`,
+      category_id: 'services',
+      quantity: 1,
+      unit_price: calc.monto,
+      currency_id: 'ARS',
+    }];
+    if (calc.comision > 0) {
+      items.push({
+        id: 'cargo_servicio',
+        title: 'Cargo por servicio EduWallet',
+        description: 'Comisión de la plataforma',
+        category_id: 'services',
+        quantity: 1,
+        unit_price: calc.comision,
+        currency_id: 'ARS',
+      });
+    }
+    const body = {
+      items,
+      statement_descriptor: 'EDUWALLET',
+      external_reference: externalReference,
+      notification_url: notificationUrl(alumno.colegio_id),
+      expires: true,
+      expiration_date_to: expira,
+    };
+    if (split && calc.comision > 0) body.marketplace_fee = calc.comision;
+
+    await pool.query(
+      `INSERT INTO pagos (padre_id, alumno_id, monto, comision, monto_total, estado, external_reference, detalle, colegio_id, origen)
+       VALUES (NULL, $1, $2, $3, $4, 'pendiente', $5, 'Link de pago', $6, 'link')`,
+      [alumno.id, calc.monto, calc.comision, calc.total, externalReference, alumno.colegio_id]
+    );
+
+    let result;
+    try {
+      result = await new Preference(client).create({ body });
+    } catch (err) {
+      await pool.query(
+        `UPDATE pagos SET estado = 'rechazado', detalle = 'Error al crear el link', actualizado_en = NOW()
+         WHERE external_reference = $1`,
+        [externalReference]
+      ).catch(() => {});
+      throw err;
+    }
+
+    await registrar(req.empleado.id, alumno.colegio_id, 'Link de pago', `${alumno.nombre} — ${calc.monto}`);
+    res.json({ url: result.init_point, expira, alumno: alumno.nombre, ...calc });
+  } catch (err) {
+    console.error('Error crearLinkPago:', err.message);
+    res.status(500).json({ error: 'Error al generar el link de pago' });
+  }
+};
+
+module.exports = { crearLinkPago, crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, getRecargasColegio, acreditarPago, vencerPagosPendientes };

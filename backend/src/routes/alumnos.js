@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, recargarSaldo, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion } = require('../controllers/alumnosController');
+const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion } = require('../controllers/alumnosController');
 
 /**
  * @swagger
@@ -126,36 +126,6 @@ router.put('/:id', verificarToken, actualizarAlumno);
  */
 router.patch('/:id/toggle', verificarToken, toggleAlumno);
 
-/**
- * @swagger
- * /alumnos/{id}/recargar:
- *   post:
- *     summary: Recargar saldo de un alumno (POS/admin)
- *     tags: [Alumnos]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: integer }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [monto]
- *             properties:
- *               monto: { type: number, example: 1000 }
- *               empleado_id: { type: integer }
- *               descripcion: { type: string }
- *     responses:
- *       200:
- *         description: Alumno con saldo actualizado
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Alumno' }
- */
-router.post('/:id/recargar', verificarToken, recargarSaldo);
 router.delete('/:id', verificarToken, soloAdmin, eliminarAlumno);
 
 /**

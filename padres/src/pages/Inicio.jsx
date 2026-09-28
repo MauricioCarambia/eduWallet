@@ -67,7 +67,7 @@ export default function Inicio() {
     if (!codigoVinculacion.trim()) return
     setVinculando(true)
     try {
-      const res = await api.post('/padres/alumnos/vincular', { codigo_vinculacion: codigoVinculacion.trim(), relacion: 'tutor' })
+      const res = await api.post('/padres/alumnos/vincular', { codigo_vinculacion: codigoVinculacion.trim() })
       showMsg('ok', res.data.mensaje || 'Alumno vinculado correctamente')
       setModalVincular(false)
       setCodigoVinculacion('')

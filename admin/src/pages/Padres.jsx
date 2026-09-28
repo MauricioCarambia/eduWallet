@@ -18,17 +18,6 @@ function Modal({ title, onClose, children }) {
   )
 }
 
-// padres_alumnos.relacion dice qué es el adulto del alumno ("madre"); en la
-// tarjeta del alumno se muestra desde el lado del chico ("hijo/a")
-const RELACIONES = [
-  { valor: 'madre',    label: 'Madre',    delAlumno: 'hijo/a' },
-  { valor: 'padre',    label: 'Padre',    delAlumno: 'hijo/a' },
-  { valor: 'tutor',    label: 'Tutor/a',  delAlumno: 'a cargo' },
-  { valor: 'abuelo/a', label: 'Abuelo/a', delAlumno: 'nieto/a' },
-  { valor: 'otro',     label: 'Otro',     delAlumno: '' },
-]
-const vinculoDelAlumno = relacion => RELACIONES.find(r => r.valor === relacion)?.delAlumno || ''
-
 export default function Padres() {
   const [padres, setPadres] = useState([])
   const [alumnos, setAlumnos] = useState([])
@@ -37,7 +26,6 @@ export default function Padres() {
   const [seleccionado, setSeleccionado] = useState(null)
   const [modal, setModal] = useState(null)
   const [alumnoVincular, setAlumnoVincular] = useState('')
-  const [relacion, setRelacion] = useState('tutor')
   const [msg, setMsg] = useState(null)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
@@ -71,7 +59,7 @@ export default function Padres() {
   const vincular = async () => {
     if (!alumnoVincular) return
     try {
-      await api.post(`/admin/padres/${seleccionado.id}/alumnos`, { alumno_id: parseInt(alumnoVincular), relacion })
+      await api.post(`/admin/padres/${seleccionado.id}/alumnos`, { alumno_id: parseInt(alumnoVincular) })
       showMsg('ok', 'Alumno vinculado'); setModal(null); cargar()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al vincular') }
   }
@@ -130,7 +118,7 @@ export default function Padres() {
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
-                      <p style={{ margin: 0, fontSize: 10, color: 'var(--text-tertiary)' }}>{[a.curso, fmt(a.saldo), vinculoDelAlumno(a.relacion)].filter(Boolean).join(' · ')}</p>
+                      <p style={{ margin: 0, fontSize: 10, color: 'var(--text-tertiary)' }}>{a.curso} · {fmt(a.saldo)}</p>
                     </div>
                     <button onClick={() => desvincular(p.id, a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--red)', padding: '0 2px' }}>×</button>
                   </div>
@@ -151,12 +139,6 @@ export default function Padres() {
               {alumnos.filter(a => !seleccionado.alumnos?.some(x => x.id === a.id)).map(a => (
                 <option key={a.id} value={a.id}>{a.nombre} — {a.curso}</option>
               ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>¿Qué es {seleccionado.nombre.split(' ')[0]} del alumno?</label>
-            <select value={relacion} onChange={e => setRelacion(e.target.value)}>
-              {RELACIONES.map(r => <option key={r.valor} value={r.valor}>{r.label}</option>)}
             </select>
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

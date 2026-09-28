@@ -18,6 +18,19 @@ const btnPagina = (deshabilitado) => ({
   cursor: deshabilitado ? 'not-allowed' : 'pointer', color: deshabilitado ? 'var(--text-tertiary)' : 'var(--text-secondary)',
 })
 
+// Excel guarda las fechas sin zona horaria: se corre la fecha para que la
+// celda muestre la hora local (Argentina) y no la UTC
+const fechaExcel = iso => { const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60000) }
+
+const descargar = (buffer, nombre) => {
+  const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nombre
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function Recargas() {
   const [recargas, setRecargas] = useState([])
   const [resumen, setResumen]   = useState(null)
@@ -30,6 +43,8 @@ export default function Recargas() {
   const [desde, setDesde]       = useState('')
   const [hasta, setHasta]       = useState('')
   const [cargando, setCargando] = useState(true)
+  const [exportando, setExportando] = useState(false)
+  const [errorExport, setErrorExport] = useState(null)
 
   // La búsqueda se aplica medio segundo después de dejar de escribir
   useEffect(() => {
@@ -61,6 +76,94 @@ export default function Recargas() {
   }, [page, estado, busqAplicada, desde, hasta])
 
   const cambiarFiltro = (setter) => (valor) => { setter(valor); setPage(1) }
+
+  // Exporta TODAS las recargas que cumplen los filtros actuales (no sólo la página)
+  const exportarExcel = async () => {
+    setExportando(true)
+    setErrorExport(null)
+    try {
+      const params = { limit: 200 }
+      if (estado) params.estado = estado
+      if (busqAplicada) params.q = busqAplicada
+      if (desde) params.desde = desde
+      if (hasta) params.hasta = hasta
+
+      let filas = [], pagina = 1, paginas = 1, resumenExport = null
+      do {
+        const res = await api.get('/pagos/colegio', { params: { ...params, page: pagina } })
+        filas = filas.concat(res.data.data)
+        paginas = res.data.pages
+        resumenExport = res.data.resumen
+        pagina++
+      } while (pagina <= paginas)
+
+      const { default: ExcelJS } = await import('exceljs')
+      const libro = new ExcelJS.Workbook()
+      libro.creator = 'EduWallet'
+      const moneda = '"$"#,##0.00'
+
+      const hoja = libro.addWorksheet('Recargas', { views: [{ state: 'frozen', ySplit: 1 }] })
+      hoja.columns = [
+        { header: 'Fecha', key: 'fecha', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
+        { header: 'Alumno', key: 'alumno', width: 24 },
+        { header: 'Padre', key: 'padre', width: 24 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Saldo cargado', key: 'monto', width: 15, style: { numFmt: moneda } },
+        { header: 'Cargo por servicio', key: 'comision', width: 18, style: { numFmt: moneda } },
+        { header: 'Total', key: 'total', width: 15, style: { numFmt: moneda } },
+        { header: 'Estado', key: 'estado', width: 13 },
+        { header: 'Detalle', key: 'detalle', width: 26 },
+        { header: 'ID pago Mercado Pago', key: 'mp', width: 22 },
+      ]
+      filas.forEach(r => hoja.addRow({
+        fecha: fechaExcel(r.creado_en),
+        alumno: r.alumno_nombre,
+        padre: r.padre_nombre,
+        email: r.padre_email,
+        monto: Number(r.monto),
+        comision: Number(r.comision),
+        total: Number(r.monto_total),
+        estado: ESTADOS[r.estado]?.label || r.estado,
+        detalle: r.detalle || '',
+        mp: r.mp_payment_id || '',
+      }))
+      hoja.getRow(1).font = { bold: true }
+      hoja.autoFilter = { from: 'A1', to: `J${filas.length + 1}` }
+
+      const res = libro.addWorksheet('Resumen')
+      res.columns = [
+        { header: 'Estado', key: 'estado', width: 16 },
+        { header: 'Cantidad', key: 'cantidad', width: 10 },
+        { header: 'Saldo cargado', key: 'monto', width: 16, style: { numFmt: moneda } },
+        { header: 'Cargo por servicio', key: 'comision', width: 18, style: { numFmt: moneda } },
+        { header: 'Total', key: 'total', width: 16, style: { numFmt: moneda } },
+      ]
+      Object.entries(ESTADOS)
+        .filter(([k]) => !estado || k === estado)
+        .forEach(([k, e]) => {
+          const r = resumenExport[k]
+          res.addRow({ estado: e.filtro, cantidad: r.cantidad, monto: Number(r.monto), comision: Number(r.comision), total: Number(r.monto_total) })
+        })
+      res.getRow(1).font = { bold: true }
+      res.addRow([])
+      const filtrosTexto = [
+        estado && `Estado: ${ESTADOS[estado].filtro}`,
+        busqAplicada && `Búsqueda: "${busqAplicada}"`,
+        desde && `Desde: ${desde}`,
+        hasta && `Hasta: ${hasta}`,
+      ].filter(Boolean).join(' · ') || 'Sin filtros'
+      res.addRow([`Filtros: ${filtrosTexto}`])
+      res.addRow([`Exportado: ${new Date().toLocaleString('es-AR')}`])
+
+      const rango = desde || hasta ? `_${desde || 'inicio'}_a_${hasta || 'hoy'}` : ''
+      descargar(await libro.xlsx.writeBuffer(), `recargas${estado ? '_' + estado : ''}${rango}.xlsx`)
+    } catch (err) {
+      console.error(err)
+      setErrorExport('No se pudo generar el Excel. Probá de nuevo.')
+    } finally {
+      setExportando(false)
+    }
+  }
   const totalResumen = resumen ? Object.values(resumen).reduce((s, r) => s + r.cantidad, 0) : 0
 
   const tarjetas = [
@@ -72,10 +175,20 @@ export default function Recargas() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Recargas</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Recargas de saldo que hicieron los padres con Mercado Pago</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Recargas</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Recargas de saldo que hicieron los padres con Mercado Pago</p>
+        </div>
+        <button onClick={exportarExcel} disabled={exportando || total === 0} title="Exporta todas las recargas que cumplen los filtros actuales" style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: exportando || total === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500, opacity: exportando || total === 0 ? 0.6 : 1 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          {exportando ? 'Generando...' : `Exportar a Excel${total ? ` (${total})` : ''}`}
+        </button>
       </div>
+
+      {errorExport && (
+        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: 'var(--red-bg)', color: 'var(--red)', borderLeft: '3px solid var(--red)' }}>{errorExport}</div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
         {tarjetas.map(s => (

@@ -108,6 +108,11 @@ router.get('/verificar', verificarPadre, verificarPago);
  *   get:
  *     summary: Historial de recargas del padre autenticado (últimas 50)
  *     tags: [Pagos]
+ *     parameters:
+ *       - in: query
+ *         name: estado
+ *         required: false
+ *         schema: { type: string, enum: [pendiente, acreditado, rechazado, vencido] }
  *     responses:
  *       200:
  *         description: Lista de pagos con su estado

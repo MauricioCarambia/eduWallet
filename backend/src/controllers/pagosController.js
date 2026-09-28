@@ -26,6 +26,22 @@ const mapEstado = (mpStatus) => {
 
 const MONTO_MAXIMO = 1000000;
 
+// Un intento de recarga que no se pagó en este plazo pasa a 'vencido'. La
+// preferencia de MP vence al mismo tiempo, así el link ya no se puede pagar.
+const HORAS_VENCIMIENTO = 24;
+
+// Marca como vencidos los intentos que nunca llegaron a tener un pago en MP
+// (checkout abierto y abandonado). Los que tienen mp_payment_id quedan
+// pendientes: son pagos en proceso (ej. efectivo) que MP todavía puede aprobar.
+const vencerPagosPendientes = async () => {
+  const r = await pool.query(
+    `UPDATE pagos SET estado = 'vencido', detalle = 'Sin pagar en ${HORAS_VENCIMIENTO} h', actualizado_en = NOW()
+     WHERE estado = 'pendiente' AND mp_payment_id IS NULL
+       AND creado_en < NOW() - INTERVAL '${HORAS_VENCIMIENTO} hours'`
+  );
+  return r.rowCount;
+};
+
 const montoValido = (monto) => {
   const n = Number(monto);
   return Number.isFinite(n) && n > 0 && n <= MONTO_MAXIMO;
@@ -189,6 +205,8 @@ const crearPreferencia = async (req, res) => {
       statement_descriptor: 'EDUWALLET',
       external_reference: externalReference,
       notification_url: notificationUrl(alumno.colegio_id),
+      expires: true,
+      expiration_date_to: new Date(Date.now() + HORAS_VENCIMIENTO * 3600 * 1000).toISOString(),
     };
     if (split && calc.comision > 0) body.marketplace_fee = calc.comision;
 
@@ -325,19 +343,24 @@ const verificarPago = async (req, res) => {
   }
 };
 
-// Historial de recargas (con estados pendiente/acreditado/rechazado) para el padre logueado
+const ESTADOS_PAGO = ['pendiente', 'acreditado', 'rechazado', 'vencido'];
+
+// Historial de recargas del padre logueado (últimas 50), opcionalmente
+// filtrado por estado: ?estado=pendiente|acreditado|rechazado|vencido
 const getHistorialPagos = async (req, res) => {
   const padreId = req.padre.id;
+  const { estado } = req.query;
+  if (estado && !ESTADOS_PAGO.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
   try {
     const result = await pool.query(
       `SELECT p.id, p.monto, p.comision, p.monto_total, p.estado, p.detalle, p.creado_en, p.actualizado_en,
               a.nombre AS alumno_nombre
        FROM pagos p
        JOIN alumnos a ON a.id = p.alumno_id
-       WHERE p.padre_id = $1
+       WHERE p.padre_id = $1 AND ($2::text IS NULL OR p.estado = $2)
        ORDER BY p.creado_en DESC
        LIMIT 50`,
-      [padreId]
+      [padreId, estado || null]
     );
     res.json(result.rows);
   } catch (err) {
@@ -346,4 +369,4 @@ const getHistorialPagos = async (req, res) => {
   }
 };
 
-module.exports = { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, acreditarPago };
+module.exports = { crearPreferencia, procesarPago, webhook, verificarPago, getHistorialPagos, acreditarPago, vencerPagosPendientes };

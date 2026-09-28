@@ -114,7 +114,7 @@ const options = {
             padre_id: { type: 'integer', example: 1 },
             alumno_id: { type: 'integer', example: 1 },
             monto: { type: 'number', example: 1000 },
-            estado: { type: 'string', enum: ['pendiente', 'acreditado', 'rechazado'], example: 'acreditado' },
+            estado: { type: 'string', enum: ['pendiente', 'acreditado', 'rechazado', 'vencido'], example: 'acreditado' },
             detalle: { type: 'string', example: 'Mercado Pago (checkout)' },
             creado_en: { type: 'string', format: 'date-time' },
           },

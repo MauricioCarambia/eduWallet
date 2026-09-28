@@ -8,7 +8,7 @@ const fakeQuery = async (sql, params = []) => {
   if (sql.includes('FROM pagos WHERE external_reference')) {
     return { rows: estadoDb.pagos.filter(p => p.external_reference === params[0]).map(p => ({ ...p })) };
   }
-  if (sql.startsWith('UPDATE pagos SET estado')) {
+  if (sql.startsWith('UPDATE pagos SET estado = $1')) {
     const p = estadoDb.pagos.find(x => x.id === params[3]);
     Object.assign(p, { estado: params[0], mp_payment_id: params[1], detalle: params[2] });
     return { rows: [] };
@@ -17,6 +17,12 @@ const fakeQuery = async (sql, params = []) => {
     if (estadoDb.transacciones.some(t => t.descripcion === params[2])) return { rows: [] }; // ON CONFLICT DO NOTHING
     estadoDb.transacciones.push({ alumno_id: params[0], monto: params[1], descripcion: params[2] });
     return { rows: [{ id: estadoDb.transacciones.length }] };
+  }
+  if (sql.includes("SET estado = 'vencido'")) {
+    const limite = Date.now() - 24 * 3600 * 1000;
+    const vencen = estadoDb.pagos.filter(p => p.estado === 'pendiente' && !p.mp_payment_id && p.creado_en < limite);
+    vencen.forEach(p => { p.estado = 'vencido'; });
+    return { rows: [], rowCount: vencen.length };
   }
   if (sql.startsWith('UPDATE alumnos SET saldo')) {
     estadoDb.saldos[params[1]] = (estadoDb.saldos[params[1]] || 0) + Number(params[0]);
@@ -31,7 +37,7 @@ jest.mock('../src/db/conexion', () => ({
 }));
 jest.mock('../src/services/pushService', () => ({ enviarPush: jest.fn() }));
 
-const { acreditarPago } = require('../src/controllers/pagosController');
+const { acreditarPago, vencerPagosPendientes, getHistorialPagos } = require('../src/controllers/pagosController');
 const { calcularRecarga } = require('../src/services/mercadoPagoService');
 
 const REF = '7_42_20000_1700000000000';
@@ -40,6 +46,7 @@ beforeEach(() => {
   estadoDb.pagos = [{
     id: 1, padre_id: 7, alumno_id: 42, colegio_id: 3, external_reference: REF,
     monto: '20000.00', comision: '1000.00', monto_total: '21000.00', estado: 'pendiente',
+    creado_en: Date.now(),
   }];
   estadoDb.transacciones = [];
   estadoDb.saldos = {};
@@ -86,5 +93,32 @@ describe('acreditarPago', () => {
     const r = await acreditarPago({ ...aprobado, status: 'in_process' });
     expect(r).toMatchObject({ estado: 'pendiente', acreditado: false });
     expect(estadoDb.saldos[42]).toBeUndefined();
+  });
+});
+
+describe('recargas vencidas', () => {
+  const HACE_2_DIAS = Date.now() - 48 * 3600 * 1000;
+
+  test('vence sólo los intentos viejos que nunca tuvieron pago en MP', async () => {
+    estadoDb.pagos[0].creado_en = HACE_2_DIAS;
+    estadoDb.pagos.push(
+      { id: 2, estado: 'pendiente', mp_payment_id: null, creado_en: Date.now() },           // reciente
+      { id: 3, estado: 'pendiente', mp_payment_id: '555', creado_en: HACE_2_DIAS },         // pago en proceso
+    );
+    expect(await vencerPagosPendientes()).toBe(1);
+    expect(estadoDb.pagos.map(p => p.estado)).toEqual(['vencido', 'pendiente', 'pendiente']);
+  });
+
+  test('si MP aprueba un pago ya vencido, igual se acredita', async () => {
+    estadoDb.pagos[0].estado = 'vencido';
+    const r = await acreditarPago({ id: 999, status: 'approved', external_reference: REF, transaction_amount: 21000 });
+    expect(r.acreditado).toBe(true);
+    expect(estadoDb.saldos[42]).toBe(20000);
+  });
+
+  test('el historial rechaza un filtro de estado inválido', async () => {
+    const res = { status: jest.fn(() => res), json: jest.fn() };
+    await getHistorialPagos({ padre: { id: 7 }, query: { estado: 'cualquiera' } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });

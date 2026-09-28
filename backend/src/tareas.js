@@ -44,6 +44,17 @@ if (!tareasInicializadas) {
     }
   });
 
+  // Vencer intentos de recarga que nunca se pagaron (más de 24 h) — cada hora
+  cron.schedule('0 * * * *', async () => {
+    try {
+      const { vencerPagosPendientes } = require('./controllers/pagosController');
+      const n = await vencerPagosPendientes();
+      if (n > 0) console.log(`${n} recarga(s) sin pagar marcadas como vencidas`);
+    } catch (err) {
+      console.error('Error venciendo recargas pendientes:', err.message);
+    }
+  });
+
   // Renovar tokens de Mercado Pago (OAuth) que vencen pronto — 4am
   cron.schedule('0 4 * * *', async () => {
     try {

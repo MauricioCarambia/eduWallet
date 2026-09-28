@@ -152,7 +152,7 @@ const crearTablas = async () => {
         monto              DECIMAL(10,2) NOT NULL CHECK (monto > 0),
         comision           DECIMAL(10,2) NOT NULL DEFAULT 0,
         monto_total        DECIMAL(10,2),
-        estado             VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'acreditado', 'rechazado')),
+        estado             VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'acreditado', 'rechazado', 'vencido')),
         mp_payment_id      VARCHAR(50),
         external_reference VARCHAR(100),
         detalle            VARCHAR(100),

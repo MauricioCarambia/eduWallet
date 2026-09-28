@@ -17,7 +17,16 @@ const ESTADOS = {
   pendiente:  { label: 'Pendiente',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
   acreditado: { label: 'Acreditado', color: 'var(--green)', bg: 'var(--green-bg)' },
   rechazado:  { label: 'Rechazado',  color: 'var(--red)',   bg: 'var(--red-bg)' },
+  vencido:    { label: 'Vencido',    color: 'var(--text-tertiary)', bg: 'var(--bg)' },
 }
+
+const FILTROS = [
+  { valor: '',           label: 'Todas' },
+  { valor: 'acreditado', label: 'Acreditadas' },
+  { valor: 'pendiente',  label: 'Pendientes' },
+  { valor: 'rechazado',  label: 'Rechazadas' },
+  { valor: 'vencido',    label: 'Vencidas' },
+]
 
 export default function Recargar() {
   const [alumnos, setAlumnos] = useState([])
@@ -29,14 +38,15 @@ export default function Recargar() {
   const [msg, setMsg] = useState(null)
   const [searchParams] = useSearchParams()
   const [historial, setHistorial] = useState([])
+  const [filtro, setFiltro] = useState('')
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 6000) }
 
   useEffect(() => { cargar(); cargarHistorial() }, [])
 
-  const cargarHistorial = async () => {
+  const cargarHistorial = async (estado = filtro) => {
     try {
-      const res = await api.get('/pagos/historial')
+      const res = await api.get('/pagos/historial', { params: estado ? { estado } : {} })
       setHistorial(res.data)
     } catch (err) { console.error(err) }
   }
@@ -184,10 +194,22 @@ export default function Recargar() {
         </p>
       </div>
 
-      {historial.length > 0 && (
+      {(historial.length > 0 || filtro) && (
         <div style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px', color: 'var(--text)' }}>Historial de recargas</h2>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 4 }}>
+            {FILTROS.map(f => (
+              <button key={f.valor} onClick={() => { setFiltro(f.valor); cargarHistorial(f.valor) }} style={{ padding: '5px 12px', border: `1.5px solid ${filtro === f.valor ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: filtro === f.valor ? 'var(--brand)' : 'var(--bg-card)', color: filtro === f.valor ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: filtro === f.valor ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
           <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+            {historial.length === 0 && (
+              <p style={{ margin: 0, padding: '16px', fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                No hay recargas {FILTROS.find(f => f.valor === filtro)?.label.toLowerCase()}
+              </p>
+            )}
             {historial.map((p, i) => {
               const e = ESTADOS[p.estado] || ESTADOS.pendiente
               return (
@@ -196,7 +218,7 @@ export default function Recargar() {
                     <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmt(p.monto)}</p>
                     <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>
                       {p.alumno_nombre} · {new Date(p.creado_en).toLocaleString('es-AR')}
-                      {Number(p.comision) > 0 && ` · Pagado ${fmt(p.monto_total)}`}
+                      {Number(p.comision) > 0 && ` · ${p.estado === 'acreditado' ? 'Pagado' : 'Total'} ${fmt(p.monto_total)}`}
                     </p>
                   </div>
                   <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: e.color, background: e.bg }}>{e.label}</span>

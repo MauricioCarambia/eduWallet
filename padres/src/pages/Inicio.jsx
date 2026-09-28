@@ -138,7 +138,7 @@ export default function Inicio() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{a.curso} · {a.relacion}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{a.curso}</p>
                   </div>
                   <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, background: a.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: a.activo ? 'var(--green)' : 'var(--red)', fontWeight: 500 }}>
                     {a.activo ? 'Activa' : 'Bloqueada'}

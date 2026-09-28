@@ -48,7 +48,7 @@ export default function Padres() {
   }
 
   const desvincular = async (padreId, alumnoId) => {
-    if (!confirm('¿Desvincular este alumno?')) return
+    if (!confirm('¿Desvincular este alumno? El padre sigue en la lista y le podés vincular otro.')) return
     try {
       await api.delete(`/admin/padres/${padreId}/alumnos/${alumnoId}`)
       setPadres(p => p.map(x => x.id === padreId ? { ...x, alumnos: x.alumnos.filter(a => a.id !== alumnoId) } : x))
@@ -65,10 +65,10 @@ export default function Padres() {
   }
 
   const eliminar = async id => {
-    if (!confirm('¿Eliminar este padre?')) return
+    if (!confirm('¿Quitar este padre del colegio? Se desvincula de todos los alumnos del colegio y deja de aparecer en la lista.')) return
     try {
       await api.delete(`/admin/padres/${id}`)
-      setPadres(p => p.filter(x => x.id !== id)); showMsg('ok', 'Padre eliminado')
+      setPadres(p => p.filter(x => x.id !== id)); showMsg('ok', 'Padre quitado del colegio')
     } catch { showMsg('error', 'Error al eliminar') }
   }
 
@@ -112,6 +112,9 @@ export default function Padres() {
               </div>
             </div>
 
+            {p.alumnos?.length === 0 && (
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Sin alumnos vinculados — usá "+ Alumno" para vincularle uno.</p>
+            )}
             {p.alumnos?.length > 0 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {p.alumnos.map(a => (

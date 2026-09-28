@@ -1,4 +1,5 @@
 const pool = require('../db/conexion');
+const { registrarPadreEnColegio } = require('../db/migracion_padres_colegios');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -68,7 +69,7 @@ const vincularAlumno = async (req, res) => {
   }
   try {
     const alumno = await pool.query(
-      'SELECT id, nombre, curso FROM alumnos WHERE codigo_vinculacion = $1',
+      'SELECT id, nombre, curso, colegio_id FROM alumnos WHERE codigo_vinculacion = $1',
       [codigo_vinculacion.trim().toUpperCase()]
     );
     if (alumno.rows.length === 0) {
@@ -86,7 +87,9 @@ const vincularAlumno = async (req, res) => {
       'INSERT INTO padres_alumnos (padre_id, alumno_id, relacion) VALUES ($1, $2, $3)',
       [padreId, alumnoId, relacion || 'tutor']
     );
-    res.json({ mensaje: 'Alumno vinculado correctamente', alumno: alumno.rows[0] });
+    await registrarPadreEnColegio(padreId, alumno.rows[0].colegio_id);
+    const { colegio_id: _colegio, ...datosAlumno } = alumno.rows[0];
+    res.json({ mensaje: 'Alumno vinculado correctamente', alumno: datosAlumno });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

@@ -2,6 +2,7 @@ const pool = require("../db/conexion");
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
+const { registrarPadreEnColegio } = require("../db/migracion_padres_colegios");
 const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
 
@@ -211,6 +212,7 @@ const vincularOInvitarPadre = async (email, nombreSugerido, alumnoId, alumnoNomb
     } catch (err) { console.error('Error enviando invitación:', err.message); }
   }
 
+  await registrarPadreEnColegio(padreId, colegioId);
   await pool.query(
     'INSERT INTO padres_alumnos (padre_id, alumno_id) VALUES ($1, $2) ON CONFLICT (padre_id, alumno_id) DO NOTHING',
     [padreId, alumnoId]

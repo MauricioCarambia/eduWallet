@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EduWallet · Billetera escolar</title>
+<meta name="description" content="Los chicos pagan en el kiosco, el comedor y la librería con su credencial. Las familias cargan saldo con Mercado Pago y ven cada compra al instante.">
+<meta property="og:title" content="EduWallet · Billetera escolar">
+<meta property="og:description" content="Los chicos pagan con su credencial, sin efectivo en la mochila. Las familias cargan saldo con Mercado Pago y controlan cada compra.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/capturas/pos-venta.jpg">
+<meta name="theme-color" content="#1d5c47">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%231d5c47%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2220%22%20width%3D%2240%22%20height%3D%2226%22%20rx%3D%225%22%20fill%3D%22none%22%20stroke%3D%22%23f3c43b%22%20stroke-width%3D%225%22%2F%3E%3Cpath%20d%3D%22M12%2029h40%22%20stroke%3D%22%23f3c43b%22%20stroke-width%3D%225%22%2F%3E%3C%2Fsvg%3E">
+<style>html{color-scheme:light;-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..125,500..900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+
+/* Layout: "la credencial y el ticket" — el hero muestra los dos objetos reales del sistema; debajo, secciones de ancho de lectura sobre papel de cuaderno, con el verde pizarrón como acento y el amarillo lápiz como marcador. */
+:root {
+  --papel: #f5f7f3;
+  --papel-2: #e9eee7;
+  --tinta: #14211c;
+  --tinta-suave: #4a5a53;
+  --pizarron: #1d5c47;
+  --pizarron-fondo: #173f33;
+  --sobre-pizarron: #eef5f0;
+  --lapiz: #f3c43b;
+  --sobre-lapiz: #241c00;
+  --linea: #d3dcd4;
+  --bien: #1f7a4d;
+  --ojo: #a3561a;
+  --no: #b3372f;
+  --tarjeta: #ffffff;
+  --sombra: 0 1px 2px rgb(20 33 28 / .06), 0 8px 24px rgb(20 33 28 / .08);
+  --velo: rgb(9 15 12 / .94);
+  --sobre-velo: #eef5f0;
+  --velo-boton: rgb(255 255 255 / .12);
+
+  --display: "Anybody", "Arial Narrow", system-ui, sans-serif;
+  --texto: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --t-xs: .8125rem; --t-s: .9375rem; --t-m: 1.0625rem; --t-l: 1.375rem; --t-xl: clamp(1.75rem, 3.2vw, 2.4rem); --t-xxl: clamp(2.4rem, 6vw, 4.4rem);
+  --ancho: 72rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #0f1714; --papel-2: #16211c; --tinta: #e4ede7; --tinta-suave: #a2b4ab;
+    --pizarron: #5cc497; --pizarron-fondo: #12302a; --sobre-pizarron: #e4efe8;
+    --lapiz: #f3c43b; --sobre-lapiz: #241c00; --linea: #2a3a33;
+    --bien: #5cc497; --ojo: #e6a15c; --no: #ef7d74; --tarjeta: #18241f;
+    --sombra: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px rgb(0 0 0 / .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #0f1714; --papel-2: #16211c; --tinta: #e4ede7; --tinta-suave: #a2b4ab;
+  --pizarron: #5cc497; --pizarron-fondo: #12302a; --sobre-pizarron: #e4efe8;
+  --lapiz: #f3c43b; --sobre-lapiz: #241c00; --linea: #2a3a33;
+  --bien: #5cc497; --ojo: #e6a15c; --no: #ef7d74; --tarjeta: #18241f;
+  --sombra: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px rgb(0 0 0 / .35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--papel); color: var(--tinta); font-family: var(--texto); font-size: var(--t-m); line-height: 1.6; padding-inline: 1rem; }
+.envoltura { max-width: var(--ancho); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; text-wrap: balance; margin: 0; }
+h2 { font-size: var(--t-xl); font-weight: 800; font-stretch: 85%; letter-spacing: -.01em; }
+h3 { font-size: var(--t-l); font-weight: 700; font-stretch: 90%; }
+p { margin: 0; }
+a { color: var(--pizarron); }
+:focus-visible { outline: 3px solid var(--lapiz); outline-offset: 2px; border-radius: 4px; }
+.etiqueta { font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-suave); }
+.marcador { background: linear-gradient(transparent 58%, color-mix(in srgb, var(--lapiz) 70%, transparent) 58%); padding-inline: .1em; }
+.lectura { max-width: 40rem; color: var(--tinta-suave); }
+
+/* barra */
+.barra { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: color-mix(in srgb, var(--papel) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--linea); margin-inline: -1rem; padding-inline: 1rem; }
+.barra .envoltura { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .75rem; }
+.marca { font-family: var(--display); font-weight: 900; font-stretch: 80%; font-size: 1.5rem; color: var(--tinta); text-decoration: none; letter-spacing: -.01em; }
+.marca span { color: var(--pizarron); }
+.barra nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.barra nav a { color: var(--tinta-suave); text-decoration: none; font-size: var(--t-s); }
+.barra nav a:hover { color: var(--tinta); }
+.boton { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.2rem; border-radius: 999px; background: var(--pizarron); color: var(--papel); font-weight: 700; text-decoration: none; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.boton.sec { background: transparent; color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--linea); }
+@media (max-width: 760px) { .barra nav { display: none; } }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 3rem; align-items: center; padding-block: 4rem 3.5rem; }
+.hero h1 { font-size: var(--t-xxl); font-weight: 900; font-stretch: 78%; letter-spacing: -.02em; }
+.hero .bajada { font-size: var(--t-l); line-height: 1.45; color: var(--tinta-suave); margin-top: 1.25rem; max-width: 34rem; }
+.hero .acciones { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 2rem; }
+.hero .donde { margin-top: 2rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+.chip { font-family: var(--mono); font-size: var(--t-xs); padding: .3rem .65rem; border-radius: 999px; background: var(--papel-2); color: var(--tinta-suave); }
+@media (max-width: 880px) { .hero { grid-template-columns: 1fr; gap: 2.5rem; padding-block: 2.5rem; } }
+
+/* escena: credencial + ticket */
+.escena { position: relative; min-height: 25rem; }
+.credencial { position: relative; width: min(100%, 21rem); aspect-ratio: 85.6 / 54; border-radius: 14px; background: var(--pizarron-fondo); color: var(--sobre-pizarron); padding: 1rem 1.1rem; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr auto; gap: .25rem .9rem; box-shadow: var(--sombra); transform: rotate(-4deg); max-width: 100%; }
+.credencial .cole { font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; opacity: .75; grid-column: 1 / -1; }
+.credencial .quien { align-self: end; }
+.credencial .nombre { font-family: var(--display); font-weight: 800; font-stretch: 85%; font-size: 1.35rem; line-height: 1.05; }
+.credencial .curso { font-size: .8rem; opacity: .8; }
+.credencial .codigo { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; opacity: .85; grid-column: 1 / -1; }
+.credencial .qr { grid-row: 2; grid-column: 2; align-self: center; width: 5.6rem; height: 5.6rem; background: #fff; border-radius: 6px; padding: .3rem; }
+.credencial .qr canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.credencial .chip-nfc { position: absolute; left: 1.1rem; top: 2.3rem; width: 2rem; height: 1.5rem; border-radius: 4px; background: linear-gradient(135deg, #e9c46a, #b98b22); opacity: .9; }
+.ticket { position: absolute; right: 0; bottom: 0; width: min(78%, 17rem); background: var(--tarjeta); border-radius: 4px 4px 0 0; box-shadow: var(--sombra); padding: 1.1rem 1.1rem 1.4rem; font-family: var(--mono); font-size: .8rem; line-height: 1.55; transform: rotate(2.5deg);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
+.ticket .cab { text-align: center; font-weight: 600; letter-spacing: .08em; border-bottom: 1px dashed var(--linea); padding-bottom: .5rem; margin-bottom: .5rem; }
+.ticket .fila { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+.ticket .total { border-top: 1px dashed var(--linea); margin-top: .5rem; padding-top: .5rem; font-weight: 600; }
+.ticket .ok { margin-top: .6rem; color: var(--bien); font-weight: 600; }
+.ticket .saldo { color: var(--tinta-suave); }
+@media (max-width: 480px) { .escena { min-height: 24rem; } .ticket { width: 88%; } }
+
+/* secciones */
+section { padding-block: 4.5rem; border-top: 1px solid var(--linea); }
+.cabecera { display: grid; gap: .75rem; margin-bottom: 2.5rem; }
+
+/* problema */
+.problema { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.5rem 2.5rem; }
+.problema div { display: grid; gap: .35rem; }
+.problema strong { font-family: var(--display); font-stretch: 90%; font-size: 1.15rem; }
+.problema p { color: var(--tinta-suave); font-size: var(--t-s); }
+
+/* pasos */
+.pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; counter-reset: paso; }
+.pasos li { counter-increment: paso; display: grid; gap: .5rem; align-content: start; padding-top: 1rem; border-top: 3px solid var(--tinta); }
+.pasos li::before { content: "Paso " counter(paso); font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--pizarron); font-weight: 600; }
+.pasos p { color: var(--tinta-suave); font-size: var(--t-s); }
+@media (max-width: 880px) { .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .pasos { grid-template-columns: 1fr; } }
+
+/* apps */
+.apps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.app { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; align-content: start; }
+.app .quien { font-family: var(--mono); font-size: var(--t-xs); color: var(--pizarron); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.app ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .55rem; font-size: var(--t-s); }
+.app li { padding-left: 1.2rem; position: relative; }
+.app li::before { content: ""; position: absolute; left: 0; top: .6em; width: .5rem; height: .5rem; border-radius: 2px; background: var(--lapiz); }
+@media (max-width: 880px) { .apps { grid-template-columns: 1fr; } }
+
+/* medios */
+.medios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.medio { border: 1px solid var(--linea); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1.1rem; align-content: start; background: var(--tarjeta); }
+.medio .tipo { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.medio .tipo .etiqueta { color: var(--pizarron); }
+.escalas { display: grid; gap: .45rem; font-size: var(--t-s); }
+.escala { display: grid; grid-template-columns: 7.5rem 1fr; align-items: center; gap: .75rem; }
+.escala .nivel { display: flex; gap: 3px; }
+.escala .nivel i { flex: 1; height: 6px; border-radius: 3px; background: var(--papel-2); }
+.escala .nivel i.on { background: var(--pizarron); }
+.escala small { grid-column: 2; color: var(--tinta-suave); font-size: var(--t-xs); margin-top: -.2rem; }
+.pro, .contra { margin: 0; padding: 0; list-style: none; display: grid; gap: .4rem; font-size: var(--t-s); }
+.pro li, .contra li { padding-left: 1.4rem; position: relative; }
+.pro li::before { content: "+"; position: absolute; left: 0; font-family: var(--mono); font-weight: 600; color: var(--bien); }
+.contra li::before { content: "−"; position: absolute; left: 0; font-family: var(--mono); font-weight: 600; color: var(--no); }
+.subt { font-family: var(--mono); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--tinta-suave); margin-bottom: .35rem; }
+.ideal { font-size: var(--t-s); padding: .75rem .9rem; border-radius: 8px; background: var(--papel-2); }
+.combinar { margin-top: 1.5rem; padding: 1.25rem 1.5rem; border-radius: 12px; background: var(--pizarron-fondo); color: var(--sobre-pizarron); display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+.combinar b { font-family: var(--display); font-stretch: 85%; font-size: 1.25rem; }
+@media (max-width: 960px) { .medios { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .combinar { grid-template-columns: 1fr; } }
+
+/* configurador */
+.config { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.opciones { display: grid; gap: 1.5rem; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: .5rem; }
+legend { font-weight: 700; margin-bottom: .5rem; }
+.op { display: flex; gap: .7rem; align-items: flex-start; padding: .7rem .85rem; border-radius: 10px; border: 1.5px solid var(--linea); cursor: pointer; background: var(--tarjeta); }
+.op:has(input:checked) { border-color: var(--pizarron); box-shadow: inset 0 0 0 1px var(--pizarron); }
+.op input { accent-color: var(--pizarron); margin-top: .3rem; }
+.op span { display: grid; font-size: var(--t-s); line-height: 1.35; }
+.op small { color: var(--tinta-suave); }
+.resultado { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1.25rem; min-width: 0; }
+.resultado h3 { font-size: 1.2rem; }
+.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.lista li { display: grid; grid-template-columns: 7rem 1fr; gap: .9rem; align-items: baseline; padding-bottom: .75rem; border-bottom: 1px dashed var(--linea); font-size: var(--t-s); }
+.lista li:last-child { border-bottom: 0; padding-bottom: 0; }
+.nivel-tag { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding: .2rem .5rem; border-radius: 999px; justify-self: start; font-weight: 600; }
+.nivel-tag.imp { background: var(--pizarron); color: var(--papel); }
+.nivel-tag.rec { background: var(--lapiz); color: var(--sobre-lapiz); }
+.nivel-tag.opc { background: var(--papel-2); color: var(--tinta-suave); }
+.aviso { padding: .85rem 1rem; border-radius: 8px; font-size: var(--t-s); border-left: 4px solid var(--ojo); background: var(--papel-2); }
+.aviso.malo { border-left-color: var(--no); }
+@media (max-width: 820px) { .config { grid-template-columns: 1fr; } }
+@media (max-width: 460px) { .lista li { grid-template-columns: 1fr; gap: .35rem; } }
+
+/* ventajas */
+.publicos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; }
+.publico { display: grid; gap: 1rem; align-content: start; }
+.publico h3 { padding-bottom: .75rem; border-bottom: 3px solid var(--lapiz); }
+.publico dl { margin: 0; display: grid; gap: .9rem; }
+.publico dt { font-weight: 700; }
+.publico dd { margin: 0; color: var(--tinta-suave); font-size: var(--t-s); }
+@media (max-width: 880px) { .publicos { grid-template-columns: 1fr; gap: 2rem; } }
+
+/* seguridad */
+.seguridad { background: var(--pizarron-fondo); color: var(--sobre-pizarron); border-radius: 18px; padding-inline: clamp(1.25rem, 4vw, 3rem); border-top: 0; margin-block: 1rem; }
+.seguridad .etiqueta, .seguridad .lectura { color: color-mix(in srgb, var(--sobre-pizarron) 72%, transparent); }
+.seguros { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.75rem 2.5rem; }
+.seguros div { display: grid; gap: .35rem; padding-left: 1rem; border-left: 2px solid var(--lapiz); }
+.seguros strong { font-family: var(--display); font-stretch: 90%; font-size: 1.1rem; }
+.seguros p { font-size: var(--t-s); color: color-mix(in srgb, var(--sobre-pizarron) 78%, transparent); }
+
+/* a tener en cuenta */
+.cuenta { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
+.cuenta div { padding: 1.1rem 1.25rem; border-radius: 10px; border: 1px dashed var(--linea); display: grid; gap: .35rem; }
+.cuenta strong { font-size: var(--t-m); }
+.cuenta p { font-size: var(--t-s); color: var(--tinta-suave); }
+
+/* faq */
+.faq { display: grid; gap: .6rem; max-width: 50rem; }
+details { border: 1px solid var(--linea); border-radius: 10px; background: var(--tarjeta); }
+summary { cursor: pointer; padding: 1rem 1.25rem; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--mono); color: var(--pizarron); font-size: 1.2rem; line-height: 1; }
+details[open] summary::after { content: "−"; }
+details p { padding: 0 1.25rem 1.1rem; color: var(--tinta-suave); font-size: var(--t-s); max-width: 44rem; }
+
+/* cierre */
+.cierre { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 2.5rem; align-items: center; }
+.cierre h2 { font-size: var(--t-xxl); font-stretch: 78%; font-weight: 900; }
+.contacto { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; }
+.contacto .dato { display: grid; gap: .15rem; }
+.contacto .valor { font-family: var(--mono); font-size: var(--t-m); }
+@media (max-width: 820px) { .cierre { grid-template-columns: 1fr; } }
+footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: var(--tinta-suave); font-size: var(--t-xs); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+/* capturas */
+.pantalla { margin: 0; display: grid; gap: .6rem; min-width: 0; }
+.marco { border-radius: 10px; overflow: hidden; border: 1px solid var(--linea); box-shadow: var(--sombra); background: var(--tarjeta); }
+.marco .barra-nav { display: flex; align-items: center; gap: 6px; padding: .5rem .75rem; background: var(--papel-2); border-bottom: 1px solid var(--linea); }
+.marco .barra-nav i { width: 9px; height: 9px; border-radius: 50%; background: var(--linea); }
+.marco .barra-nav span { margin-left: .5rem; font-family: var(--mono); font-size: .72rem; color: var(--tinta-suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.marco img { display: block; width: 100%; height: auto; }
+.pantalla figcaption { font-size: var(--t-s); color: var(--tinta-suave); }
+.pantalla figcaption b { color: var(--tinta); }
+.capturas { display: grid; gap: 2rem; }
+.capturas .fila3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; align-items: start; }
+.nota-ejemplo { font-family: var(--mono); font-size: var(--t-xs); color: var(--tinta-suave); }
+@media (max-width: 880px) { .capturas .fila3 { grid-template-columns: 1fr; } }
+
+/* carrusel */
+.carrusel { display: grid; gap: 1rem; }
+.pista { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; border-radius: 12px; }
+.pista::-webkit-scrollbar { display: none; }
+.pista:focus-visible { outline: 3px solid var(--lapiz); outline-offset: 4px; }
+.diapo { scroll-snap-align: start; margin: 0; display: grid; gap: .75rem; align-content: start; min-width: 0; padding: 2px; }
+.ampliar { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; position: relative; color: inherit; font: inherit; text-align: left; border-radius: 10px; }
+.ampliar .marco img { aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+.lupa { position: absolute; right: .75rem; bottom: .75rem; display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .75rem; border-radius: 999px; background: var(--velo); color: var(--sobre-velo); font-size: var(--t-xs); font-weight: 700; pointer-events: none; }
+.diapo figcaption { font-size: var(--t-s); color: var(--tinta-suave); max-width: 46rem; }
+.diapo figcaption b { color: var(--tinta); }
+.controles { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+.flecha { width: 2.5rem; height: 2.5rem; border-radius: 50%; border: 1.5px solid var(--linea); background: var(--tarjeta); color: var(--tinta); font-size: 1.3rem; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.flecha:hover { border-color: var(--pizarron); color: var(--pizarron); }
+.puntos { display: flex; gap: .5rem; }
+.puntos button { width: .65rem; height: .65rem; border-radius: 999px; border: 0; padding: 0; background: var(--linea); cursor: pointer; transition: width .2s ease, background .2s ease; }
+.puntos button[aria-current="true"] { width: 1.6rem; background: var(--pizarron); }
+.contador { font-family: var(--mono); font-size: var(--t-xs); color: var(--tinta-suave); font-variant-numeric: tabular-nums; min-width: 3rem; }
+
+.diapo-tel { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 1.5rem 3rem; align-items: center; max-width: 50rem; width: 100%; margin-inline: auto; padding: .5rem 2px 1rem; }
+.diapo-tel .ampliar-tel { max-width: 15rem; }
+.diapo-tel figcaption { display: grid; gap: .6rem; max-width: 28rem; }
+.diapo-tel figcaption h3 { font-size: var(--t-xl); }
+.diapo-tel figcaption p:last-child { color: var(--tinta-suave); font-size: var(--t-m); }
+@media (max-width: 560px) { .diapo-tel { grid-template-columns: 1fr; justify-items: center; text-align: center; } .diapo-tel .ampliar-tel { max-width: 12.5rem; } }
+
+/* visor de la captura ampliada */
+.visor { position: fixed; inset: 0; z-index: 50; background: var(--velo); color: var(--sobre-velo); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: calc(env(safe-area-inset-top, 0px) + .75rem) 1rem calc(env(safe-area-inset-bottom, 0px) + .75rem); gap: .75rem; }
+.visor-barra { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.visor-barra span { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.visor-barra div { display: flex; gap: .5rem; flex-shrink: 0; }
+.visor button { border: 0; background: var(--velo-boton); color: var(--sobre-velo); border-radius: 999px; cursor: pointer; font: inherit; }
+.visor-barra button { padding: .45rem .9rem; font-size: var(--t-s); font-weight: 700; }
+.visor-lienzo { position: relative; overflow: auto; display: grid; place-items: center; min-height: 0; overscroll-behavior: contain; }
+.visor-lienzo img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; cursor: zoom-in; }
+.visor-lienzo.zoom { place-items: start; }
+.visor-lienzo.zoom img { max-width: none; max-height: none; width: var(--ancho-zoom, 1600px); cursor: zoom-out; }
+.visor-flecha { position: fixed; top: 50%; transform: translateY(-50%); width: 3rem; height: 3rem; font-size: 1.6rem; display: grid; place-items: center; }
+.visor-flecha.ant { left: 1rem; }
+.visor-flecha.sig { right: 1rem; }
+.visor-pie { text-align: center; font-size: var(--t-s); color: color-mix(in srgb, var(--sobre-velo) 78%, transparent); max-width: 50rem; margin-inline: auto; }
+@media (max-width: 520px) { .ampliar-tel .lupa span { display: none; } }
+@media (max-width: 640px) { .visor-flecha { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem); transform: none; width: 2.6rem; height: 2.6rem; } .lupa span { display: none; } }
+
+/* familias */
+.familias-pasos { list-style: none; margin: 0 0 2.5rem; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; counter-reset: fam; }
+.familias-pasos li { counter-increment: fam; display: grid; grid-template-columns: auto 1fr; gap: .25rem .8rem; align-content: start; font-size: var(--t-s); }
+.familias-pasos li::before { content: counter(fam); grid-row: span 2; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; background: var(--lapiz); color: var(--sobre-lapiz); font-family: var(--display); font-weight: 800; }
+.familias-pasos b { font-size: var(--t-m); }
+.familias-pasos p { color: var(--tinta-suave); }
+.telefonos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.telefono { margin: 0; display: grid; gap: .6rem; min-width: 0; }
+.ampliar-tel { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; position: relative; justify-self: center; max-width: 16rem; border-radius: 26px; }
+.ampliar-tel .lupa { right: 50%; transform: translateX(50%); bottom: 1rem; white-space: nowrap; }
+.ampliar-tel .cuerpo { border-radius: 26px; padding: 7px; background: var(--tinta); box-shadow: var(--sombra); max-width: 16rem; width: 100%; justify-self: center; }
+.ampliar-tel img { display: block; width: 100%; height: auto; border-radius: 20px; }
+.telefono figcaption { font-size: var(--t-s); color: var(--tinta-suave); text-align: center; }
+.telefono figcaption b { display: block; color: var(--tinta); }
+.reenviar { margin-top: 2rem; padding: 1rem 1.25rem; border-radius: 10px; background: var(--papel-2); font-size: var(--t-s); display: flex; gap: .75rem 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+@media (max-width: 960px) { .familias-pasos, .telefonos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .familias-pasos { grid-template-columns: 1fr; } .telefonos { grid-template-columns: 1fr 1fr; gap: .9rem; } }
+
+/* puesta en marcha */
+.puesta { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: puesta; max-width: 52rem; }
+.puesta li { counter-increment: puesta; display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: .25rem 1rem; padding-block: 1.1rem; border-top: 1px solid var(--linea); align-items: baseline; }
+.puesta li:last-child { border-bottom: 1px solid var(--linea); }
+.puesta li::before { content: counter(puesta, decimal-leading-zero); font-family: var(--mono); font-weight: 600; color: var(--pizarron); grid-row: span 2; }
+.puesta h3 { font-size: 1.15rem; }
+.puesta p { grid-column: 2; color: var(--tinta-suave); font-size: var(--t-s); }
+.quien-hace { grid-column: 3; grid-row: 1; font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding: .2rem .55rem; border-radius: 999px; background: var(--papel-2); color: var(--tinta-suave); white-space: nowrap; }
+.quien-hace.nos { background: var(--pizarron); color: var(--papel); }
+.quien-hace.fam { background: var(--lapiz); color: var(--sobre-lapiz); }
+@media (max-width: 560px) { .puesta li { grid-template-columns: 2.4rem minmax(0, 1fr); } .quien-hace { grid-column: 2; grid-row: auto; justify-self: start; } }
+
+/* soporte */
+.soporte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+.soporte div { display: grid; gap: .35rem; padding-top: 1rem; border-top: 3px solid var(--pizarron); }
+.soporte strong { font-family: var(--display); font-stretch: 90%; font-size: 1.15rem; }
+.soporte p { color: var(--tinta-suave); font-size: var(--t-s); }
+@media (max-width: 760px) { .soporte { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .app, .medio { transition: transform .2s ease, box-shadow .2s ease; }
+  .app:hover, .medio:hover { transform: translateY(-3px); box-shadow: var(--sombra); }
+  .ticket .ok { animation: aparece .5s .6s both ease-out; }
+  @keyframes aparece { from { transform: translateY(4px); opacity: .3; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+</head>
+<body>
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="#inicio">Edu<span>Wallet</span></a>
+    <nav aria-label="Secciones">
+      <a href="#como">Cómo funciona</a>
+      <a href="#capturas">Pantallas</a>
+      <a href="#medios">Medios de cobro</a>
+      <a href="#puesta">Puesta en marcha</a>
+      <a href="#familias">Familias</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="boton" href="#contacto">Pedí una demo</a>
+  </div>
+</header>
+
+<main class="envoltura" id="inicio">
+
+  <div class="hero">
+    <div>
+      <p class="etiqueta">Billetera escolar para kiosco, comedor y librería</p>
+      <h1 style="margin-top:.75rem">Los chicos pagan con su credencial. <span class="marcador">Sin efectivo en la mochila.</span></h1>
+      <p class="bajada">Las familias cargan saldo desde el celular con Mercado Pago y ven cada compra al instante. El colegio cobra en todas sus zonas con el equipo que ya tiene, y la plata entra directo a su cuenta.</p>
+      <div class="acciones">
+        <a class="boton" href="#contacto">Pedí una demo</a>
+        <a class="boton sec" href="#como">Ver cómo funciona</a>
+      </div>
+      <div class="donde" aria-label="Dónde funciona">
+        <span class="chip">Navegador en PC</span><span class="chip">Tablet</span><span class="chip">Celular</span><span class="chip">App para Windows</span>
+      </div>
+    </div>
+
+    <div class="escena" aria-label="Ejemplo: credencial de un alumno y el ticket de una compra en el kiosco">
+      <div class="credencial">
+        <span class="cole">Colegio de ejemplo · Credencial</span>
+        <span class="chip-nfc" aria-hidden="true"></span>
+        <div class="quien">
+          <div class="nombre">Martina López</div>
+          <div class="curso">4° B · Secundaria</div>
+        </div>
+        <div class="qr" aria-hidden="true"><canvas id="qr" width="25" height="25"></canvas></div>
+        <span class="codigo">EW7K3M9QXR2T4P</span>
+      </div>
+      <div class="ticket" role="img" aria-label="Ticket de ejemplo: 2 alfajores y un agua, total 2.600 pesos, pago aprobado">
+        <div class="cab">KIOSCO · CAJA ABIERTA</div>
+        <div class="fila"><span>2 × Alfajor</span><span>$1.600</span></div>
+        <div class="fila"><span>1 × Agua 500 ml</span><span>$1.000</span></div>
+        <div class="fila total"><span>TOTAL</span><span>$2.600</span></div>
+        <div class="fila saldo"><span>Saldo restante</span><span>$7.400</span></div>
+        <div class="ok">✓ Cobrado a Martina L.</div>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="t-problema">
+    <div class="cabecera">
+      <p class="etiqueta">Lo que pasa hoy en muchos colegios</p>
+      <h2 id="t-problema">El recreo dura quince minutos y la fila del kiosco, diez.</h2>
+    </div>
+    <div class="problema">
+      <div><strong>Plata que se pierde</strong><p>Billetes en la mochila, vueltos que no vuelven y chicos que se quedan sin comer porque se olvidaron la plata.</p></div>
+      <div><strong>Cajas difíciles de cuadrar</strong><p>Cambio, monedas y cuentas en un cuaderno. Al final del día nadie sabe bien cuánto se vendió en cada zona.</p></div>
+      <div><strong>Familias a ciegas</strong><p>Los padres no saben qué compran sus hijos ni cuánto gastan, y no tienen forma de poner un límite.</p></div>
+      <div><strong>Fiado y cuadernos</strong><p>Deudas anotadas a mano que después hay que cobrar, con todo el desgaste que eso trae.</p></div>
+    </div>
+  </section>
+
+  <section id="como" aria-labelledby="t-como">
+    <div class="cabecera">
+      <p class="etiqueta">Cómo funciona</p>
+      <h2 id="t-como">Cuatro pasos, de la carga de saldo al ticket.</h2>
+    </div>
+    <ol class="pasos">
+      <li><h3>El colegio entrega las credenciales</h3><p>Carga a los alumnos y a cada uno le da su credencial: QR impreso, llavero o tarjeta. Se puede imprimir desde el sistema o mandar por WhatsApp a la familia.</p></li>
+      <li><h3>La familia carga saldo</h3><p>Desde el celular, paga con Mercado Pago. El saldo se acredita solo, sin que nadie del colegio tenga que tocar nada. Para quien no usa la app, el colegio puede generar un link de pago.</p></li>
+      <li><h3>El alumno paga en el recreo</h3><p>En el kiosco, el comedor o la librería, el cajero arma el pedido, el chico muestra su credencial y listo. Se descuenta del saldo en el momento.</p></li>
+      <li><h3>Todo queda registrado</h3><p>La familia ve la compra al instante. El colegio tiene el resumen del día por zona, el historial de recargas y la auditoría de cada movimiento.</p></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="t-apps">
+    <div class="cabecera">
+      <p class="etiqueta">Tres aplicaciones, un solo sistema</p>
+      <h2 id="t-apps">Cada uno ve lo que necesita, y nada más.</h2>
+      <p class="lectura">Las tres funcionan desde el navegador. No hay que instalar nada de una tienda de apps; las familias pueden agregarla a la pantalla de inicio del celular como una app más.</p>
+    </div>
+    <div class="apps">
+      <article class="app">
+        <span class="quien">Para las familias</span>
+        <h3>App de padres</h3>
+        <ul>
+          <li>Saldo de cada hijo y recarga con Mercado Pago</li>
+          <li>Historial de compras y recargas en tiempo real</li>
+          <li>Límite de gasto diario</li>
+          <li>Bloquear todas las compras, o solo el QR, o solo la tarjeta si se perdió</li>
+          <li>La credencial en el celular: se descarga, se imprime o se muestra para pagar</li>
+          <li>Varios hijos en la misma cuenta</li>
+        </ul>
+      </article>
+      <article class="app">
+        <span class="quien">Para kiosco, comedor y librería</span>
+        <h3>Punto de venta</h3>
+        <ul>
+          <li>Cobro con QR, llavero o tarjeta, con el lector que tenga cada zona</li>
+          <li>Carrito, descuentos y anulación de la última venta</li>
+          <li>Productos y stock propios de cada zona, con aviso de stock bajo</li>
+          <li>Códigos de barras: se escanea el producto y va al carrito</li>
+          <li>Importación de productos desde Excel</li>
+          <li>Caja por turno que se cierra sola a la medianoche y resumen del día con filtros</li>
+        </ul>
+      </article>
+      <article class="app">
+        <span class="quien">Para la dirección del colegio</span>
+        <h3>Panel de administración</h3>
+        <ul>
+          <li>Alumnos, cursos y vínculo con sus padres</li>
+          <li>Credenciales listas para imprimir, en lote o de a una</li>
+          <li>Asignación de tarjetas y llaveros acercándolos al lector</li>
+          <li>Personal del punto de venta por zona, con código de activación</li>
+          <li>Historial de recargas con filtros y exportación a Excel</li>
+          <li>Auditoría de todos los movimientos</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section id="capturas" aria-labelledby="t-capturas">
+    <div class="cabecera">
+      <p class="etiqueta">Pantallas del sistema</p>
+      <h2 id="t-capturas">Así se ve en el colegio.</h2>
+      <p class="nota-ejemplo">Capturas reales del sistema con datos de ejemplo.</p>
+    </div>
+    <div class="carrusel" id="carrusel" role="region" aria-roledescription="carrusel" aria-label="Pantallas del sistema">
+      <div class="pista" id="pista" tabindex="0" aria-label="Deslizá o usá las flechas para ver otras pantallas">
+        <figure class="diapo" role="group" aria-roledescription="diapositiva" aria-label="1 de 4: Cobrar en el kiosco">
+          <button class="ampliar" type="button" data-i="0" data-titulo="Cobrar en el kiosco" data-texto="El cajero toca los productos o los escanea, el alumno muestra su credencial y aparece con su saldo. Un toque en Cobrar y listo." aria-label="Agrandar: Cobrar en el kiosco">
+            <div class="marco"><div class="barra-nav" aria-hidden="true"><i></i><i></i><i></i><span>Punto de venta · Venta</span></div><img src="capturas/pos-venta.jpg" alt="Pantalla de venta del kiosco: productos a la izquierda y a la derecha la alumna identificada con su saldo, dos alfajores y un agua en el carrito, total 2.600 pesos" width="2560" height="1600"></div>
+            <span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span>
+          </button>
+          <figcaption><b>Cobrar en el kiosco.</b> El cajero toca los productos o los escanea, el alumno muestra su credencial y aparece con su saldo. Un toque en Cobrar y listo.</figcaption>
+        </figure>
+        <figure class="diapo" role="group" aria-roledescription="diapositiva" aria-label="2 de 4: Resumen del día">
+          <button class="ampliar" type="button" data-i="1" data-titulo="Resumen del día" data-texto="Lo vendido, las ventas por hora, lo más vendido y cada caja, con filtros por zona y por fecha." aria-label="Agrandar: Resumen del día">
+            <div class="marco"><div class="barra-nav" aria-hidden="true"><i></i><i></i><i></i><span>Punto de venta · Resumen</span></div><img src="capturas/pos-resumen.jpg" alt="Resumen del día con total vendido, ventas por hora, productos más vendidos y cajas de cada zona" loading="lazy" width="2560" height="1800"></div>
+            <span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span>
+          </button>
+          <figcaption><b>Resumen del día.</b> Lo vendido, las ventas por hora, lo más vendido y cada caja, con filtros por zona y por fecha.</figcaption>
+        </figure>
+        <figure class="diapo" role="group" aria-roledescription="diapositiva" aria-label="3 de 4: Productos y stock">
+          <button class="ampliar" type="button" data-i="2" data-titulo="Productos y stock" data-texto="Cada zona maneja los suyos. Se cargan escaneando el código de barras o desde un Excel." aria-label="Agrandar: Productos y stock">
+            <div class="marco"><div class="barra-nav" aria-hidden="true"><i></i><i></i><i></i><span>Punto de venta · Productos</span></div><img src="capturas/pos-productos.jpg" alt="Lista de productos del kiosco con precio, stock y código de barras" loading="lazy" width="2560" height="1600"></div>
+            <span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span>
+          </button>
+          <figcaption><b>Productos y stock.</b> Cada zona maneja los suyos. Se cargan escaneando el código de barras o desde un Excel.</figcaption>
+        </figure>
+        <figure class="diapo" role="group" aria-roledescription="diapositiva" aria-label="4 de 4: Credenciales listas para imprimir">
+          <button class="ampliar" type="button" data-i="3" data-titulo="Credenciales listas para imprimir" data-texto="Diez por hoja A4, tamaño tarjeta de crédito, por curso o de todo el colegio." aria-label="Agrandar: Credenciales listas para imprimir">
+            <div class="marco"><div class="barra-nav" aria-hidden="true"><i></i><i></i><i></i><span>Administración · Credenciales</span></div><img src="capturas/admin-credenciales.jpg" alt="Hoja de credenciales listas para imprimir, cada una con el nombre del alumno, el curso y su QR" loading="lazy" width="2560" height="1600"></div>
+            <span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span>
+          </button>
+          <figcaption><b>Credenciales listas para imprimir.</b> Diez por hoja A4, tamaño tarjeta de crédito, por curso o de todo el colegio.</figcaption>
+        </figure>
+      </div>
+      <div class="controles">
+        <button class="flecha car-ant" type="button" aria-label="Pantalla anterior">‹</button>
+        <div class="puntos">
+          <button type="button" data-i="0" aria-label="Ver Cobrar en el kiosco" aria-current="true"></button>
+          <button type="button" data-i="1" aria-label="Ver Resumen del día"></button>
+          <button type="button" data-i="2" aria-label="Ver Productos y stock"></button>
+          <button type="button" data-i="3" aria-label="Ver Credenciales listas para imprimir"></button>
+        </div>
+        <button class="flecha car-sig" type="button" aria-label="Pantalla siguiente">›</button>
+        <span class="contador" aria-live="polite">1 / 4</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="medios" aria-labelledby="t-medios">
+    <div class="cabecera">
+      <p class="etiqueta">Medios de cobro</p>
+      <h2 id="t-medios">QR, llavero o tarjeta: cada uno tiene lo suyo.</h2>
+      <p class="lectura">El sistema acepta los tres al mismo tiempo. Cada colegio elige según su presupuesto, el equipo que tenga en cada zona y la edad de los chicos.</p>
+    </div>
+    <div class="medios">
+      <article class="medio">
+        <div class="tipo"><h3>Credencial con QR</h3><span class="etiqueta">Papel, PVC o celular</span></div>
+        <div class="escalas">
+          <div class="escala"><span>Costo</span><span class="nivel" aria-label="muy bajo"><i class="on"></i><i></i><i></i><i></i></span></div>
+          <div class="escala"><span>Rapidez</span><span class="nivel" aria-label="alta con lector, media con cámara"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><small>Con lector USB; con cámara, un poco menos</small></div>
+          <div class="escala"><span>Durabilidad</span><span class="nivel" aria-label="baja a media"><i class="on"></i><i class="on"></i><i></i><i></i></span><small>Mejor si se plastifica o se imprime en PVC</small></div>
+        </div>
+        <div><p class="subt">Ventajas</p><ul class="pro">
+          <li>La opción más económica: se imprime en el colegio</li>
+          <li>Se lee con la cámara de cualquier celular o tablet, incluidos iPhone y iPad</li>
+          <li>Si se pierde, se genera un QR nuevo y el anterior deja de servir</li>
+          <li>La familia la tiene en el celular y la puede reenviar por WhatsApp</li>
+          <li>El mismo lector sirve para los códigos de barras de los productos</li>
+        </ul></div>
+        <div><p class="subt">Desventajas</p><ul class="contra">
+          <li>El papel se moja, se rompe o se arruga</li>
+          <li>Se puede fotografiar o fotocopiar; por eso la familia puede bloquearlo en el acto</li>
+          <li>Con cámara es más lento que con un lector</li>
+        </ul></div>
+        <p class="ideal"><b>Ideal para</b> empezar sin inversión, o colegios que cobran con tablets y celulares.</p>
+      </article>
+
+      <article class="medio">
+        <div class="tipo"><h3>Llavero 125 kHz</h3><span class="etiqueta">Proximidad (RFID)</span></div>
+        <div class="escalas">
+          <div class="escala"><span>Costo</span><span class="nivel" aria-label="bajo"><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
+          <div class="escala"><span>Rapidez</span><span class="nivel" aria-label="muy alta"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="escala"><span>Durabilidad</span><span class="nivel" aria-label="muy alta"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        </div>
+        <div><p class="subt">Ventajas</p><ul class="pro">
+          <li>Llaveros y lectores fáciles de conseguir en Argentina y a buen precio</li>
+          <li>Se apoya y listo: la lectura más rápida en la fila</li>
+          <li>Muy resistente: va colgado en la mochila y aguanta años</li>
+          <li>El lector USB se enchufa y anda en cualquier navegador, sin instalar nada</li>
+        </ul></div>
+        <div><p class="subt">Desventajas</p><ul class="contra">
+          <li>Los celulares no lo pueden leer: hace falta un lector en cada zona</li>
+          <li>Hay que comprar un llavero por alumno</li>
+          <li>Es una tecnología simple, más fácil de copiar con equipos específicos</li>
+        </ul></div>
+        <p class="ideal"><b>Ideal para</b> colegios con PC o notebook en cada zona y mucha gente en el recreo.</p>
+      </article>
+
+      <article class="medio">
+        <div class="tipo"><h3>Tarjeta NFC 13,56 MHz</h3><span class="etiqueta">Formato credencial</span></div>
+        <div class="escalas">
+          <div class="escala"><span>Costo</span><span class="nivel" aria-label="medio"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+          <div class="escala"><span>Rapidez</span><span class="nivel" aria-label="muy alta"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="escala"><span>Durabilidad</span><span class="nivel" aria-label="muy alta"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        </div>
+        <div><p class="subt">Ventajas</p><ul class="pro">
+          <li>Tiene formato de credencial: foto, nombre y QR impresos en la misma tarjeta</li>
+          <li>Se lee con celulares y tablets Android que tengan NFC, sin lector aparte</li>
+          <li>También funciona con lectores USB en la computadora</li>
+          <li>Rápida y resistente como el llavero</li>
+        </ul></div>
+        <div><p class="subt">Desventajas</p><ul class="contra">
+          <li>Es la opción más cara por alumno</li>
+          <li>Los lectores USB son menos comunes; algunos necesitan la app de EduWallet para Windows</li>
+          <li>iPhone y iPad no pueden leerla desde la web (ahí se usa el QR impreso en la tarjeta)</li>
+        </ul></div>
+        <p class="ideal"><b>Ideal para</b> colegios que quieren una credencial institucional completa y cobran con equipos Android.</p>
+      </article>
+    </div>
+    <div class="combinar">
+      <b>No hace falta elegir uno solo.</b>
+      <p>Una tarjeta NFC con el QR impreso sirve en todas las zonas: la del lector apoya la tarjeta y la de la tablet escanea el QR. Si se pierde un medio, la familia bloquea solo ese y el otro sigue funcionando.</p>
+    </div>
+  </section>
+
+  <section id="equipos" aria-labelledby="t-equipos">
+    <div class="cabecera">
+      <p class="etiqueta">Qué hace falta</p>
+      <h2 id="t-equipos">Armá la configuración de cada zona.</h2>
+      <p class="lectura">Elegí con qué equipo va a cobrar la zona y qué credencial van a usar los chicos. Te mostramos lo que hace falta y lo que conviene sumar.</p>
+    </div>
+    <div class="config">
+      <form class="opciones" id="config" onsubmit="return false">
+        <fieldset>
+          <legend>¿Con qué cobra la zona?</legend>
+          <label class="op" for="d-pc"><input type="radio" name="disp" id="d-pc" value="pc" checked><span>PC o notebook<small>Windows, Mac o Linux, con navegador</small></span></label>
+          <label class="op" for="d-and"><input type="radio" name="disp" id="d-and" value="android"><span>Tablet o celular Android<small>Con Chrome</small></span></label>
+          <label class="op" for="d-ios"><input type="radio" name="disp" id="d-ios" value="ios"><span>iPad o iPhone<small>Con Safari o Chrome</small></span></label>
+        </fieldset>
+        <fieldset>
+          <legend>¿Qué credencial usan los chicos?</legend>
+          <label class="op" for="m-qr"><input type="radio" name="medio" id="m-qr" value="qr" checked><span>Credencial con QR<small>Impresa o en el celular</small></span></label>
+          <label class="op" for="m-125"><input type="radio" name="medio" id="m-125" value="125"><span>Llavero 125 kHz</span></label>
+          <label class="op" for="m-1356"><input type="radio" name="medio" id="m-1356" value="1356"><span>Tarjeta NFC 13,56 MHz</span></label>
+        </fieldset>
+      </form>
+      <div class="resultado" aria-live="polite">
+        <h3 id="res-titulo">PC con credencial QR</h3>
+        <ul class="lista" id="res-lista"></ul>
+        <div id="res-aviso"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="puesta" aria-labelledby="t-puesta">
+    <div class="cabecera">
+      <p class="etiqueta">Puesta en marcha</p>
+      <h2 id="t-puesta">De la firma al primer recreo sin efectivo.</h2>
+      <p class="lectura">Te acompañamos en cada paso. Recomendamos empezar con un curso de prueba y sumar al resto cuando todo funcione como el colegio quiere.</p>
+    </div>
+    <ol class="puesta">
+      <li><h3>Alta del colegio</h3><span class="quien-hace nos">Nosotros</span><p>Creamos el colegio en el sistema con su nombre, su logo y las zonas donde se va a cobrar: kiosco, comedor, librería o las que tenga.</p></li>
+      <li><h3>Cuenta de Mercado Pago</h3><span class="quien-hace">Colegio</span><p>La dirección conecta la cuenta de Mercado Pago del colegio desde el panel. Ahí se acreditan las recargas de las familias.</p></li>
+      <li><h3>Alumnos</h3><span class="quien-hace">Colegio</span><p>Se cargan de a uno o todos juntos con una planilla, con curso, contactos, alergias y límite diario.</p></li>
+      <li><h3>Personal de cada zona</h3><span class="quien-hace">Colegio</span><p>La dirección da de alta a cada cajero y le pasa un código de activación. Cada uno entra con ese código y elige su propio PIN.</p></li>
+      <li><h3>Productos</h3><span class="quien-hace">Colegio</span><p>Cada zona carga lo que vende con su precio y stock: escaneando los códigos de barras o importando un Excel.</p></li>
+      <li><h3>Credenciales</h3><span class="quien-hace">Colegio</span><p>Se imprimen desde el panel o se asignan llaveros y tarjetas acercándolos al lector. También se pueden mandar por WhatsApp.</p></li>
+      <li><h3>Familias</h3><span class="quien-hace fam">Familias</span><p>Cada familia recibe el código de vinculación de su hijo, se registra desde el celular y hace la primera carga.</p></li>
+      <li><h3>Prueba con un curso</h3><span class="quien-hace nos">Todos</span><p>Un curso empieza a comprar con la credencial. Ajustamos lo que haga falta y después se suma el resto del colegio.</p></li>
+    </ol>
+  </section>
+
+  <section id="familias" aria-labelledby="t-familias">
+    <div class="cabecera">
+      <p class="etiqueta">Para las familias</p>
+      <h2 id="t-familias">Todo desde el celular, sin descargar nada.</h2>
+      <p class="lectura">La app de padres se abre desde el navegador del celular y se puede agregar a la pantalla de inicio como cualquier otra app.</p>
+    </div>
+    <ol class="familias-pasos">
+      <li><b>Registrate</b><p>Con tu email y una contraseña, desde el celular o la computadora.</p></li>
+      <li><b>Vinculá a tu hijo</b><p>Con el código de vinculación que te da el colegio. Si tenés más de un hijo, los sumás a la misma cuenta.</p></li>
+      <li><b>Cargá saldo</b><p>Pagás con Mercado Pago y el saldo se acredita solo, apenas se aprueba el pago.</p></li>
+      <li><b>Seguí sus compras</b><p>Mirá cada compra al momento, poné un límite diario y bloqueá la credencial si se pierde.</p></li>
+    </ol>
+    <div class="carrusel" id="carrusel-familias" role="region" aria-roledescription="carrusel" aria-label="Pantallas de la app de padres">
+      <div class="pista" tabindex="0" aria-label="Deslizá o usá las flechas para ver otras pantallas">
+        <figure class="diapo diapo-tel" role="group" aria-roledescription="diapositiva" aria-label="1 de 4: Saldo de cada hijo">
+          <button class="ampliar-tel" type="button" data-i="0" data-titulo="Saldo de cada hijo" data-texto="Al entrar, la familia ve el saldo de cada hijo y cuánto gastó en el día. Desde ahí recarga, mira el historial o abre la credencial." aria-label="Agrandar: Saldo de cada hijo"><div class="cuerpo"><img src="capturas/padres-inicio.jpg" alt="Inicio de la app de padres con el saldo y lo gastado hoy de cada hijo" loading="lazy" width="780" height="1688"></div><span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span></button>
+          <figcaption><p class="etiqueta">App de padres · 1 de 4</p><h3>Saldo de cada hijo</h3><p>Al entrar, la familia ve el saldo de cada hijo y cuánto gastó en el día. Desde ahí recarga, mira el historial o abre la credencial.</p></figcaption>
+        </figure>
+        <figure class="diapo diapo-tel" role="group" aria-roledescription="diapositiva" aria-label="2 de 4: Historial">
+          <button class="ampliar-tel" type="button" data-i="1" data-titulo="Historial" data-texto="Cada compra aparece al momento, con lo que se compró, en qué zona y a qué hora. También las recargas, con filtros por tipo." aria-label="Agrandar: Historial"><div class="cuerpo"><img src="capturas/padres-historial.jpg" alt="Historial con compras en kiosco, comedor y librería y recargas con Mercado Pago" loading="lazy" width="780" height="1688"></div><span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span></button>
+          <figcaption><p class="etiqueta">App de padres · 2 de 4</p><h3>Historial</h3><p>Cada compra aparece al momento, con lo que se compró, en qué zona y a qué hora. También las recargas, con filtros por tipo.</p></figcaption>
+        </figure>
+        <figure class="diapo diapo-tel" role="group" aria-roledescription="diapositiva" aria-label="3 de 4: Control">
+          <button class="ampliar-tel" type="button" data-i="2" data-titulo="Control" data-texto="Un límite de gasto por día y el bloqueo de todas las compras, solo del QR o solo de la tarjeta. Se aplica en el acto en todas las zonas." aria-label="Agrandar: Control"><div class="cuerpo"><img src="capturas/padres-control.jpg" alt="Control parental con botones para bloquear el QR, la tarjeta o todas las compras, y el límite de gasto diario" loading="lazy" width="780" height="1688"></div><span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span></button>
+          <figcaption><p class="etiqueta">App de padres · 3 de 4</p><h3>Control</h3><p>Un límite de gasto por día y el bloqueo de todas las compras, solo del QR o solo de la tarjeta. Se aplica en el acto en todas las zonas.</p></figcaption>
+        </figure>
+        <figure class="diapo diapo-tel" role="group" aria-roledescription="diapositiva" aria-label="4 de 4: Credencial">
+          <button class="ampliar-tel" type="button" data-i="3" data-titulo="Credencial" data-texto="La credencial del hijo en el celular: se muestra para pagar, se guarda como imagen o se imprime." aria-label="Agrandar: Credencial"><div class="cuerpo"><img src="capturas/padres-credencial.jpg" alt="Credencial del alumno con su QR y botones para guardar la imagen o imprimirla" loading="lazy" width="780" height="1688"></div><span class="lupa" aria-hidden="true">⤢ <span>Agrandar</span></span></button>
+          <figcaption><p class="etiqueta">App de padres · 4 de 4</p><h3>Credencial</h3><p>La credencial del hijo en el celular: se muestra para pagar, se guarda como imagen o se imprime.</p></figcaption>
+        </figure>
+      </div>
+      <div class="controles">
+        <button class="flecha car-ant" type="button" aria-label="Pantalla anterior">‹</button>
+        <div class="puntos">
+          <button type="button" data-i="0" aria-label="Ver Saldo de cada hijo" aria-current="true"></button>
+          <button type="button" data-i="1" aria-label="Ver Historial"></button>
+          <button type="button" data-i="2" aria-label="Ver Control"></button>
+          <button type="button" data-i="3" aria-label="Ver Credencial"></button>
+        </div>
+        <button class="flecha car-sig" type="button" aria-label="Pantalla siguiente">›</button>
+        <span class="contador" aria-live="polite">1 / 4</span>
+      </div>
+    </div>
+    <div class="reenviar">
+      <span><b>¿Sos del colegio?</b> Esta parte se puede reenviar tal cual a las familias.</span>
+      <button class="boton sec" type="button" id="copiar-familias">Copiar texto para las familias</button>
+    </div>
+  </section>
+
+  <section id="ventajas" aria-labelledby="t-ventajas">
+    <div class="cabecera">
+      <p class="etiqueta">Por qué te conviene</p>
+      <h2 id="t-ventajas">Gana el colegio, ganan las familias y ganan los chicos.</h2>
+    </div>
+    <div class="publicos">
+      <div class="publico">
+        <h3>Para el colegio</h3>
+        <dl>
+          <dt>Menos efectivo en las zonas</dt><dd>Menos cambio, menos riesgo y cajas que cierran sin diferencias.</dd>
+          <dt>La plata va a su cuenta</dt><dd>Cada recarga se acredita directo en la cuenta de Mercado Pago del colegio.</dd>
+          <dt>Nadie carga saldo sin pagar</dt><dd>El saldo solo entra por un pago real. Ni un empleado ni un directivo pueden cargarlo a mano.</dd>
+          <dt>Información por zona</dt><dd>Ventas del día, productos más vendidos y stock de cada zona, con filtros por fecha.</dd>
+          <dt>Sin comprar equipos caros</dt><dd>Funciona con la PC, tablet o celular que ya tienen. Los lectores son opcionales.</dd>
+        </dl>
+      </div>
+      <div class="publico">
+        <h3>Para las familias</h3>
+        <dl>
+          <dt>Saben en qué se gasta</dt><dd>Cada compra aparece en el celular en el momento, con detalle de lo que se compró.</dd>
+          <dt>Ponen un límite</dt><dd>Un tope de gasto por día para cada hijo.</dd>
+          <dt>Actúan si se pierde</dt><dd>Bloquean la credencial o la tarjeta desde el celular, en segundos.</dd>
+          <dt>Cargan cuando quieren</dt><dd>A cualquier hora, desde el celular, con Mercado Pago.</dd>
+        </dl>
+      </div>
+      <div class="publico">
+        <h3>Para los chicos</h3>
+        <dl>
+          <dt>Nada de plata en la mochila</dt><dd>No hay billetes que perder ni vueltos que contar.</dd>
+          <dt>Filas más cortas</dt><dd>Apoyar un llavero o mostrar un QR es más rápido que buscar monedas.</dd>
+          <dt>Siempre pueden comer</dt><dd>Si hay saldo, se olvidaron la plata en casa y no pasa nada.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="seguridad" aria-labelledby="t-seguridad">
+    <div class="envoltura">
+      <div class="cabecera">
+        <p class="etiqueta">Seguridad</p>
+        <h2 id="t-seguridad">Pensado para que cada peso tenga explicación.</h2>
+      </div>
+      <div class="seguros">
+        <div><strong>Pagos procesados por Mercado Pago</strong><p>Los datos de las tarjetas de las familias nunca pasan por el sistema del colegio.</p></div>
+        <div><strong>Códigos QR imposibles de adivinar</strong><p>Cada credencial tiene un código aleatorio. Si se filtra, se genera otro y el viejo deja de funcionar.</p></div>
+        <div><strong>Cada uno con su clave</strong><p>El personal del punto de venta elige su propio PIN al activar la cuenta. Ni la dirección lo conoce.</p></div>
+        <div><strong>Permisos por rol y por zona</strong><p>El cajero del comedor solo maneja el comedor. La dirección administra, pero no cobra.</p></div>
+        <div><strong>Auditoría completa</strong><p>Ventas, anulaciones, cambios de precio y bloqueos quedan registrados con quién y cuándo.</p></div>
+        <div><strong>Control de la familia</strong><p>Límite diario y bloqueo por medio, aplicados en el mismo momento en todas las zonas.</p></div>
+        <div><strong>Los datos son del colegio</strong><p>La información de los alumnos la tiene únicamente el colegio. Cada familia ve solo la de sus hijos.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-cuenta">
+    <div class="cabecera">
+      <p class="etiqueta">Antes de decidir</p>
+      <h2 id="t-cuenta">Lo que conviene saber.</h2>
+      <p class="lectura">Preferimos que lo sepas desde el principio.</p>
+    </div>
+    <div class="cuenta">
+      <div><strong>Hace falta internet en cada zona</strong><p>El cobro se valida en línea para que el saldo esté siempre al día. Si se corta el wifi, se puede seguir con los datos móviles de un celular, o cobrar en efectivo como hasta ahora mientras dura el corte.</p></div>
+      <div><strong>Las recargas son por Mercado Pago</strong><p>Por ahora no se aceptan transferencias bancarias ni efectivo para cargar saldo. Para quien no usa la app, está el link de pago.</p></div>
+      <div><strong>iPhone no lee NFC desde la web</strong><p>En zonas que cobran con iPad o iPhone conviene usar QR, o un lector que funcione como teclado.</p></div>
+      <div><strong>Los lectores NFC 13,56 USB son pocos</strong><p>Si el colegio quiere tarjetas y cobra con PC, conviene elegir el lector con nosotros antes de comprarlo.</p></div>
+    </div>
+  </section>
+
+  <section id="soporte" aria-labelledby="t-soporte">
+    <div class="cabecera">
+      <p class="etiqueta">Soporte</p>
+      <h2 id="t-soporte">No se queda solo después de la instalación.</h2>
+    </div>
+    <div class="soporte">
+      <div><strong>Siempre que haga falta</strong><p>Atención cada vez que el colegio lo necesite, en horario laboral.</p></div>
+      <div><strong>Virtual</strong><p>Por videollamada, mensaje o email, para resolver dudas y problemas rápido.</p></div>
+      <div><strong>Presencial</strong><p>Cuando la situación lo requiere y es posible, vamos al colegio.</p></div>
+    </div>
+  </section>
+
+  <section id="preguntas" aria-labelledby="t-preguntas">
+    <div class="cabecera">
+      <p class="etiqueta">Preguntas frecuentes</p>
+      <h2 id="t-preguntas">Lo que nos preguntan siempre.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>¿Qué pasa si un chico pierde la credencial?</summary><p>La familia la bloquea desde su celular y nadie más puede usarla. Si era un QR, el colegio genera uno nuevo y el anterior deja de servir. Si era un llavero o una tarjeta, se asigna otro en segundos acercándolo al lector.</p></details>
+      <details><summary>¿Y si no le alcanza el saldo?</summary><p>El punto de venta no deja cobrar y avisa en la pantalla. Tampoco deja pasar el límite diario que haya puesto la familia.</p></details>
+      <details><summary>¿Qué pasa si se corta internet?</summary><p>La zona puede seguir cobrando conectándose a los datos móviles de un celular. Si no hay forma de conectarse, se cobra en efectivo como se hace hoy hasta que vuelva la conexión.</p></details>
+      <details><summary>¿Quién tiene los datos de los alumnos?</summary><p>Únicamente el colegio. Las familias ven solo la información de sus propios hijos, y el personal de cada zona ve lo necesario para cobrar.</p></details>
+      <details><summary>¿Qué soporte tienen?</summary><p>Soporte siempre que el colegio lo necesite, en horario laboral. Es virtual, y cuando hace falta y es posible, también presencial.</p></details>
+      <details><summary>¿Hay que instalar algo?</summary><p>No. Las tres aplicaciones funcionan en el navegador. La única excepción es opcional: si una zona usa un lector NFC que no funciona como teclado, como el ACR122U, se instala la app de EduWallet para Windows.</p></details>
+      <details><summary>¿Cómo se cargan los productos?</summary><p>Cada zona carga los suyos: de a uno, escaneando el código de barras, o importando todos juntos desde un Excel.</p></details>
+      <details><summary>¿Cuándo se acredita una recarga?</summary><p>Apenas Mercado Pago aprueba el pago, el saldo se actualiza solo. Las recargas que no se pagan vencen y no quedan colgadas.</p></details>
+      <details><summary>¿La familia puede tener varios hijos en el mismo colegio o en colegios distintos?</summary><p>Sí. Con una sola cuenta ve y controla a todos sus hijos.</p></details>
+      <details><summary>¿Cuánto cuesta?</summary><p>Armamos la propuesta según la cantidad de alumnos, las zonas de cobro y el medio que elija el colegio. Escribinos y te la pasamos.</p></details>
+    </div>
+  </section>
+
+  <section id="contacto" aria-labelledby="t-contacto">
+    <div class="cierre">
+      <div>
+        <p class="etiqueta">Demo sin compromiso</p>
+        <h2 id="t-contacto" style="margin-top:.75rem">Probalo con un curso antes de sumar a todo el colegio.</h2>
+        <p class="lectura" style="margin-top:1rem">Te mostramos el sistema funcionando con credenciales y un punto de venta de prueba, y te ayudamos a elegir los equipos.</p>
+      </div>
+      <div class="contacto">
+        <div class="dato"><span class="etiqueta">WhatsApp</span><span class="valor">A completar</span></div>
+        <div class="dato"><span class="etiqueta">Email</span><span class="valor">A completar</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="visor" id="visor" role="dialog" aria-modal="true" aria-labelledby="visor-titulo" hidden>
+    <div class="visor-barra">
+      <span id="visor-titulo"></span>
+      <div>
+        <button type="button" id="visor-zoom">Acercar</button>
+        <button type="button" id="visor-cerrar" aria-label="Cerrar">✕ Cerrar</button>
+      </div>
+    </div>
+    <div class="visor-lienzo" id="visor-lienzo"><img id="visor-img" alt=""></div>
+    <p class="visor-pie" id="visor-pie"></p>
+    <button class="visor-flecha ant" type="button" id="visor-ant" aria-label="Pantalla anterior">‹</button>
+    <button class="visor-flecha sig" type="button" id="visor-sig" aria-label="Pantalla siguiente">›</button>
+  </div>
+
+  <footer>
+    <span>EduWallet · Billetera escolar</span>
+    <span>Los pagos se procesan con Mercado Pago.</span>
+  </footer>
+</main>
+
+<script>
+// QR decorativo de la credencial de ejemplo (no es un código real)
+(function () {
+  const c = document.getElementById('qr'); if (!c) return;
+  const x = c.getContext('2d'), n = 25;
+  let s = 7; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, n, n); x.fillStyle = '#14211c';
+  const ojo = (a, b) => { x.fillRect(a, b, 7, 7); x.fillStyle = '#fff'; x.fillRect(a + 1, b + 1, 5, 5); x.fillStyle = '#14211c'; x.fillRect(a + 2, b + 2, 3, 3); };
+  const libre = (i, j) => !((i < 8 && j < 8) || (i > n - 9 && j < 8) || (i < 8 && j > n - 9));
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (libre(i, j) && r() > .52) x.fillRect(i, j, 1, 1);
+  ojo(0, 0); ojo(n - 7, 0); ojo(0, n - 7);
+})();
+
+// Carruseles de pantallas y visor para agrandarlas
+(function () {
+  const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const crearCarrusel = raiz => {
+    const pista = raiz.querySelector('.pista');
+    const n = pista.querySelectorAll('.diapo').length;
+    const puntos = [...raiz.querySelectorAll('.puntos button')];
+    const contador = raiz.querySelector('.contador');
+    let actual = 0, espera;
+    const marcar = i => {
+      actual = i;
+      puntos.forEach((p, j) => p.setAttribute('aria-current', j === i ? 'true' : 'false'));
+      contador.textContent = (i + 1) + ' / ' + n;
+    };
+    const ir = i => {
+      const k = (i + n) % n;
+      pista.scrollTo({ left: k * pista.clientWidth, behavior: suave ? 'smooth' : 'auto' });
+      marcar(k);
+    };
+    pista.addEventListener('scroll', () => {
+      clearTimeout(espera);
+      espera = setTimeout(() => marcar(Math.round(pista.scrollLeft / pista.clientWidth)), 60);
+    });
+    raiz.querySelector('.car-ant').addEventListener('click', () => ir(actual - 1));
+    raiz.querySelector('.car-sig').addEventListener('click', () => ir(actual + 1));
+    puntos.forEach(p => p.addEventListener('click', () => ir(+p.dataset.i)));
+    pista.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); ir(actual + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); ir(actual - 1); }
+    });
+    addEventListener('resize', () => pista.scrollTo({ left: actual * pista.clientWidth }));
+    return { ir, botones: [...pista.querySelectorAll('.ampliar, .ampliar-tel')] };
+  };
+  const colegio = document.getElementById('carrusel');
+  const familias = document.getElementById('carrusel-familias');
+  if (!colegio || !familias) return;
+  const carColegio = crearCarrusel(colegio);
+  const carFamilias = crearCarrusel(familias);
+
+  // Visor: sirve para las pantallas del colegio y para las del celular
+  const visor = document.getElementById('visor');
+  const lienzo = document.getElementById('visor-lienzo');
+  const img = document.getElementById('visor-img');
+  const zoom = document.getElementById('visor-zoom');
+  const grupos = {
+    colegio: { botones: carColegio.botones, ancho: '1600px', alCerrar: i => carColegio.ir(i) },
+    familias: { botones: carFamilias.botones, ancho: '560px', alCerrar: i => carFamilias.ir(i) },
+  };
+  let grupo = grupos.colegio, abierta = 0, origen = null;
+
+  const acercar = si => {
+    lienzo.classList.toggle('zoom', si);
+    zoom.textContent = si ? 'Alejar' : 'Acercar';
+    if (!si) lienzo.scrollTo(0, 0);
+  };
+  const mostrar = i => {
+    const total = grupo.botones.length;
+    abierta = (i + total) % total;
+    const b = grupo.botones[abierta], fuente = b.querySelector('img');
+    img.src = fuente.currentSrc || fuente.src;
+    img.alt = fuente.alt;
+    lienzo.style.setProperty('--ancho-zoom', grupo.ancho);
+    document.getElementById('visor-titulo').textContent = b.dataset.titulo + ' · ' + (abierta + 1) + ' de ' + total;
+    document.getElementById('visor-pie').textContent = b.dataset.texto;
+    acercar(false);
+  };
+  const abrir = (g, i) => {
+    grupo = g;
+    origen = document.activeElement;
+    mostrar(i);
+    visor.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    document.getElementById('visor-cerrar').focus();
+  };
+  const cerrar = () => {
+    visor.hidden = true;
+    document.documentElement.style.overflow = '';
+    grupo.alCerrar(abierta);
+    origen?.focus?.();
+  };
+  for (const g of Object.values(grupos)) g.botones.forEach(b => b.addEventListener('click', () => abrir(g, +b.dataset.i)));
+  document.getElementById('visor-cerrar').addEventListener('click', cerrar);
+  document.getElementById('visor-ant').addEventListener('click', () => mostrar(abierta - 1));
+  document.getElementById('visor-sig').addEventListener('click', () => mostrar(abierta + 1));
+  zoom.addEventListener('click', () => acercar(!lienzo.classList.contains('zoom')));
+  img.addEventListener('click', () => acercar(!lienzo.classList.contains('zoom')));
+  lienzo.addEventListener('click', e => { if (e.target === lienzo && !lienzo.classList.contains('zoom')) cerrar(); });
+  visor.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cerrar();
+    if (e.key === 'ArrowRight') mostrar(abierta + 1);
+    if (e.key === 'ArrowLeft') mostrar(abierta - 1);
+    if (e.key === 'Tab') { // el foco no sale del visor
+      const f = [...visor.querySelectorAll('button')];
+      const i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+    }
+  });
+})();
+
+// Texto para que el colegio reenvíe a las familias
+(function () {
+  const b = document.getElementById('copiar-familias'); if (!b) return;
+  const texto = 'Desde ahora los chicos pagan en el colegio con su credencial EduWallet.\n\n' +
+    '1. Registrate desde el celular en la app de padres de EduWallet con tu email y una contraseña.\n' +
+    '2. Vinculá a tu hijo con el código que te pasa el colegio. Si tenés más de un hijo, sumalos a la misma cuenta.\n' +
+    '3. Cargá saldo con Mercado Pago: se acredita solo apenas se aprueba el pago.\n' +
+    '4. Seguí cada compra al momento, poné un límite diario y, si se pierde la credencial, bloqueala desde la app.';
+  b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(texto); b.textContent = 'Texto copiado' }
+    catch { const t = document.createElement('textarea'); t.value = texto; t.style.cssText = 'width:100%;min-height:9rem;margin-top:.75rem'; b.replaceWith(t); t.select() }
+    setTimeout(() => { if (b.isConnected) b.textContent = 'Copiar texto para las familias' }, 2500);
+  });
+})();
+
+// Configurador de equipos por zona
+(function () {
+  const form = document.getElementById('config');
+  const nombres = { pc: 'PC o notebook', android: 'Tablet o celular Android', ios: 'iPad o iPhone' };
+  const medios = { qr: 'credencial QR', '125': 'llavero 125 kHz', '1356': 'tarjeta NFC 13,56 MHz' };
+  const credencial = {
+    qr: ['Credenciales impresas', 'Se imprimen desde el panel del colegio. Conviene plastificarlas o imprimirlas en PVC. Las familias también la tienen en el celular.'],
+    '125': ['Un llavero 125 kHz por alumno', 'Tipo EM4100. Se asigna a cada alumno acercándolo al lector desde el panel.'],
+    '1356': ['Una tarjeta NFC 13,56 MHz por alumno', 'Tipo MIFARE o NTAG. Conviene imprimirle la credencial con el QR, así sirve en todas las zonas.'],
+  };
+  const lector = {
+    pc: {
+      qr: [['imp', 'Lector de códigos 2D por USB', 'Lee el QR de la credencial y los códigos de barras de los productos. Se enchufa y funciona como un teclado.'], ['opc', 'Webcam', 'Alternativa sin lector: se escanea el QR con la cámara, un poco más lento.']],
+      '125': [['imp', 'Lector USB 125 kHz', 'Funciona como un teclado: se enchufa y anda en el navegador, sin instalar nada.']],
+      '1356': [['imp', 'Lector USB NFC 13,56 MHz', 'Si funciona como teclado, anda en el navegador. Si es un ACR122U, se instala la app de EduWallet para Windows.']],
+    },
+    android: {
+      qr: [['imp', 'La cámara del equipo', 'No hace falta nada más: el punto de venta escanea el QR con la cámara trasera.'], ['opc', 'Lector que funcione como teclado', 'Bluetooth o USB con adaptador OTG, para cobrar más rápido en zonas con mucha gente.']],
+      '125': [['imp', 'Lector 125 kHz que funcione como teclado', 'Por USB con adaptador OTG. El celular solo no puede leer llaveros de 125 kHz.']],
+      '1356': [['imp', 'El NFC del equipo', 'Si la tablet o el celular tiene NFC, lee la tarjeta directo desde Chrome. Revisá que el modelo tenga NFC.']],
+    },
+    ios: {
+      qr: [['imp', 'La cámara del equipo', 'Se escanea el QR con la cámara del iPad o iPhone.']],
+      '125': [['imp', 'Lector 125 kHz que funcione como teclado', 'Por USB-C o Bluetooth. El iPad o iPhone solo no puede leer llaveros.']],
+      '1356': [['imp', 'Lector que funcione como teclado', 'Por USB-C o Bluetooth. Safari no lee NFC desde la web.']],
+    },
+  };
+  const avisos = {
+    'ios-1356': ['malo', 'iPad y iPhone no pueden leer tarjetas NFC desde la web. En esta zona conviene imprimir el QR en la tarjeta y escanearlo con la cámara.'],
+    'android-125': ['', 'Los celulares y tablets no leen llaveros de 125 kHz por sí solos. Si la zona no va a tener lector, conviene usar QR o tarjeta 13,56 MHz.'],
+    'ios-125': ['', 'Antes de comprar el lector, confirmá que funcione con iPad o iPhone como teclado.'],
+  };
+  const tag = { imp: ['imp', 'Hace falta'], rec: ['rec', 'Conviene'], opc: ['opc', 'Opcional'] };
+  const item = (nivel, t, d) => `<li><span class="nivel-tag ${tag[nivel][0]}">${tag[nivel][1]}</span><span><b>${t}</b><br>${d}</span></li>`;
+
+  function pintar() {
+    const d = form.disp.value, m = form.medio.value;
+    document.getElementById('res-titulo').textContent = `${nombres[d]} con ${medios[m]}`;
+    const filas = [item('imp', nombres[d] + ' con navegador', 'Cualquier equipo con Chrome, Edge, Firefox o Safari actualizado.'), item('imp', 'Internet', 'Wifi o datos móviles; el cobro se valida en línea.')];
+    lector[d][m].forEach(([n, t, x]) => filas.push(item(n, t, x)));
+    filas.push(item('imp', credencial[m][0], credencial[m][1]));
+    if (!(m === 'qr' && d === 'pc')) filas.push(item('rec', 'Lector de códigos de barras', 'Para vender escaneando los productos. Un lector 2D sirve también para leer el QR de las credenciales.'));
+    filas.push(item('opc', 'Impresora', 'Para imprimir credenciales en el colegio. También se pueden mandar por WhatsApp.'));
+    document.getElementById('res-lista').innerHTML = filas.join('');
+    const a = avisos[`${d}-${m}`];
+    document.getElementById('res-aviso').innerHTML = a ? `<p class="aviso ${a[0]}">${a[1]}</p>` : '';
+  }
+  form.addEventListener('change', pintar);
+  pintar();
+})();
+</script>
+
+</body>
+</html>

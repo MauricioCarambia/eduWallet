@@ -150,6 +150,8 @@ export default function Venta() {
   // Tarjeta NFC: la búsqueda la hace el backend, que reconoce el número en
   // cualquier formato (celular, lector USB en hex o decimal)
   const buscarPorTarjeta = async uid => {
+    // Con la caja cerrada no se puede cobrar: se avisa en vez de ignorar la tarjeta
+    if (!caja) { showMsg('warn', 'Abrí la caja para cobrar con tarjeta'); return }
     try {
       const res = await api.get('/alumnos/por-tarjeta', { params: { uid } })
       const encontrado = alumnos.find(a => a.id === res.data.id) || res.data
@@ -161,8 +163,9 @@ export default function Venta() {
     }
   }
 
-  // Lector USB: funciona siempre en esta pantalla, tenga el cursor donde tenga
-  useLectorTarjeta(buscarPorTarjeta, !!caja)
+  // Lector (USB o app de escritorio): escucha siempre en esta pantalla, tenga
+  // el cursor donde tenga; con la caja cerrada avisa que hay que abrirla
+  useLectorTarjeta(buscarPorTarjeta)
   const lectorEscritorio = useLectorEscritorio()
 
   // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva

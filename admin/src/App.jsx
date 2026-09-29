@@ -11,6 +11,7 @@ import Cajas from './pages/Cajas'
 import Reportes from './pages/Reportes'
 import Auditoria from './pages/Auditoria'
 import Recargas from './pages/Recargas'
+import Credenciales from './pages/Credenciales'
 import Configuracion from './pages/Configuracion'
 import Layout from './components/Layout'
 import Padres from './pages/Padres'
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/mensajes" element={<PrivateRoute><Layout><Mensajes /></Layout></PrivateRoute>} />
       <Route path="/cajas" element={<PrivateRoute><Layout><Cajas /></Layout></PrivateRoute>} />
       <Route path="/reportes" element={<PrivateRoute><Layout><Reportes /></Layout></PrivateRoute>} />
+      <Route path="/credenciales" element={<PrivateRoute><Layout><Credenciales /></Layout></PrivateRoute>} />
       <Route path="/recargas" element={<PrivateRoute><Layout><Recargas /></Layout></PrivateRoute>} />
       <Route path="/auditoria" element={<PrivateRoute><Layout><Auditoria /></Layout></PrivateRoute>} />
       <Route path="/configuracion" element={<PrivateRoute><Layout><Configuracion /></Layout></PrivateRoute>} />

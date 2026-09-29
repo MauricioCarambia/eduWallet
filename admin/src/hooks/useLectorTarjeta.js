@@ -7,14 +7,26 @@ import { useEffect, useRef, useState } from 'react'
 const MAX_MS_ENTRE_TECLAS = 50
 const MIN_CARACTERES = 6
 
+const MS_REPETIDA = 1500
+
 export default function useLectorTarjeta(onLeer, activo = true) {
   const onLeerRef = useRef(onLeer)
   useEffect(() => { onLeerRef.current = onLeer }, [onLeer])
+  const ultimaRef = useRef({ codigo: null, t: 0 })
 
   useEffect(() => {
     if (!activo) return
     let buffer = ''
     let ultima = 0
+
+    // La misma lectura repetida en menos de 1,5 s se toma una sola vez
+    const leer = codigo => {
+      const ahora = Date.now()
+      const u = ultimaRef.current
+      if (u.codigo === codigo && ahora - u.t < MS_REPETIDA) return
+      ultimaRef.current = { codigo, t: ahora }
+      onLeerRef.current(codigo)
+    }
 
     const onKeyDown = e => {
       const ahora = Date.now()
@@ -33,7 +45,7 @@ export default function useLectorTarjeta(onLeer, activo = true) {
             setter?.call(el, el.value.slice(0, -leido.length))
             el.dispatchEvent(new Event('input', { bubbles: true }))
           }
-          onLeerRef.current(leido)
+          leer(leido)
         }
         buffer = ''
         return
@@ -44,7 +56,7 @@ export default function useLectorTarjeta(onLeer, activo = true) {
     document.addEventListener('keydown', onKeyDown, true)
     // App de escritorio (EduWallet POS para Windows): el lector PC/SC
     // (ACR122U) manda las tarjetas directo, sin pasar por el teclado
-    const desuscribir = escritorio()?.onTarjeta(uid => onLeerRef.current(uid))
+    const desuscribir = escritorio()?.onTarjeta(uid => leer(uid))
     return () => {
       document.removeEventListener('keydown', onKeyDown, true)
       desuscribir?.()

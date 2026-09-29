@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
 const { registrarPadreEnColegio } = require("../db/migracion_padres_colegios");
 const { variantesUid } = require("../services/tarjetasService");
+const { nuevoCodigoQr, normalizarCodigo, esCodigoQr } = require("../services/credencialesService");
 const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
 
@@ -39,7 +40,7 @@ const crearAlumno = async (req, res) => {
   const { nombre, curso, limite_diario, tutor, tutor_tel, contacto2, contacto2_tel, alergias } =
     req.body;
   try {
-    const qr = "QR-" + Date.now();
+    const qr = nuevoCodigoQr();
     const codigoVinculacion = generarCodigoVinculacion();
     const resultado = await pool.query(
       `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id, contacto2, contacto2_tel)
@@ -254,7 +255,7 @@ const importarAlumnos = async (req, res) => {
       const contacto2  = f.tutor2?.trim() || null;
       const contacto2Tel = f.tutor2_tel?.trim() || null;
       const alergias   = f.alergias?.trim() || 'Ninguna';
-      const qr         = 'QR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+      const qr         = nuevoCodigoQr();
       const codigoVinculacion = generarCodigoVinculacion();
 
       try {
@@ -313,6 +314,9 @@ const importarAlumnos = async (req, res) => {
 // puede estar en dos alumnos del colegio.
 const asignarTarjeta = async (req, res) => {
   const { id } = req.params;
+  if (esCodigoQr(req.body.uid)) {
+    return res.status(400).json({ error: 'Ese es el QR de una credencial, no una tarjeta. El QR ya funciona solo: no hace falta asignarlo.' });
+  }
   const claves = variantesUid(req.body.uid);
   if (claves.length === 0) return res.status(400).json({ error: 'No se pudo leer la tarjeta. Probá de nuevo.' });
   try {
@@ -367,7 +371,84 @@ const buscarPorTarjeta = async (req, res) => {
   }
 };
 
+// ─── Identificar al alumno con cualquier medio ──────────────────────────────
+// Lo que llegue del POS (QR leído con lector USB o cámara, tarjeta NFC de
+// 13,56 MHz o llavero de 125 kHz, con cualquier lector) se resuelve acá: el
+// POS no necesita saber qué tipo de lector usa cada colegio.
+const buscarAlumnoPorCodigo = async (codigo, colegioId) => {
+  const normalizado = normalizarCodigo(codigo);
+  if (normalizado.length >= 6) {
+    const porQr = await pool.query(
+      `SELECT * FROM alumnos WHERE colegio_id = $1 AND regexp_replace(upper(qr), '[^A-Z0-9]', '', 'g') = $2 LIMIT 1`,
+      [colegioId, normalizado]
+    );
+    if (porQr.rows.length) return { alumno: porQr.rows[0], medio: 'qr' };
+  }
+  const claves = variantesUid(codigo);
+  if (claves.length) {
+    const porTarjeta = await pool.query(
+      'SELECT * FROM alumnos WHERE colegio_id = $1 AND nfc_claves && $2::text[] LIMIT 1',
+      [colegioId, claves]
+    );
+    if (porTarjeta.rows.length) return { alumno: porTarjeta.rows[0], medio: 'tarjeta' };
+  }
+  return null;
+};
+
+const identificarAlumno = async (req, res) => {
+  const { codigo } = req.query;
+  if (!codigo || normalizarCodigo(codigo).length < 6) return res.status(400).json({ error: 'No se pudo leer el código. Probá de nuevo.' });
+  try {
+    const r = await buscarAlumnoPorCodigo(codigo, req.empleado.colegio_id);
+    if (!r) {
+      return res.status(404).json({ error: esCodigoQr(codigo) ? 'QR no reconocido: puede ser de una credencial vieja' : 'Tarjeta o código no asignado a ningún alumno' });
+    }
+    res.json({ ...r.alumno, medio: r.medio });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// QR nuevo (credencial perdida o copiada): el anterior deja de funcionar
+const regenerarQr = async (req, res) => {
+  try {
+    const r = await pool.query(
+      'UPDATE alumnos SET qr = $1 WHERE id = $2 AND colegio_id = $3 RETURNING *',
+      [nuevoCodigoQr(), req.params.id, req.empleado.colegio_id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Alumno no encontrado' });
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'QR regenerado', `${r.rows[0].nombre} (la credencial anterior dejó de funcionar)`);
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Credenciales para imprimir: nombre, curso y QR de cada alumno activo
+const getCredenciales = async (req, res) => {
+  const { curso } = req.query;
+  try {
+    const r = await pool.query(
+      `SELECT id, nombre, curso, qr FROM alumnos
+       WHERE colegio_id = $1 AND activo = true AND ($2::text IS NULL OR curso = $2)
+       ORDER BY curso, nombre`,
+      [req.empleado.colegio_id, curso || null]
+    );
+    const conf = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [req.empleado.colegio_id]);
+    const credenciales = await Promise.all(r.rows.map(async a => ({
+      id: a.id, nombre: a.nombre, curso: a.curso,
+      qr_img: await QRCode.toDataURL(a.qr, { width: 300, margin: 1, errorCorrectionLevel: 'M' }),
+    })));
+    res.json({ colegio: conf.rows[0]?.nombre_colegio || '', logo: conf.rows[0]?.logo || null, credenciales });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 module.exports = {
+  identificarAlumno,
+  regenerarQr,
+  getCredenciales,
   asignarTarjeta,
   quitarTarjeta,
   buscarPorTarjeta,

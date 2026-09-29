@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { Link } from 'react-router-dom'
 import { SkeletonTable } from '../components/Skeleton'
 import { ModalTarjeta, ModalAsignarTarjetas } from '../components/TarjetasNfc'
 
@@ -178,6 +179,17 @@ export default function Alumnos() {
     } catch { showMsg('error', 'No se pudo copiar, seleccioná el link a mano') }
   }
 
+  // QR nuevo: la credencial anterior (perdida o copiada) deja de funcionar
+  const regenerarQR = async () => {
+    if (!confirm(`¿Generar un QR nuevo para ${qrModal.alumno.nombre}? La credencial actual deja de funcionar y hay que imprimir una nueva.`)) return
+    try {
+      await api.patch(`/alumnos/${qrModal.alumno.id}/qr`)
+      const res = await api.get(`/alumnos/${qrModal.alumno.id}/qr`)
+      setQrModal(m => ({ ...m, qr: res.data.qr, codigo: res.data.codigo }))
+      showMsg('ok', 'QR nuevo generado: imprimí la credencial otra vez')
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al generar el QR') }
+  }
+
   const verQR = async alumno => {
     try {
       const res = await api.get(`/alumnos/${alumno.id}/qr`)
@@ -242,6 +254,7 @@ export default function Alumnos() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Importar CSV
           </button>
+          <Link to="/credenciales" style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none' }}>🖨 Imprimir credenciales</Link>
           <button onClick={() => setModal('asignarTarjetas')} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)' }}>💳 Asignar tarjetas</button>
           <Btn onClick={() => { setForm(FORM_VACIO); setModal('nuevo') }}>+ Nuevo alumno</Btn>
         </div>
@@ -419,7 +432,11 @@ export default function Alumnos() {
             </div>
             <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-secondary)' }}>Código: <b style={{ color: 'var(--text)' }}>{qrModal.codigo}</b></p>
             <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-tertiary)' }}>{qrModal.alumno.curso}</p>
-            <Btn onClick={() => { const a = document.createElement('a'); a.href = qrModal.qr; a.download = `QR-${qrModal.alumno.nombre}.png`; a.click() }}>Descargar QR</Btn>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Btn onClick={() => { const a = document.createElement('a'); a.href = qrModal.qr; a.download = `QR-${qrModal.alumno.nombre}.png`; a.click() }}>Descargar QR</Btn>
+              <button onClick={regenerarQR} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Generar QR nuevo</button>
+            </div>
+            <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Si la credencial se pierde o la copian, generá un QR nuevo: la anterior deja de funcionar.</p>
           </div>
         </Modal>
       )}

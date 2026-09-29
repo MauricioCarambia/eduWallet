@@ -6,6 +6,12 @@ import api from '../api/axios'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 
+// Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
+const esCodigo = texto => {
+  const t = texto.trim()
+  return /^EW[A-Z0-9]{12}$/i.test(t) || (/^[A-Za-z0-9:'\-]{8,}$/.test(t) && /\d/.test(t))
+}
+
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Venta() {
@@ -122,50 +128,43 @@ export default function Venta() {
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al anular') }
   }
 
-  const buscarPorCodigo = codigo => {
-    const encontrado = alumnos.find(a => a.qr === codigo.trim())
-    if (encontrado) { setAlumno(encontrado); setModoEscaneo('manual'); setEscaneandoQR(false); showMsg('ok', `✓ ${encontrado.nombre}`) }
-    else showMsg('error', `Código no reconocido: ${codigo}`)
-  }
-
   const iniciarQR = async () => {
     setEscaneandoQR(true); setErrorQR(null)
     try {
       const { BrowserQRCodeReader } = await import('@zxing/browser')
       const reader = new BrowserQRCodeReader()
-      scannerRef.current = reader
-      const devices = await BrowserQRCodeReader.listVideoInputDevices()
-      if (devices.length === 0) { setErrorQR('No se encontró cámara'); setEscaneandoQR(false); return }
-      await reader.decodeFromVideoDevice(devices[devices.length - 1].deviceId, videoRef.current, (result) => {
-        if (result) { buscarPorCodigo(result.getText()); detenerQR() }
+      // cámara trasera en celulares/tablets (también en iPhone); en una PC, la que haya
+      scannerRef.current = await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } } }, videoRef.current, (result) => {
+        if (result) { identificar(result.getText()); detenerQR() }
       })
-    } catch (err) { setErrorQR('Error al acceder a la cámara'); setEscaneandoQR(false) }
+    } catch (err) { setErrorQR(err?.name === 'NotAllowedError' ? 'Permití el acceso a la cámara para escanear' : 'No se encontró una cámara'); setEscaneandoQR(false) }
   }
 
   const detenerQR = () => {
-    if (scannerRef.current) { scannerRef.current.reset(); scannerRef.current = null }
+    if (scannerRef.current) { scannerRef.current.stop(); scannerRef.current = null }
     setEscaneandoQR(false)
   }
 
-  // Tarjeta NFC: la búsqueda la hace el backend, que reconoce el número en
-  // cualquier formato (celular, lector USB en hex o decimal)
-  const buscarPorTarjeta = async uid => {
-    // Con la caja cerrada no se puede cobrar: se avisa en vez de ignorar la tarjeta
-    if (!caja) { showMsg('warn', 'Abrí la caja para cobrar con tarjeta'); return }
+  // Identificar al alumno con lo que se leyó: QR de la credencial (lector USB
+  // o cámara), tarjeta NFC 13,56 MHz o llavero 125 kHz, con cualquier lector.
+  // El backend resuelve qué es; el POS no necesita saber qué usa el colegio.
+  const identificar = async codigo => {
+    // Con la caja cerrada no se puede cobrar: se avisa en vez de ignorar la lectura
+    if (!caja) { showMsg('warn', 'Abrí la caja para cobrar con la credencial'); return }
     try {
-      const res = await api.get('/alumnos/por-tarjeta', { params: { uid } })
+      const res = await api.get('/alumnos/identificar', { params: { codigo } })
       const encontrado = alumnos.find(a => a.id === res.data.id) || res.data
-      if (!encontrado.activo) { showMsg('error', `Tarjeta de ${encontrado.nombre}: está bloqueada`); return }
-      setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false)
+      if (!encontrado.activo) { showMsg('error', `${encontrado.nombre}: la cuenta está bloqueada`); return }
+      setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
       showMsg('ok', `✓ ${encontrado.nombre}`)
     } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Error al leer la tarjeta')
+      showMsg('error', err.response?.data?.error || 'No se pudo leer la credencial')
     }
   }
 
   // Lector (USB o app de escritorio): escucha siempre en esta pantalla, tenga
   // el cursor donde tenga; con la caja cerrada avisa que hay que abrirla
-  useLectorTarjeta(buscarPorTarjeta)
+  useLectorTarjeta(identificar)
   const lectorEscritorio = useLectorEscritorio()
 
   // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva
@@ -178,7 +177,7 @@ export default function Venta() {
       detenerNFC()
       const ctrl = new AbortController()
       nfcAbortRef.current = ctrl
-      await escucharNfc(buscarPorTarjeta, ctrl.signal)
+      await escucharNfc(identificar, ctrl.signal)
       setModoEscaneo('nfc')
     } catch (err) { showMsg('error', 'Error al activar NFC: ' + err.message); setModoEscaneo('manual') }
   }
@@ -341,7 +340,7 @@ export default function Venta() {
           ) : (
             <div>
               <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
-                💳 Pasá la tarjeta por el lector{nfcDisponible() ? ' o tocá NFC' : ''}, escaneá el QR o buscá por nombre
+                💳 Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
                 {lectorEscritorio.disponible && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
                     {lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}
@@ -358,11 +357,11 @@ export default function Venta() {
                     }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}>{m.label}</button>
                   ))}
                 </div>
-                <input placeholder="Buscá por nombre o pasá la tarjeta..." value={busqAlumno}
+                <input placeholder="Buscá por nombre o pasá la credencial..." value={busqAlumno}
                   onChange={e => { setBusqAlumno(e.target.value); setShowSugerencias(true) }}
-                  onKeyDown={e => { if (e.key === 'Enter' && busqAlumno.startsWith('QR-')) { buscarPorCodigo(busqAlumno); setBusqAlumno(''); setShowSugerencias(false) } }}
+                  onKeyDown={e => { if (e.key === 'Enter' && esCodigo(busqAlumno)) { identificar(busqAlumno.trim()); setBusqAlumno(''); setShowSugerencias(false) } }}
                   onFocus={() => setShowSugerencias(true)} style={{ marginBottom: 6 }} autoFocus />
-                {showSugerencias && busqAlumno.length > 1 && !busqAlumno.startsWith('QR-') && (
+                {showSugerencias && busqAlumno.length > 1 && !esCodigo(busqAlumno) && (
                   <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow-md)', zIndex: 50, maxHeight: 200, overflowY: 'auto', marginBottom: 6 }}>
                     {alumnos.filter(a => a.activo && a.nombre.toLowerCase().includes(busqAlumno.toLowerCase())).map(a => (
                       <button key={a.id} onClick={() => { setAlumno(a); setBusqAlumno(''); setShowSugerencias(false) }}

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion, asignarTarjeta, quitarTarjeta, buscarPorTarjeta } = require('../controllers/alumnosController');
+const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion, asignarTarjeta, quitarTarjeta, buscarPorTarjeta, identificarAlumno, regenerarQr, getCredenciales } = require('../controllers/alumnosController');
 
 /**
  * @swagger
@@ -56,6 +56,41 @@ router.get('/', verificarToken, getAlumnos);
  *         description: Tarjeta no asignada
  */
 router.get('/por-tarjeta', verificarToken, buscarPorTarjeta);
+
+/**
+ * @swagger
+ * /alumnos/identificar:
+ *   get:
+ *     summary: Identificar al alumno con lo que leyó el POS (QR de la credencial, tarjeta NFC 13,56 MHz o llavero 125 kHz, con cualquier lector)
+ *     tags: [Alumnos]
+ *     parameters:
+ *       - in: query
+ *         name: codigo
+ *         required: true
+ *         schema: { type: string, example: "EWK7QM2XPT4HNA" }
+ *     responses:
+ *       200:
+ *         description: Alumno, con "medio" = qr | tarjeta
+ *       404:
+ *         description: Código no asignado
+ */
+router.get('/identificar', verificarToken, identificarAlumno);
+
+/**
+ * @swagger
+ * /alumnos/credenciales:
+ *   get:
+ *     summary: Credenciales para imprimir (nombre, curso y QR) de los alumnos activos, opcionalmente de un curso (solo admin)
+ *     tags: [Alumnos]
+ *     parameters:
+ *       - in: query
+ *         name: curso
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: "{ colegio, logo, credenciales: [{ id, nombre, curso, qr_img }] }"
+ */
+router.get('/credenciales', verificarToken, soloAdmin, getCredenciales);
 
 /**
  * @swagger
@@ -228,6 +263,18 @@ router.patch('/:id/codigo-vinculacion', verificarToken, soloAdmin, regenerarCodi
  *         description: Alumno actualizado
  */
 router.put('/:id/tarjeta', verificarToken, soloAdmin, asignarTarjeta);
+
+/**
+ * @swagger
+ * /alumnos/{id}/qr:
+ *   patch:
+ *     summary: Generar un QR nuevo para la credencial (perdida o copiada); el anterior deja de funcionar (solo admin)
+ *     tags: [Alumnos]
+ *     responses:
+ *       200:
+ *         description: Alumno actualizado
+ */
+router.patch('/:id/qr', verificarToken, soloAdmin, regenerarQr);
 router.delete('/:id/tarjeta', verificarToken, soloAdmin, quitarTarjeta);
 
 module.exports = router;

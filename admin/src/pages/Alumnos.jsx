@@ -217,7 +217,7 @@ export default function Alumnos() {
   }
 
   const enviarWhatsApp = async () => {
-    const texto = `Credencial EduWallet de ${qrModal.alumno.nombre} (${qrModal.alumno.curso}). Mostrala en el kiosco o el comedor para pagar con el saldo.`
+    const texto = `Credencial EduWallet de ${qrModal.alumno.nombre} (${qrModal.alumno.curso}). Mostrala donde corresponda para pagar con el saldo.`
     try {
       const archivo = await archivoCredencial()
       // Celulares (y navegadores que lo permiten): menú de compartir con la imagen, se elige WhatsApp

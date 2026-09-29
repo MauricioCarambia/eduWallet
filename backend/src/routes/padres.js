@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
+const { registro, login, getAlumnos, getCredencial, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
@@ -140,6 +140,25 @@ router.get('/alumnos', verificarPadre, getAlumnos);
  *         description: El alumno no está vinculado a este padre
  */
 router.get('/alumnos/:alumno_id/transacciones', verificarPadre, getTransaccionesAlumno);
+
+/**
+ * @swagger
+ * /padres/alumnos/{alumno_id}/credencial:
+ *   get:
+ *     summary: Credencial de un hijo (nombre, curso, colegio y QR) para verla, descargarla o imprimirla
+ *     tags: [Padres]
+ *     parameters:
+ *       - in: path
+ *         name: alumno_id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: "{ colegio, logo, credencial: { id, nombre, curso, qr_img } }"
+ *       403:
+ *         description: El alumno no está vinculado al padre
+ */
+router.get('/alumnos/:alumno_id/credencial', verificarPadre, getCredencial);
 
 /**
  * @swagger

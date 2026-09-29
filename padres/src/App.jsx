@@ -8,6 +8,7 @@ import Inicio from './pages/Inicio'
 import Historial from './pages/Historial'
 import Recargar from './pages/Recargar'
 import Control from './pages/Control'
+import Credencial from './pages/Credencial'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -27,6 +28,7 @@ export default function App() {
       <Route path="/inicio" element={<PrivateRoute><Layout><Inicio /></Layout></PrivateRoute>} />
       <Route path="/historial" element={<PrivateRoute><Layout><Historial /></Layout></PrivateRoute>} />
       <Route path="/recargar" element={<PrivateRoute><Layout><Recargar /></Layout></PrivateRoute>} />
+      <Route path="/credencial/:alumnoId" element={<PrivateRoute><Layout><Credencial /></Layout></PrivateRoute>} />
       <Route path="/control" element={<PrivateRoute><Layout><Control /></Layout></PrivateRoute>} />
     </Routes>
   )

@@ -3,6 +3,7 @@ const { registrarPadreEnColegio } = require('../db/migracion_padres_colegios');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const { enviarEmailRecuperacion } = require('../services/emailService');
 require('dotenv').config();
 
@@ -224,4 +225,32 @@ const resetearPassword = async (req, res) => {
   }
 };
 
-module.exports = { registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };
+// Credencial de un hijo (nombre, curso, colegio y QR) para verla, descargarla
+// o imprimirla desde la app. Sólo de alumnos vinculados al padre.
+const getCredencial = async (req, res) => {
+  const { alumno_id } = req.params;
+  try {
+    const r = await pool.query(
+      `SELECT a.id, a.nombre, a.curso, a.qr, a.colegio_id FROM alumnos a
+       JOIN padres_alumnos pa ON pa.alumno_id = a.id AND pa.padre_id = $1
+       WHERE a.id = $2`,
+      [req.padre.id, alumno_id]
+    );
+    if (r.rows.length === 0) return res.status(403).json({ error: 'No tenés acceso a este alumno' });
+    const a = r.rows[0];
+    const conf = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [a.colegio_id]);
+    res.json({
+      colegio: conf.rows[0]?.nombre_colegio || '',
+      logo: conf.rows[0]?.logo || null,
+      credencial: {
+        id: a.id, nombre: a.nombre, curso: a.curso,
+        qr_img: await QRCode.toDataURL(a.qr, { width: 300, margin: 1, errorCorrectionLevel: 'M' }),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = {
+  getCredencial, registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };

@@ -171,6 +171,7 @@ export default function Inicio() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <button onClick={() => navigate('/recargar')} style={{ padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Recargar saldo</button>
                   <button onClick={() => navigate('/historial')} style={{ padding: '10px', border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>Ver historial</button>
+                  <button onClick={() => navigate(`/credencial/${a.id}`)} style={{ gridColumn: '1 / -1', padding: '10px', border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>🪪 Ver credencial</button>
                 </div>
               </div>
             ))}

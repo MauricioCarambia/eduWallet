@@ -21,7 +21,7 @@ const fakeQuery = async (sql, params = []) => {
     return { rows: [p] };
   }
   if (sql.startsWith('UPDATE productos SET nombre')) {
-    const p = db.productos.find(x => x.id === Number(params[3]));
+    const p = db.productos.find(x => x.id === Number(params.at(-1)));
     Object.assign(p, { nombre: params[0], precio: params[1], categoria: params[2] });
     return { rows: [p] };
   }

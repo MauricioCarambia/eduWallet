@@ -3,13 +3,15 @@ import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
 import { useAuth } from '../context/AuthContext'
+import useLectorTarjeta from '../hooks/useLectorTarjeta'
+import { leerArchivo, descargarModelo } from '../utils/importarProductos'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, ancho = 440 }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: ancho, maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{title}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
@@ -20,16 +22,33 @@ function Modal({ title, onClose, children }) {
   )
 }
 
-function Campo({ label, children }) {
+function Campo({ label, children, ayuda }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</label>
       {children}
+      {ayuda && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>{ayuda}</p>}
     </div>
   )
 }
 
-const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida' }
+function SelectCategoria({ value, onChange }) {
+  return (
+    <select value={value} onChange={onChange}>
+      <option value="comida">Comida</option>
+      <option value="bebida">Bebida</option>
+      <option value="golosina">Golosina</option>
+      <option value="útil">Útil escolar</option>
+      <option value="otro">Otro</option>
+    </select>
+  )
+}
+
+const btnSec = { padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }
+const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
+
+const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '' }
+const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
 
 export default function Productos() {
   const { sesion } = useAuth()
@@ -42,6 +61,8 @@ export default function Productos() {
   const [form, setForm] = useState(FORM_VACIO)
   const [busq, setBusq] = useState('')
   const [msg, setMsg] = useState(null)
+  const [importacion, setImportacion] = useState(null) // { archivo, filas, error, resultado }
+  const [importando, setImportando] = useState(false)
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
@@ -54,7 +75,27 @@ export default function Productos() {
     catch (err) { console.error(err) } finally { setCargando(false) }
   }
 
-  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO) }
+  const cerrarModal = () => { setModal(null); setSeleccionado(null); setForm(FORM_VACIO); setImportacion(null) }
+
+  const abrirStock = (p, sumar = 0) => { setSeleccionado(p); setForm({ stock: String(p.stock + sumar) }); setModal('stock') }
+
+  // Lector de códigos de barras (el mismo lector USB del QR de la credencial):
+  // con el formulario abierto completa el código; si no, busca el producto en
+  // esta zona: si existe abre el stock (cada escaneo suma 1), si no, lo da de alta
+  const alEscanear = leido => {
+    const codigo = limpiarCodigo(leido)
+    if (modal === 'nuevo' || modal === 'editar') { setForm(p => ({ ...p, codigo_barras: codigo })); return }
+    if (modal === 'stock') {
+      if (seleccionado?.codigo_barras === codigo) setForm(p => ({ stock: String((parseInt(p.stock) || 0) + 1) }))
+      else showMsg('error', 'Guardá o cerrá el stock de este producto antes de escanear otro')
+      return
+    }
+    if (modal) return
+    const existente = productos.find(p => p.local === local && p.codigo_barras === codigo)
+    if (existente) abrirStock(existente, 1)
+    else { setForm({ ...FORM_VACIO, codigo_barras: codigo }); setModal('nuevo') }
+  }
+  useLectorTarjeta(alEscanear, !!local, { repetidaMs: 0 })
 
   const guardarNuevo = async () => {
     if (!form.nombre) return
@@ -68,7 +109,7 @@ export default function Productos() {
   const guardarEdicion = async () => {
     if (!form.nombre) return
     try {
-      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria })
+      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras })
       setProductos(prev => prev.map(p => p.id === res.data.id ? res.data : p))
       showMsg('ok', `Producto ${res.data.nombre} actualizado`); cerrarModal()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar el producto') }
@@ -96,7 +137,32 @@ export default function Productos() {
     } catch (err) { showMsg('error', 'Error al ajustar stock') }
   }
 
-  const prodsFiltrados = productos.filter(p => p.local === local && p.nombre.toLowerCase().includes(busq.toLowerCase()))
+  // ─── Importar desde Excel / CSV ───────────────────────────────────────────
+  const elegirArchivo = async e => {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivo) return
+    try { setImportacion({ archivo: archivo.name, filas: await leerArchivo(archivo) }) }
+    catch (err) { setImportacion({ archivo: archivo.name, error: err.message || 'No se pudo leer el archivo' }) }
+  }
+
+  const confirmarImportacion = async () => {
+    const validas = importacion.filas.filter(f => !f.aviso)
+    if (validas.length === 0 || importando) return
+    setImportando(true)
+    try {
+      const res = await api.post('/productos/importar', { local, productos: validas.map(f => ({ ...f, aviso: undefined })) })
+      const avisos = importacion.filas.filter(f => f.aviso).map(f => ({ fila: f.fila, error: f.aviso }))
+      const errores = [...avisos, ...res.data.errores].sort((a, b) => a.fila - b.fila)
+      setImportacion(prev => ({ ...prev, resultado: { ...res.data, errores } }))
+      await cargar()
+    } catch (err) {
+      setImportacion(prev => ({ ...prev, error: err.response?.data?.error || 'Error al importar' }))
+    } finally { setImportando(false) }
+  }
+
+  const texto = busq.toLowerCase()
+  const prodsFiltrados = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(texto) || (p.codigo_barras || '').includes(busq.trim())))
   const stockBajo = productos.filter(p => p.stock <= 3)
 
   if (cargando) return <SkeletonTable rows={6} cols={4} />
@@ -106,10 +172,13 @@ export default function Productos() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Productos</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{productos.length} productos en total</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{productos.length} productos en total · escaneá un código de barras para cargarlo o sumar stock</p>
         </div>
         {local && (
-          <button onClick={() => setModal('nuevo')} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo producto</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setImportacion({}); setModal('importar') }} style={btnSec}>⬆ Importar Excel</button>
+            <button onClick={() => setModal('nuevo')} style={btnPri}>+ Nuevo producto</button>
+          </div>
         )}
       </div>
 
@@ -129,7 +198,7 @@ export default function Productos() {
         </div>
       )}
 
-      <input placeholder="Buscar producto..." value={busq} onChange={e => setBusq(e.target.value)} style={{ marginBottom: 14 }} />
+      <input placeholder="Buscar por nombre o código..." value={busq} onChange={e => setBusq(e.target.value)} style={{ marginBottom: 14 }} />
 
       <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -143,24 +212,25 @@ export default function Productos() {
           <tbody>
             {prodsFiltrados.map(p => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{p.nombre}</td>
+                <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
+                  {p.nombre}
+                  {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
+                </td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button onClick={() => editarStock(p.id, -1)} style={{ width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>−</button>
                     <span style={{ fontSize: 14, fontWeight: 600, minWidth: 28, textAlign: 'center', color: p.stock <= 3 ? 'var(--red)' : 'var(--text)' }}>{p.stock}</span>
                     <button onClick={() => editarStock(p.id, 1)} style={{ width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>+</button>
-                    <button onClick={() => { setSeleccionado(p); setForm({ stock: String(p.stock) }); setModal('stock') }} style={{ padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 11, cursor: 'pointer', color: 'var(--text-secondary)' }}>Ajustar</button>
+                    <button onClick={() => abrirStock(p)} style={{ padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 11, cursor: 'pointer', color: 'var(--text-secondary)' }}>Ajustar</button>
                     {p.stock <= 3 && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 5, background: 'var(--red-bg)', color: 'var(--red)' }}>Bajo</span>}
                   </div>
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
-                {(
-                  <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
-                    <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
-                    <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
-                  </td>
-                )}
+                <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
+                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -170,21 +240,16 @@ export default function Productos() {
 
       {modal === 'nuevo' && (
         <Modal title={`Nuevo producto — ${local}`} onClose={cerrarModal}>
-          <Campo label="Nombre"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
+          <Campo label="Nombre"><input autoFocus value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
           <Campo label="Stock inicial"><input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} /></Campo>
-          <Campo label="Categoría">
-            <select value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
-              <option value="comida">Comida</option>
-              <option value="bebida">Bebida</option>
-              <option value="golosina">Golosina</option>
-              <option value="útil">Útil escolar</option>
-              <option value="otro">Otro</option>
-            </select>
+          <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
+          <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
+            <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
           </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={guardarNuevo} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Agregar</button>
+            <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
+            <button onClick={guardarNuevo} style={btnPri}>Agregar</button>
           </div>
         </Modal>
       )}
@@ -193,18 +258,13 @@ export default function Productos() {
         <Modal title={`Editar — ${seleccionado.nombre}`} onClose={cerrarModal}>
           <Campo label="Nombre"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
-          <Campo label="Categoría">
-            <select value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
-              <option value="comida">Comida</option>
-              <option value="bebida">Bebida</option>
-              <option value="golosina">Golosina</option>
-              <option value="útil">Útil escolar</option>
-              <option value="otro">Otro</option>
-            </select>
+          <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
+          <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
+            <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
           </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={guardarEdicion} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Guardar</button>
+            <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
+            <button onClick={guardarEdicion} style={btnPri}>Guardar</button>
           </div>
         </Modal>
       )}
@@ -212,11 +272,83 @@ export default function Productos() {
       {modal === 'stock' && seleccionado && (
         <Modal title={`Ajustar stock — ${seleccionado.nombre}`} onClose={cerrarModal}>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Stock actual: <b style={{ color: 'var(--text)' }}>{seleccionado.stock}</b></p>
-          <Campo label="Nuevo stock"><input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} /></Campo>
+          <Campo label="Nuevo stock" ayuda={seleccionado.codigo_barras ? 'Cada vez que escaneás este producto suma 1' : null}>
+            <input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} />
+          </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={ajustarStock} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Guardar</button>
+            <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
+            <button onClick={ajustarStock} style={btnPri}>Guardar</button>
           </div>
+        </Modal>
+      )}
+
+      {modal === 'importar' && importacion && (
+        <Modal title={`Importar productos — ${local}`} onClose={cerrarModal} ancho={620}>
+          {importacion.resultado ? (
+            <div>
+              <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--green-bg)', color: 'var(--green)', fontSize: 14, marginBottom: 12 }}>
+                ✓ {importacion.resultado.creados} producto{importacion.resultado.creados === 1 ? '' : 's'} nuevo{importacion.resultado.creados === 1 ? '' : 's'} y {importacion.resultado.actualizados} actualizado{importacion.resultado.actualizados === 1 ? '' : 's'}
+              </div>
+              {importacion.resultado.errores.length > 0 && (
+                <div style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>
+                  <b>{importacion.resultado.errores.length} fila{importacion.resultado.errores.length === 1 ? '' : 's'} sin importar:</b>
+                  <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                    {importacion.resultado.errores.slice(0, 30).map(e => <li key={e.fila}>Fila {e.fila}: {e.error}</li>)}
+                  </ul>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button onClick={cerrarModal} style={btnPri}>Listo</button></div>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b> y <b>codigo_barras</b>.
+                Los productos que ya existen en {local} (mismo código o mismo nombre) se actualizan; el resto se crea.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+                <label style={{ ...btnPri, display: 'inline-block' }}>
+                  Elegir archivo
+                  <input type="file" accept=".xlsx,.csv" onChange={elegirArchivo} style={{ display: 'none' }} />
+                </label>
+                <button onClick={descargarModelo} style={btnSec}>Descargar planilla modelo</button>
+              </div>
+
+              {importacion.error && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12, background: 'var(--red-bg)', color: 'var(--red)' }}>{importacion.archivo ? `${importacion.archivo}: ` : ''}{importacion.error}</div>}
+
+              {importacion.filas && (
+                <>
+                  <p style={{ fontSize: 13, color: 'var(--text)', margin: '0 0 8px' }}><b>{importacion.archivo}</b> · {importacion.filas.length} producto{importacion.filas.length === 1 ? '' : 's'}</p>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'auto', maxHeight: 260, marginBottom: 14 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg)', position: 'sticky', top: 0 }}>
+                          {['Fila', 'Nombre', 'Precio', 'Stock', 'Categoría', 'Código'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontWeight: 600 }}>{h}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importacion.filas.slice(0, 100).map(f => (
+                          <tr key={f.fila} style={{ borderTop: '1px solid var(--border-light)', color: f.aviso ? 'var(--red)' : 'var(--text)' }} title={f.aviso || ''}>
+                            <td style={{ padding: '5px 8px', color: 'var(--text-tertiary)' }}>{f.fila}</td>
+                            <td style={{ padding: '5px 8px' }}>{f.nombre || <i style={{ color: 'var(--red)' }}>falta</i>}</td>
+                            <td style={{ padding: '5px 8px' }}>{typeof f.precio === 'number' ? fmt(f.precio) : <i style={{ color: 'var(--red)' }}>{f.precio || 'falta'}</i>}</td>
+                            <td style={{ padding: '5px 8px' }}>{f.stock === '' ? '—' : f.stock}</td>
+                            <td style={{ padding: '5px 8px' }}>{f.categoria || '—'}</td>
+                            <td style={{ padding: '5px 8px', fontFamily: 'monospace' }}>{f.aviso ? '⚠' : f.codigo_barras || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {importacion.filas.length > 100 && <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '-6px 0 12px' }}>Se muestran los primeros 100.</p>}
+                  {importacion.filas.some(f => f.aviso) && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 12px' }}>⚠ {importacion.filas.find(f => f.aviso).aviso}</p>}
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
+                    <button onClick={confirmarImportacion} disabled={importando} style={{ ...btnPri, opacity: importando ? 0.6 : 1 }}>{importando ? 'Importando...' : `Importar ${importacion.filas.filter(f => !f.aviso).length} productos`}</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </Modal>
       )}
     </div>

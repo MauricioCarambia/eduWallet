@@ -62,7 +62,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // la importación de productos manda hasta 1000 filas
 
 app.use('/api/empleados', empleadosRoutes);
 app.use('/api/alumnos', alumnosRoutes);

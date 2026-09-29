@@ -49,6 +49,7 @@ const options = {
             stock: { type: 'integer', example: 20 },
             categoria: { type: 'string', example: 'Snacks' },
             local: { type: 'string', example: 'Kiosco' },
+            codigo_barras: { type: 'string', example: '7790580123456' },
             activo: { type: 'boolean', example: true },
           },
         },

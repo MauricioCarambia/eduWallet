@@ -9,7 +9,10 @@ const MIN_CARACTERES = 6
 
 const MS_REPETIDA = 1500
 
-export default function useLectorTarjeta(onLeer, activo = true) {
+// repetidaMs: la misma lectura repetida dentro de ese tiempo se toma una sola
+// vez (los lectores de tarjetas a veces leen dos veces). Con 0 cuenta todas:
+// sirve para códigos de barras, donde dos productos iguales son dos lecturas.
+export default function useLectorTarjeta(onLeer, activo = true, { repetidaMs = MS_REPETIDA } = {}) {
   const onLeerRef = useRef(onLeer)
   useEffect(() => { onLeerRef.current = onLeer }, [onLeer])
   const ultimaRef = useRef({ codigo: null, t: 0 })
@@ -19,11 +22,10 @@ export default function useLectorTarjeta(onLeer, activo = true) {
     let buffer = ''
     let ultima = 0
 
-    // La misma lectura repetida en menos de 1,5 s se toma una sola vez
     const leer = codigo => {
       const ahora = Date.now()
       const u = ultimaRef.current
-      if (u.codigo === codigo && ahora - u.t < MS_REPETIDA) return
+      if (u.codigo === codigo && ahora - u.t < repetidaMs) return
       ultimaRef.current = { codigo, t: ahora }
       onLeerRef.current(codigo)
     }
@@ -61,7 +63,7 @@ export default function useLectorTarjeta(onLeer, activo = true) {
       document.removeEventListener('keydown', onKeyDown, true)
       desuscribir?.()
     }
-  }, [activo])
+  }, [activo, repetidaMs])
 }
 
 // ─── App de escritorio ──────────────────────────────────────────────────────

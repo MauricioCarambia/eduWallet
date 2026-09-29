@@ -32,16 +32,41 @@ const productoDelColegio = async (id, colegioId) =>
   (await pool.query('SELECT * FROM productos WHERE id = $1 AND colegio_id = $2 AND activo = true', [id, colegioId])).rows[0];
 
 const validarDatos = ({ nombre, precio }) => {
-  if (!nombre?.trim()) return 'El nombre es obligatorio';
+  if (!String(nombre ?? '').trim()) return 'El nombre es obligatorio';
   const p = Number(precio);
   if (!Number.isFinite(p) || p <= 0) return 'El precio tiene que ser mayor a 0';
   return null;
 };
 
+// Código de barras tal como lo tipea el lector (sin espacios); vacío = sin código
+const normalizarCodigoBarras = v => {
+  const c = String(v ?? '').replace(/\s+/g, '');
+  return c ? c.slice(0, 50) : null;
+};
+
+// Categorías del POS; lo que venga de un Excel se lleva a la más parecida
+const CATEGORIAS = ['comida', 'bebida', 'golosina', 'útil', 'otro'];
+const normalizarCategoria = v => {
+  const t = String(v ?? '').trim().toLowerCase();
+  if (!t) return null;
+  if (CATEGORIAS.includes(t)) return t;
+  const s = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (s.startsWith('comida')) return 'comida';
+  if (s.startsWith('bebida')) return 'bebida';
+  if (s.startsWith('golosina')) return 'golosina';
+  if (s.startsWith('util') || s.startsWith('libreria')) return 'útil';
+  return 'otro';
+};
+
+const CODIGO_REPETIDO = 'Ese código de barras ya está en otro producto de esta zona';
+const esRepetido = err => err.code === '23505';
+
 const crearProducto = async (req, res) => {
-  const { nombre, precio, stock, categoria } = req.body;
+  const { nombre, precio, stock } = req.body;
   const error = validarDatos(req.body);
   if (error) return res.status(400).json({ error });
+  const categoria = normalizarCategoria(req.body.categoria) || 'otro';
+  const codigo = normalizarCodigoBarras(req.body.codigo_barras);
   try {
     // Un empleado con zona fija siempre crea en su zona
     const zona = await zonaDelEmpleado(req.empleado);
@@ -50,21 +75,23 @@ const crearProducto = async (req, res) => {
     if (existe.rows.length === 0) return res.status(400).json({ error: 'Zona inválida' });
 
     const resultado = await pool.query(
-      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [nombre.trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id]
+      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo]
     );
-    await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo producto', `${nombre.trim()} — $${Number(precio)} (${local})`);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo producto', `${String(nombre).trim()} — ${Number(precio)} (${local})`);
     res.json(resultado.rows[0]);
   } catch (err) {
+    if (esRepetido(err)) return res.status(409).json({ error: CODIGO_REPETIDO });
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
 
-// Editar nombre, precio y categoría
+// Editar nombre, precio, categoría y código de barras
 const actualizarProducto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio, categoria } = req.body;
+  const { precio } = req.body;
+  const nombre = String(req.body.nombre ?? '');
   const error = validarDatos(req.body);
   if (error) return res.status(400).json({ error });
   try {
@@ -74,8 +101,9 @@ const actualizarProducto = async (req, res) => {
       return res.status(403).json({ error: `Sólo podés modificar productos de tu zona` });
     }
     const resultado = await pool.query(
-      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3 WHERE id = $4 RETURNING *',
-      [nombre.trim(), Number(precio), categoria || producto.categoria, id]
+      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4 WHERE id = $5 RETURNING *',
+      [nombre.trim(), Number(precio), normalizarCategoria(req.body.categoria) || producto.categoria,
+        'codigo_barras' in req.body ? normalizarCodigoBarras(req.body.codigo_barras) : producto.codigo_barras, id]
     );
     const cambios = [
       producto.nombre !== nombre.trim() && `nombre: ${producto.nombre} → ${nombre.trim()}`,
@@ -84,6 +112,7 @@ const actualizarProducto = async (req, res) => {
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Producto editado', `${nombre.trim()} (${producto.local})${cambios ? ' — ' + cambios : ''}`);
     res.json(resultado.rows[0]);
   } catch (err) {
+    if (esRepetido(err)) return res.status(409).json({ error: CODIGO_REPETIDO });
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -124,6 +153,90 @@ const eliminarProducto = async (req, res) => {
   }
 };
 
+// Importar la lista de productos de una zona (Excel / CSV leído en el POS).
+// Cada fila se busca por código de barras y, si no tiene o no está, por nombre:
+// si existe se actualiza (precio, categoría, código y stock si vino), si no se
+// crea. Las filas con errores se informan y no frenan al resto.
+const MAX_IMPORTAR = 1000;
+
+const importarProductos = async (req, res) => {
+  const filas = req.body.productos;
+  if (!Array.isArray(filas) || filas.length === 0) return res.status(400).json({ error: 'No hay productos para importar' });
+  if (filas.length > MAX_IMPORTAR) return res.status(400).json({ error: `Se pueden importar hasta ${MAX_IMPORTAR} productos por vez` });
+
+  const colegioId = req.empleado.colegio_id;
+  let db;
+  try {
+    const zona = await zonaDelEmpleado(req.empleado);
+    const local = zona || req.body.local;
+    const existe = await pool.query('SELECT 1 FROM locales WHERE colegio_id = $1 AND nombre = $2', [colegioId, local]);
+    if (existe.rows.length === 0) return res.status(400).json({ error: 'Zona inválida' });
+
+    let creados = 0, actualizados = 0;
+    const errores = [];
+    db = await pool.connect();
+    await db.query('BEGIN');
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i] || {};
+      const fila = Number.isInteger(f.fila) ? f.fila : i + 2;
+      const error = validarDatos(f);
+      if (error) { errores.push({ fila, error }); continue; }
+      const stockVacio = f.stock === undefined || f.stock === null || String(f.stock).trim() === '';
+      const stock = stockVacio ? null : Number(f.stock);
+      if (!stockVacio && (!Number.isInteger(stock) || stock < 0)) { errores.push({ fila, error: 'El stock tiene que ser un número entero, 0 o más' }); continue; }
+
+      const nombre = String(f.nombre).trim().slice(0, 100);
+      const precio = Number(f.precio);
+      const categoria = normalizarCategoria(f.categoria);
+      const codigo = normalizarCodigoBarras(f.codigo_barras);
+
+      let previo = null;
+      if (codigo) {
+        previo = (await db.query('SELECT id FROM productos WHERE colegio_id = $1 AND local = $2 AND activo = true AND codigo_barras = $3', [colegioId, local, codigo])).rows[0];
+      }
+      if (!previo) {
+        previo = (await db.query('SELECT id FROM productos WHERE colegio_id = $1 AND local = $2 AND activo = true AND lower(nombre) = lower($3) ORDER BY id LIMIT 1', [colegioId, local, nombre])).rows[0];
+      }
+
+      // Un savepoint por fila: si una choca (código repetido) no se pierde el resto
+      await db.query('SAVEPOINT fila');
+      try {
+        if (previo) {
+          await db.query(
+            `UPDATE productos SET nombre = $1, precio = $2, categoria = COALESCE($3, categoria),
+               codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock)
+             WHERE id = $6`,
+            [nombre, precio, categoria, codigo, stock, previo.id]
+          );
+          actualizados++;
+        } else {
+          await db.query(
+            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo]
+          );
+          creados++;
+        }
+        await db.query('RELEASE SAVEPOINT fila');
+      } catch (err) {
+        await db.query('ROLLBACK TO SAVEPOINT fila');
+        if (!esRepetido(err)) throw err;
+        errores.push({ fila, error: CODIGO_REPETIDO });
+      }
+    }
+    await db.query('COMMIT');
+    if (creados + actualizados > 0) {
+      await registrar(req.empleado.id, colegioId, 'Productos importados', `${creados} nuevos, ${actualizados} actualizados (${local})`);
+    }
+    res.json({ creados, actualizados, errores });
+  } catch (err) {
+    if (db) await db.query('ROLLBACK').catch(() => {});
+    res.status(500).json({ error: 'Error del servidor' });
+  } finally {
+    db?.release();
+  }
+};
+
 // Productos con stock por debajo (o igual) del umbral configurado
 const getStockBajo = async (req, res) => {
   try {
@@ -142,4 +255,4 @@ const getStockBajo = async (req, res) => {
   }
 };
 
-module.exports = { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo };
+module.exports = { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, importarProductos };

@@ -76,6 +76,7 @@ const crearTablas = async () => {
         stock     INTEGER       DEFAULT 0 CHECK (stock >= 0),
         categoria VARCHAR(50),
         local     VARCHAR(50)   NOT NULL,
+        codigo_barras VARCHAR(50),
         activo    BOOLEAN       DEFAULT true
       );
 

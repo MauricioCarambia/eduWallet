@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo } = require('../controllers/productosController');
+const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, importarProductos } = require('../controllers/productosController');
 const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
 
 /**
@@ -61,6 +61,39 @@ router.get('/stock-bajo', verificarToken, getStockBajo);
 // Los productos los gestiona el personal del POS: un empleado con zona fija
 // sólo los de su zona; uno sin zona, todos. El admin del colegio sólo los ve.
 router.post('/', verificarToken, soloPersonalPos, crearProducto);
+
+/**
+ * @swagger
+ * /productos/importar:
+ *   post:
+ *     summary: Importar productos de una zona (desde un Excel o CSV leído en el POS). Actualiza los que ya existen por código de barras o nombre y crea el resto
+ *     tags: [Productos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [productos]
+ *             properties:
+ *               local: { type: string, description: 'Zona (el empleado con zona fija siempre importa en la suya)' }
+ *               productos:
+ *                 type: array
+ *                 maxItems: 1000
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     fila: { type: integer, description: 'Fila del archivo, para informar errores' }
+ *                     nombre: { type: string }
+ *                     precio: { type: number }
+ *                     stock: { type: integer }
+ *                     categoria: { type: string }
+ *                     codigo_barras: { type: string }
+ *     responses:
+ *       200:
+ *         description: Cantidad de productos creados y actualizados, y filas con errores
+ */
+router.post('/importar', verificarToken, soloPersonalPos, importarProductos);
 
 /**
  * @swagger

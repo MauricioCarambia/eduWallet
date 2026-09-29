@@ -12,6 +12,14 @@ const esCodigo = texto => {
   return /^EW[A-Z0-9]{12}$/i.test(t) || (/^[A-Za-z0-9:'\-]{8,}$/.test(t) && /\d/.test(t))
 }
 
+// La credencial leída dos veces seguidas (pasa con algunos lectores) cuenta una
+const esRepeticion = (ref, codigo) => {
+  const ahora = Date.now()
+  const repetida = ref.current.codigo === codigo && ahora - ref.current.t < 1500
+  ref.current = { codigo, t: ahora }
+  return repetida
+}
+
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Venta() {
@@ -71,7 +79,7 @@ export default function Venta() {
 
   const total = carrito.reduce((s, i) => s + i.precio * i.qty, 0)
   const totalDesc = Math.round(total * (1 - descPct / 100))
-  const prods = productos.filter(p => p.local === local && p.nombre.toLowerCase().includes(busq.toLowerCase()))
+  const prods = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(busq.toLowerCase()) || (busq.trim() && (p.codigo_barras || '').includes(busq.trim()))))
 
   const handleAbrirCaja = async () => {
     try { await abrirCaja(local, fondoCaja); showMsg('ok', `Caja abierta en ${local}`) }
@@ -162,9 +170,27 @@ export default function Venta() {
     }
   }
 
+  // Producto de esta zona con ese código de barras (o nada)
+  const productoPorCodigo = codigo => {
+    const c = codigo.replace(/\s+/g, '')
+    return productos.find(p => p.local === local && p.codigo_barras && p.codigo_barras === c)
+  }
+
   // Lector (USB o app de escritorio): escucha siempre en esta pantalla, tenga
-  // el cursor donde tenga; con la caja cerrada avisa que hay que abrirla
-  useLectorTarjeta(identificar)
+  // el cursor donde tenga. Un código de barras de un producto lo suma al
+  // carrito (cada escaneo, una unidad); cualquier otra cosa es la credencial
+  // del alumno. Con la caja cerrada avisa que hay que abrirla.
+  const ultimaCredencialRef = useRef({ codigo: null, t: 0 })
+  const leerCodigo = codigo => {
+    const producto = productoPorCodigo(codigo)
+    if (producto) {
+      if (!caja) { showMsg('warn', 'Abrí la caja para vender'); return }
+      addProd(producto)
+      return
+    }
+    if (!esRepeticion(ultimaCredencialRef, codigo)) identificar(codigo)
+  }
+  useLectorTarjeta(leerCodigo, true, { repetidaMs: 0 })
   const lectorEscritorio = useLectorEscritorio()
 
   // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva
@@ -285,7 +311,8 @@ export default function Venta() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </button>
           </div>
-          <input ref={busqRef} placeholder="Buscar producto..." value={busq} onChange={e => setBusq(e.target.value)} />
+          <input ref={busqRef} placeholder="Buscar producto o código..." value={busq} onChange={e => setBusq(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { const p = productoPorCodigo(busq); if (p) { addProd(p); setBusq('') } } }} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>

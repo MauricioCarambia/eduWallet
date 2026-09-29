@@ -3,6 +3,7 @@ import api from '../api/axios'
 import { Link } from 'react-router-dom'
 import { SkeletonTable } from '../components/Skeleton'
 import Credencial, { ESTILOS_CREDENCIAL } from '../components/Credencial'
+import { imagenCredencial } from '../utils/imagenCredencial'
 import { ModalTarjeta, ModalAsignarTarjetas } from '../components/TarjetasNfc'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -194,6 +195,42 @@ export default function Alumnos() {
   const cargarCredencial = async alumno => {
     const res = await api.get('/alumnos/credenciales', { params: { alumno_id: alumno.id } })
     return { alumno, credencial: res.data.credenciales[0], colegio: res.data.colegio, logo: res.data.logo }
+  }
+
+  // Imagen PNG de la credencial: guardarla o mandarla por WhatsApp
+  const archivoCredencial = async () => {
+    const blob = await imagenCredencial(qrModal)
+    const nombre = `Credencial ${qrModal.alumno.nombre}.png`.replace(/[\\/:*?"<>|]/g, '')
+    return new File([blob], nombre, { type: 'image/png' })
+  }
+
+  const descargar = archivo => {
+    const url = URL.createObjectURL(archivo)
+    const a = document.createElement('a')
+    a.href = url; a.download = archivo.name; a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  const guardarImagen = async () => {
+    try { descargar(await archivoCredencial()) }
+    catch { showMsg('error', 'No se pudo generar la imagen') }
+  }
+
+  const enviarWhatsApp = async () => {
+    const texto = `Credencial EduWallet de ${qrModal.alumno.nombre} (${qrModal.alumno.curso}). Mostrala en el kiosco o el comedor para pagar con el saldo.`
+    try {
+      const archivo = await archivoCredencial()
+      // Celulares (y navegadores que lo permiten): menú de compartir con la imagen, se elige WhatsApp
+      if (navigator.canShare?.({ files: [archivo] })) {
+        try { await navigator.share({ files: [archivo], title: 'Credencial EduWallet', text: texto }) }
+        catch (err) { if (err?.name !== 'AbortError') throw err }
+        return
+      }
+      // Si no: se descarga la imagen y se abre WhatsApp con el mensaje (la imagen se adjunta a mano)
+      descargar(archivo)
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener')
+      showMsg('ok', 'Se descargó la imagen: adjuntala en el chat de WhatsApp que se abrió')
+    } catch { showMsg('error', 'No se pudo compartir la credencial') }
   }
 
   const verQR = async alumno => {
@@ -437,6 +474,8 @@ export default function Alumnos() {
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Btn onClick={() => window.open(`/credenciales?alumno=${qrModal.alumno.id}&imprimir=1`, '_blank')}>🖨 Imprimir credencial</Btn>
+              <button onClick={guardarImagen} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>⬇ Guardar imagen</button>
+              <button onClick={enviarWhatsApp} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Enviar por WhatsApp</button>
               <button onClick={regenerarQR} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Generar QR nuevo</button>
             </div>
             <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Si la credencial se pierde o la copian, generá un QR nuevo: la anterior deja de funcionar.</p>

@@ -80,12 +80,15 @@ router.get('/identificar', verificarToken, identificarAlumno);
  * @swagger
  * /alumnos/credenciales:
  *   get:
- *     summary: Credenciales para imprimir (nombre, curso y QR) de los alumnos activos, opcionalmente de un curso (solo admin)
+ *     summary: Credenciales para imprimir (nombre, curso y QR) de los alumnos activos, de un curso o de un solo alumno (solo admin)
  *     tags: [Alumnos]
  *     parameters:
  *       - in: query
  *         name: curso
  *         schema: { type: string }
+ *       - in: query
+ *         name: alumno_id
+ *         schema: { type: integer }
  *     responses:
  *       200:
  *         description: "{ colegio, logo, credenciales: [{ id, nombre, curso, qr_img }] }"

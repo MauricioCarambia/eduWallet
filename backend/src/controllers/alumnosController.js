@@ -425,14 +425,18 @@ const regenerarQr = async (req, res) => {
 };
 
 // Credenciales para imprimir: nombre, curso y QR de cada alumno activo
+// (con ?alumno_id=, sólo la de ese alumno, esté activo o no)
 const getCredenciales = async (req, res) => {
-  const { curso } = req.query;
+  const { curso, alumno_id } = req.query;
   try {
     const r = await pool.query(
       `SELECT id, nombre, curso, qr FROM alumnos
-       WHERE colegio_id = $1 AND activo = true AND ($2::text IS NULL OR curso = $2)
+       WHERE colegio_id = $1
+         AND ($3::int IS NOT NULL OR activo = true)
+         AND ($2::text IS NULL OR curso = $2)
+         AND ($3::int IS NULL OR id = $3)
        ORDER BY curso, nombre`,
-      [req.empleado.colegio_id, curso || null]
+      [req.empleado.colegio_id, curso || null, alumno_id ? parseInt(alumno_id) || -1 : null]
     );
     const conf = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [req.empleado.colegio_id]);
     const credenciales = await Promise.all(r.rows.map(async a => ({

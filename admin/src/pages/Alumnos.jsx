@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { Link } from 'react-router-dom'
 import { SkeletonTable } from '../components/Skeleton'
+import Credencial, { ESTILOS_CREDENCIAL } from '../components/Credencial'
 import { ModalTarjeta, ModalAsignarTarjetas } from '../components/TarjetasNfc'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -184,17 +185,20 @@ export default function Alumnos() {
     if (!confirm(`¿Generar un QR nuevo para ${qrModal.alumno.nombre}? La credencial actual deja de funcionar y hay que imprimir una nueva.`)) return
     try {
       await api.patch(`/alumnos/${qrModal.alumno.id}/qr`)
-      const res = await api.get(`/alumnos/${qrModal.alumno.id}/qr`)
-      setQrModal(m => ({ ...m, qr: res.data.qr, codigo: res.data.codigo }))
+      setQrModal(await cargarCredencial(qrModal.alumno))
       showMsg('ok', 'QR nuevo generado: imprimí la credencial otra vez')
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al generar el QR') }
   }
 
+  // La misma credencial que en "Imprimir credenciales" (nombre, curso, colegio y QR)
+  const cargarCredencial = async alumno => {
+    const res = await api.get('/alumnos/credenciales', { params: { alumno_id: alumno.id } })
+    return { alumno, credencial: res.data.credenciales[0], colegio: res.data.colegio, logo: res.data.logo }
+  }
+
   const verQR = async alumno => {
-    try {
-      const res = await api.get(`/alumnos/${alumno.id}/qr`)
-      setQrModal({ alumno, qr: res.data.qr, codigo: res.data.codigo })
-    } catch { showMsg('error', 'Error al obtener QR') }
+    try { setQrModal(await cargarCredencial(alumno)) }
+    catch { showMsg('error', 'Error al obtener la credencial') }
   }
 
   const onArchivoCSV = (e) => {
@@ -425,15 +429,14 @@ export default function Alumnos() {
       )}
 
       {qrModal && (
-        <Modal title={`QR — ${qrModal.alumno.nombre}`} onClose={() => setQrModal(null)}>
+        <Modal title={`Credencial — ${qrModal.alumno.nombre}`} onClose={() => setQrModal(null)}>
+          <style>{ESTILOS_CREDENCIAL}</style>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', padding: 16, background: 'white', borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--border)', marginBottom: 12 }}>
-              <img src={qrModal.qr} alt="QR" style={{ width: 200, height: 200, display: 'block' }} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, overflowX: 'auto' }}>
+              <Credencial credencial={qrModal.credencial} colegio={qrModal.colegio} logo={qrModal.logo} />
             </div>
-            <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-secondary)' }}>Código: <b style={{ color: 'var(--text)' }}>{qrModal.codigo}</b></p>
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-tertiary)' }}>{qrModal.alumno.curso}</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Btn onClick={() => { const a = document.createElement('a'); a.href = qrModal.qr; a.download = `QR-${qrModal.alumno.nombre}.png`; a.click() }}>Descargar QR</Btn>
+              <Btn onClick={() => window.open(`/credenciales?alumno=${qrModal.alumno.id}&imprimir=1`, '_blank')}>🖨 Imprimir credencial</Btn>
               <button onClick={regenerarQR} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Generar QR nuevo</button>
             </div>
             <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Si la credencial se pierde o la copian, generá un QR nuevo: la anterior deja de funcionar.</p>

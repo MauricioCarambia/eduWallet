@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import { useLocales } from '../hooks/useLocales'
-import useLectorTarjeta, { nfcDisponible, escucharNfc } from '../hooks/useLectorTarjeta'
+import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -163,6 +163,7 @@ export default function Venta() {
 
   // Lector USB: funciona siempre en esta pantalla, tenga el cursor donde tenga
   useLectorTarjeta(buscarPorTarjeta, !!caja)
+  const lectorEscritorio = useLectorEscritorio()
 
   // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva
   const nfcAbortRef = useRef(null)
@@ -338,6 +339,11 @@ export default function Venta() {
             <div>
               <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
                 💳 Pasá la tarjeta por el lector{nfcDisponible() ? ' o tocá NFC' : ''}, escaneá el QR o buscá por nombre
+                {lectorEscritorio.disponible && (
+                  <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
+                    {lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}
+                  </div>
+                )}
               </div>
               <div id="alumno-search">
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>

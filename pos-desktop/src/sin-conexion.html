@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Sin conexión — EduWallet POS</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #F0F4F8; color: #1E3A5F; font-family: "Segoe UI", system-ui, sans-serif; }
+    .caja { background: #fff; border: 1.5px solid #E2E8F0; border-radius: 16px; padding: 32px; max-width: 380px; text-align: center; box-shadow: 0 4px 12px rgba(30,58,95,.1); }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { color: #64748B; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+    button { border: none; border-radius: 10px; background: #1E3A5F; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; cursor: pointer; }
+    small { display: block; margin-top: 14px; color: #94A3B8; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="caja">
+    <h1>Sin conexión a internet</h1>
+    <p>EduWallet POS necesita internet para cobrar. Revisá el wifi o el cable de red y probá de nuevo.</p>
+    <button id="reintentar" type="button">Reintentar</button>
+    <small id="auto">Se reintenta solo cada 10 segundos.</small>
+  </div>
+  <script>
+    const volver = new URLSearchParams(location.search).get('volver');
+    const reintentar = () => { if (volver) location.href = volver; };
+    document.getElementById('reintentar').addEventListener('click', reintentar);
+    setTimeout(reintentar, 10000);
+  </script>
+</body>
+</html>

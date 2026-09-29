@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
-import useLectorTarjeta, { nfcDisponible, escucharNfc } from '../hooks/useLectorTarjeta'
+import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 
 // Asignación de tarjetas NFC a alumnos. Se puede leer la tarjeta con un
 // lector USB (en cualquier computadora) o con el NFC del celular/tablet
@@ -36,6 +36,7 @@ function Lector({ onLeer, ocupado }) {
   const abortRef = useRef(null)
 
   useLectorTarjeta(uid => { if (!ocupado) onLeer(uid) })
+  const lectorEscritorio = useLectorEscritorio()
   useEffect(() => () => abortRef.current?.abort(), [])
 
   const activarNfc = async () => {
@@ -52,7 +53,9 @@ function Lector({ onLeer, ocupado }) {
     <div style={{ padding: '18px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', textAlign: 'center', marginBottom: 12 }}>
       <div style={{ fontSize: 28, marginBottom: 6 }}>💳</div>
       <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ocupado ? 'Guardando...' : 'Pasá la tarjeta por el lector'}</p>
-      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Lector USB: no hace falta hacer clic en ningún lado.</p>
+      {lectorEscritorio.disponible
+        ? <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>{lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}</p>
+        : <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Lector USB: no hace falta hacer clic en ningún lado.</p>}
       {nfcDisponible() && (
         nfcActivo
           ? <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>NFC activo — acercá la tarjeta al dispositivo</p>

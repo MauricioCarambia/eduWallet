@@ -1,0 +1,39 @@
+{
+  "name": "eduwallet-pos-desktop",
+  "productName": "EduWallet POS",
+  "version": "1.0.0",
+  "description": "Punto de venta de EduWallet para Windows, con lector NFC ACR122U (PC/SC)",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.eduwallet.pos",
+    "productName": "EduWallet POS",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "EduWallet POS"
+    }
+  },
+  "dependencies": {
+    "koffi": "^3.3.2"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}

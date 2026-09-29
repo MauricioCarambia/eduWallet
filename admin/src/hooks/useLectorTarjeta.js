@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Lector de tarjetas NFC por USB: se comporta como un teclado que "escribe"
 // el número de la tarjeta muy rápido y termina con Enter. Se detecta por la
@@ -42,8 +42,31 @@ export default function useLectorTarjeta(onLeer, activo = true) {
     }
 
     document.addEventListener('keydown', onKeyDown, true)
-    return () => document.removeEventListener('keydown', onKeyDown, true)
+    // App de escritorio (EduWallet POS para Windows): el lector PC/SC
+    // (ACR122U) manda las tarjetas directo, sin pasar por el teclado
+    const desuscribir = escritorio()?.onTarjeta(uid => onLeerRef.current(uid))
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true)
+      desuscribir?.()
+    }
   }, [activo])
+}
+
+// ─── App de escritorio ──────────────────────────────────────────────────────
+const escritorio = () => (typeof window !== 'undefined' ? window.eduwalletEscritorio : undefined)
+
+// Estado del lector de la app de escritorio: { disponible, conectado, lectores }
+// (disponible = false cuando se usa desde el navegador)
+export function useLectorEscritorio() {
+  const [estado, setEstado] = useState({ disponible: !!escritorio(), conectado: false, lectores: [] })
+  useEffect(() => {
+    const api = escritorio()
+    if (!api) return
+    const aplicar = e => setEstado({ disponible: true, conectado: !!e?.conectado, lectores: e?.lectores || [] })
+    api.estadoLector().then(aplicar).catch(() => {})
+    return api.onLector(aplicar)
+  }, [])
+  return estado
 }
 
 // Web NFC (Chrome en Android): lee el número de serie de la tarjeta

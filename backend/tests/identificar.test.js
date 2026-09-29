@@ -66,3 +66,21 @@ test('no se puede asignar un QR de credencial como si fuera una tarjeta', async 
   await asignarTarjeta({ empleado: { id: 1, colegio_id: 3 }, params: { id: '2' }, body: { uid: qrAna } }, res);
   expect(res.status).toHaveBeenCalledWith(400);
 });
+
+describe('medios bloqueados por la familia', () => {
+  afterEach(() => { db.alumnos[0].qr_bloqueado = false; db.alumnos[0].tarjeta_bloqueada = false; });
+
+  test('con el QR bloqueado, el QR no identifica pero la tarjeta sí', async () => {
+    db.alumnos[0].qr_bloqueado = true;
+    const qr = await identificar(qrAna);
+    expect(qr.status).toHaveBeenCalledWith(403);
+    expect(qr.json).toHaveBeenCalledWith(expect.objectContaining({ bloqueado: 'qr' }));
+    expect((await identificar('04:a2:3f:1b')).status).not.toHaveBeenCalled();
+  });
+
+  test('con la tarjeta bloqueada, la tarjeta no identifica pero el QR sí', async () => {
+    db.alumnos[0].tarjeta_bloqueada = true;
+    expect((await identificar('04:a2:3f:1b')).status).toHaveBeenCalledWith(403);
+    expect((await identificar(qrAna)).status).not.toHaveBeenCalled();
+  });
+});

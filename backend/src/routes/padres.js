@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, getAlumnos, getCredencial, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
+const { registro, login, getAlumnos, getCredencial, bloquearMedio, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
@@ -159,6 +159,28 @@ router.get('/alumnos/:alumno_id/transacciones', verificarPadre, getTransacciones
  *         description: El alumno no está vinculado al padre
  */
 router.get('/alumnos/:alumno_id/credencial', verificarPadre, getCredencial);
+
+/**
+ * @swagger
+ * /padres/alumnos/{alumno_id}/medios:
+ *   patch:
+ *     summary: Bloquear o desbloquear un medio de pago (QR de la credencial o tarjeta/llavero) sin bloquear todas las compras
+ *     tags: [Padres]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [medio, bloqueado]
+ *             properties:
+ *               medio: { type: string, enum: [qr, tarjeta] }
+ *               bloqueado: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Alumno actualizado
+ */
+router.patch('/alumnos/:alumno_id/medios', verificarPadre, bloquearMedio);
 
 /**
  * @swagger

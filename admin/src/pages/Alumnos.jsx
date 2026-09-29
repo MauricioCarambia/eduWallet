@@ -343,6 +343,11 @@ export default function Alumnos() {
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: a.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: a.activo ? 'var(--green)' : 'var(--red)' }}>
                       {a.activo ? 'Activa' : 'Bloqueada'}
                     </span>
+                    {(a.qr_bloqueado || a.tarjeta_bloqueada) && (
+                      <div title="Bloqueado por la familia desde la app" style={{ marginTop: 4, fontSize: 10, fontWeight: 600, color: 'var(--red)' }}>
+                        {[a.qr_bloqueado && 'QR bloqueado', a.tarjeta_bloqueada && 'Tarjeta bloqueada'].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>

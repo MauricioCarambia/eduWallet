@@ -28,12 +28,23 @@ export default function Control() {
     }
   }
 
+  // Bloqueo general: ninguna compra, con ningún medio
   const toggleBloqueo = async () => {
     try {
       const res = await api.patch(`/padres/alumnos/${alumnoId}/toggle`)
-      setAlumnos(prev => prev.map(a => a.id === alumnoId ? res.data : a))
-      showMsg('ok', `Tarjeta ${res.data.activo ? 'activada' : 'bloqueada'}`)
-    } catch (err) { showMsg('error', 'Error al cambiar estado') }
+      setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
+      showMsg('ok', res.data.activo ? 'Compras habilitadas' : 'Todas las compras bloqueadas')
+    } catch { showMsg('error', 'Error al cambiar estado') }
+  }
+
+  // Bloqueo de un solo medio: el QR de la credencial o la tarjeta/llavero
+  const toggleMedio = async (medio, bloqueado) => {
+    try {
+      const res = await api.patch(`/padres/alumnos/${alumnoId}/medios`, { medio, bloqueado })
+      setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
+      const nombre = medio === 'qr' ? 'QR de la credencial' : 'Tarjeta'
+      showMsg('ok', `${nombre} ${bloqueado ? 'bloqueado' : 'desbloqueado'}`)
+    } catch { showMsg('error', 'Error al cambiar el estado') }
   }
 
   const guardarLimite = async () => {
@@ -75,24 +86,36 @@ export default function Control() {
       {alumnoActual && (
         <div style={{ display: 'grid', gap: 12 }}>
 
-          {/* estado tarjeta */}
+          {/* medios de pago */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 14px', color: 'var(--text)' }}>Estado de la tarjeta</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{alumnoActual.nombre}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{alumnoActual.qr}</p>
+            <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Medios de pago de {alumnoActual.nombre.split(' ')[0]}</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 12px' }}>Si se pierde la credencial o la tarjeta, bloqueala acá: el resto sigue funcionando.</p>
+
+            {[
+              { medio: 'qr', titulo: 'Credencial con QR', detalle: 'La impresa o la del celular', bloqueado: alumnoActual.qr_bloqueado, disponible: true },
+              { medio: 'tarjeta', titulo: 'Tarjeta o llavero', detalle: alumnoActual.nfc_uid ? 'La que se apoya en el lector' : 'Todavía no tiene una asignada', bloqueado: alumnoActual.tarjeta_bloqueada, disponible: !!alumnoActual.nfc_uid },
+            ].map(m => (
+              <div key={m.medio} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--border-light)', opacity: m.disponible ? 1 : 0.6 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{m.titulo}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: m.bloqueado ? 'var(--red)' : 'var(--text-tertiary)' }}>{m.bloqueado ? 'Bloqueado: no se puede pagar con este medio' : m.detalle}</p>
+                </div>
+                {m.disponible && (
+                  <button onClick={() => toggleMedio(m.medio, !m.bloqueado)} style={{ flexShrink: 0, padding: '8px 12px', border: 'none', borderRadius: 10, background: m.bloqueado ? 'var(--green-bg)' : 'var(--red-bg)', color: m.bloqueado ? 'var(--green)' : 'var(--red)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    {m.bloqueado ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                  </button>
+                )}
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 8, background: alumnoActual.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: alumnoActual.activo ? 'var(--green)' : 'var(--red)' }}>
-                {alumnoActual.activo ? 'Activa' : 'Bloqueada'}
-              </span>
+            ))}
+
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12, marginTop: 2 }}>
+              <button onClick={toggleBloqueo} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: alumnoActual.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: alumnoActual.activo ? 'var(--red)' : 'var(--green)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                {alumnoActual.activo ? '🔒 Bloquear todas las compras' : '🔓 Habilitar las compras'}
+              </button>
+              {!alumnoActual.activo && (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red)', textAlign: 'center' }}>Todas las compras están bloqueadas, con cualquier medio.</p>
+              )}
             </div>
-            <button onClick={toggleBloqueo} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: alumnoActual.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: alumnoActual.activo ? 'var(--red)' : 'var(--green)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              {alumnoActual.activo ? '🔒 Bloquear tarjeta' : '🔓 Desbloquear tarjeta'}
-            </button>
-            {!alumnoActual.activo && (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red)', textAlign: 'center' }}>La tarjeta está bloqueada. No puede realizar compras.</p>
-            )}
           </div>
 
           {/* límite diario */}

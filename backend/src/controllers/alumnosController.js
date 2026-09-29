@@ -365,6 +365,7 @@ const buscarPorTarjeta = async (req, res) => {
       [req.empleado.colegio_id, claves]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Tarjeta no asignada a ningún alumno' });
+    if (r.rows[0].tarjeta_bloqueada) return res.status(403).json({ error: 'La familia bloqueó esta tarjeta', bloqueado: 'tarjeta' });
     res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -402,6 +403,13 @@ const identificarAlumno = async (req, res) => {
     const r = await buscarAlumnoPorCodigo(codigo, req.empleado.colegio_id);
     if (!r) {
       return res.status(404).json({ error: esCodigoQr(codigo) ? 'QR no reconocido: puede ser de una credencial vieja' : 'Tarjeta o código no asignado a ningún alumno' });
+    }
+    const nombre = r.alumno.nombre.split(' ')[0];
+    if (r.medio === 'qr' && r.alumno.qr_bloqueado) {
+      return res.status(403).json({ error: `La familia bloqueó el QR de ${nombre}. Puede pagar con otro medio.`, bloqueado: 'qr' });
+    }
+    if (r.medio === 'tarjeta' && r.alumno.tarjeta_bloqueada) {
+      return res.status(403).json({ error: `La familia bloqueó la tarjeta de ${nombre}. Puede pagar con otro medio.`, bloqueado: 'tarjeta' });
     }
     res.json({ ...r.alumno, medio: r.medio });
   } catch (err) {

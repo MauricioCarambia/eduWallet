@@ -252,5 +252,30 @@ const getCredencial = async (req, res) => {
   }
 };
 
+// Bloquear o desbloquear un medio de pago (QR de la credencial o tarjeta /
+// llavero) sin bloquear todas las compras. Queda en la auditoría del colegio.
+const MEDIOS = { qr: { columna: 'qr_bloqueado', nombre: 'QR de la credencial' }, tarjeta: { columna: 'tarjeta_bloqueada', nombre: 'tarjeta / llavero' } };
+
+const bloquearMedio = async (req, res) => {
+  const { alumno_id } = req.params;
+  const { medio, bloqueado } = req.body;
+  const m = MEDIOS[medio];
+  if (!m || typeof bloqueado !== 'boolean') return res.status(400).json({ error: 'Datos inválidos' });
+  try {
+    const vinculo = await pool.query('SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2', [req.padre.id, alumno_id]);
+    if (vinculo.rows.length === 0) return res.status(403).json({ error: 'No tenés acceso a este alumno' });
+    const r = await pool.query(`UPDATE alumnos SET ${m.columna} = $1 WHERE id = $2 RETURNING *`, [bloqueado, alumno_id]);
+    const padre = await pool.query('SELECT nombre FROM padres WHERE id = $1', [req.padre.id]);
+    await pool.query(
+      'INSERT INTO auditoria (empleado_id, colegio_id, accion, detalle) VALUES (NULL, $1, $2, $3)',
+      [r.rows[0].colegio_id, bloqueado ? 'Medio bloqueado por la familia' : 'Medio desbloqueado por la familia', `${r.rows[0].nombre}: ${m.nombre} (${padre.rows[0]?.nombre || 'padre'})`]
+    ).catch(() => {});
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 module.exports = {
+  bloquearMedio,
   getCredencial, registro, login, getAlumnos, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword };

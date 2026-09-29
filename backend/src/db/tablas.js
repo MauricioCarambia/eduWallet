@@ -63,6 +63,8 @@ const crearTablas = async () => {
         contacto2_tel VARCHAR(50),
         nfc_uid      VARCHAR(40),
         nfc_claves   TEXT[],
+        qr_bloqueado      BOOLEAN NOT NULL DEFAULT false,
+        tarjeta_bloqueada BOOLEAN NOT NULL DEFAULT false,
         creado_en    TIMESTAMP      DEFAULT NOW()
       );
 

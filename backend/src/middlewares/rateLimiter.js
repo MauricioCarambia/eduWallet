@@ -36,4 +36,13 @@ const recuperacionLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter };
+// Formulario de contacto de la página — 5 consultas por hora por IP (evitar spam)
+const contactoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Ya recibimos varias consultas desde tu conexión. Escribinos por WhatsApp o probá en una hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter, contactoLimiter };

@@ -192,7 +192,28 @@ const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios })
   return { enviados, errores };
 };
 
+// Consulta del formulario de la página: le llega a quien vende EduWallet
+const escapar = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const enviarEmailContacto = async ({ nombre, colegio, cargo, email, telefono, alumnos, mensaje }) => {
+  const fila = (etiqueta, valor) => valor ? `<tr><td style="padding: 6px 12px 6px 0; color: #666; font-size: 13px; white-space: nowrap; vertical-align: top;">${etiqueta}</td><td style="padding: 6px 0; color: #111; font-size: 14px;">${escapar(valor)}</td></tr>` : '';
+  const html = baseHTML(`
+    <p style="color: #111; margin: 0 0 16px; font-size: 15px;">Nueva consulta desde la página de EduWallet.</p>
+    <table style="border-collapse: collapse; margin-bottom: 16px;">
+      ${fila('Nombre', nombre)}${fila('Colegio', colegio)}${fila('Cargo', cargo)}${fila('Email', email)}${fila('Teléfono', telefono)}${fila('Alumnos', alumnos)}
+    </table>
+    ${mensaje ? `<div style="background: #F6F8F5; border-radius: 10px; padding: 14px; font-size: 14px; color: #111; white-space: pre-wrap;">${escapar(mensaje)}</div>` : ''}
+  `, 'EduWallet', null);
+
+  await enviarEmail({
+    to: process.env.CONTACTO_EMAIL || 'mcarambia@gmail.com',
+    subject: `Consulta de ${String(colegio).slice(0, 80)} — EduWallet`,
+    html,
+  });
+};
+
 module.exports = {
+  enviarEmailContacto,
   enviarEmailSaldoBajo,
   enviarEmailRecarga,
   enviarEmailCompra,

@@ -229,6 +229,28 @@ details p { padding: 0 1.25rem 1.1rem; color: var(--tinta-suave); font-size: var
 .contacto { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; }
 .contacto .dato { display: grid; gap: .15rem; }
 .contacto .valor { font-family: var(--mono); font-size: var(--t-m); }
+.cierre { align-items: start; }
+.directo { display: grid; gap: .75rem; margin-top: 1.75rem; max-width: 26rem; }
+.directo a.wa { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; padding: .85rem 1.2rem; border-radius: 999px; background: var(--bien); color: var(--papel); font-weight: 700; text-decoration: none; }
+.directo .mail { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: var(--t-s); color: var(--tinta-suave); }
+.directo .mail a { font-family: var(--mono); color: var(--tinta); user-select: all; }
+.directo .mail button { border: 1px solid var(--linea); background: var(--tarjeta); color: var(--tinta-suave); border-radius: 999px; padding: .25rem .7rem; font: inherit; font-size: var(--t-xs); cursor: pointer; }
+.form-contacto { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 14px; padding: 1.5rem; display: grid; gap: .9rem; box-shadow: var(--sombra); min-width: 0; }
+.form-contacto h3 { font-size: 1.25rem; }
+.form-contacto .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+.form-contacto label { display: grid; gap: .3rem; font-size: var(--t-s); font-weight: 700; min-width: 0; }
+.form-contacto label small { font-weight: 400; color: var(--tinta-suave); }
+.form-contacto input, .form-contacto select, .form-contacto textarea { width: 100%; font: inherit; font-weight: 400; font-size: var(--t-m); color: var(--tinta); background: var(--papel); border: 1.5px solid var(--linea); border-radius: 10px; padding: .65rem .8rem; }
+.form-contacto textarea { min-height: 6rem; resize: vertical; }
+.form-contacto input:focus, .form-contacto select:focus, .form-contacto textarea:focus { outline: none; border-color: var(--pizarron); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pizarron) 22%, transparent); }
+.form-contacto .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form-contacto button[type=submit] { justify-self: start; }
+.form-contacto button[type=submit][disabled] { opacity: .6; cursor: wait; }
+.form-estado { font-size: var(--t-s); padding: .75rem .9rem; border-radius: 10px; background: var(--papel-2); }
+.form-estado.ok { border-left: 4px solid var(--bien); }
+.form-estado.mal { border-left: 4px solid var(--no); }
+.form-estado a { font-weight: 700; }
+@media (max-width: 520px) { .form-contacto .dos { grid-template-columns: 1fr; } }
 @media (max-width: 820px) { .cierre { grid-template-columns: 1fr; } }
 footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: var(--tinta-suave); font-size: var(--t-xs); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
@@ -776,11 +798,47 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
         <p class="etiqueta">Demo sin compromiso</p>
         <h2 id="t-contacto" style="margin-top:.75rem">Probalo con un curso antes de sumar a todo el colegio.</h2>
         <p class="lectura" style="margin-top:1rem">Te mostramos el sistema funcionando con credenciales y un punto de venta de prueba, y te ayudamos a elegir los equipos.</p>
+        <div class="directo">
+          <a class="wa" href="https://wa.me/5491156410025?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20EduWallet%20para%20mi%20colegio." target="_blank" rel="noopener">WhatsApp 11 5641-0025</a>
+          <div class="mail">Email: <a href="mailto:mcarambia@gmail.com">mcarambia@gmail.com</a> <button type="button" id="copiar-mail">Copiar</button></div>
+        </div>
       </div>
-      <div class="contacto">
-        <div class="dato"><span class="etiqueta">WhatsApp</span><span class="valor">A completar</span></div>
-        <div class="dato"><span class="etiqueta">Email</span><span class="valor">A completar</span></div>
-      </div>
+      <form class="form-contacto" id="form-contacto" novalidate>
+        <h3>Pedí una demo</h3>
+        <div class="dos">
+          <label for="c-nombre">Tu nombre<input id="c-nombre" name="nombre" autocomplete="name" required maxlength="100"></label>
+          <label for="c-colegio">Colegio<input id="c-colegio" name="colegio" autocomplete="organization" required maxlength="150"></label>
+        </div>
+        <div class="dos">
+          <label for="c-email">Email<input id="c-email" name="email" type="email" autocomplete="email" maxlength="150"></label>
+          <label for="c-telefono">WhatsApp o teléfono<input id="c-telefono" name="telefono" type="tel" autocomplete="tel" maxlength="40"></label>
+        </div>
+        <div class="dos">
+          <label for="c-cargo">Tu cargo <small>(opcional)</small>
+            <select id="c-cargo" name="cargo">
+              <option value="">Elegí una opción</option>
+              <option>Dirección</option>
+              <option>Administración</option>
+              <option>Cooperadora</option>
+              <option>Kiosco o comedor</option>
+              <option>Otro</option>
+            </select>
+          </label>
+          <label for="c-alumnos">Cantidad de alumnos <small>(opcional)</small>
+            <select id="c-alumnos" name="alumnos">
+              <option value="">Elegí una opción</option>
+              <option>Menos de 300</option>
+              <option>300 a 600</option>
+              <option>600 a 1.000</option>
+              <option>Más de 1.000</option>
+            </select>
+          </label>
+        </div>
+        <label for="c-mensaje">Mensaje <small>(opcional)</small><textarea id="c-mensaje" name="mensaje" maxlength="2000" placeholder="Contanos cuántas zonas de cobro tienen o qué te gustaría ver en la demo"></textarea></label>
+        <div class="trampa" aria-hidden="true"><label for="c-sitio">Sitio web<input id="c-sitio" name="sitio_web" tabindex="-1" autocomplete="off"></label></div>
+        <button class="boton" type="submit" id="c-enviar">Enviar consulta</button>
+        <p class="form-estado" id="c-estado" role="status" hidden></p>
+      </form>
     </div>
   </section>
 
@@ -928,6 +986,52 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
   });
 })();
 
+(function () {
+  const form = document.getElementById('form-contacto'); if (!form) return;
+  const API = 'https://eduwallet-85yn.onrender.com/api/contacto';
+  const WA = '5491156410025';
+  const estado = document.getElementById('c-estado');
+  const enviar = document.getElementById('c-enviar');
+  const mostrar = (clase, html) => { estado.className = 'form-estado ' + clase; estado.innerHTML = html; estado.hidden = false; };
+  const linkWa = texto => 'https://wa.me/' + WA + '?text=' + encodeURIComponent(texto);
+  let despierto = false;
+  form.addEventListener('focusin', () => { if (!despierto) { despierto = true; fetch(API).catch(() => {}); } });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(form));
+    for (const k in d) d[k] = String(d[k]).trim();
+    if (!d.nombre || !d.colegio) return mostrar('mal', 'Completá tu nombre y el del colegio.');
+    if (!d.email && !d.telefono) return mostrar('mal', 'Dejanos un email o un teléfono para responderte.');
+    if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return mostrar('mal', 'Revisá el email: no parece válido.');
+
+    const resumen = 'Hola, soy ' + d.nombre + ' del colegio ' + d.colegio + '. Quiero saber más sobre EduWallet.' + (d.mensaje ? ' ' + d.mensaje : '');
+    enviar.disabled = true; enviar.textContent = 'Enviando...';
+    mostrar('', 'Enviando tu consulta...');
+    const ctrl = new AbortController();
+    const tope = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), signal: ctrl.signal });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'No pudimos enviar la consulta.');
+      form.reset();
+      mostrar('ok', '¡Gracias! Recibimos tu consulta y te respondemos a la brevedad.');
+    } catch (err) {
+      const motivo = err.name === 'AbortError' ? 'El envío tardó demasiado.' : err.message;
+      mostrar('mal', motivo + ' Podés mandarnos lo mismo por <a href="' + linkWa(resumen) + '" target="_blank" rel="noopener">WhatsApp</a>.');
+    } finally {
+      clearTimeout(tope);
+      enviar.disabled = false; enviar.textContent = 'Enviar consulta';
+    }
+  });
+
+  const copiar = document.getElementById('copiar-mail');
+  copiar?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText('mcarambia@gmail.com'); copiar.textContent = 'Copiado'; }
+    catch { const r = document.createRange(); r.selectNodeContents(copiar.previousElementSibling); getSelection().removeAllRanges(); getSelection().addRange(r); }
+    setTimeout(() => { copiar.textContent = 'Copiar'; }, 2000);
+  });
+})();
 </script>
 
 </body>

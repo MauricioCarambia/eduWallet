@@ -13,13 +13,14 @@ const { migrarActivacionEmpleados } = require('./db/migracion_activacion_emplead
 const { migrarQrSeguro } = require('./db/migracion_qr_seguro');
 const { migrarBloqueoMedios } = require('./db/migracion_bloqueo_medios');
 const { migrarCodigoBarras } = require('./db/migracion_codigo_barras');
+const { migrarContactos } = require('./db/migracion_contactos');
 
 const PORT = process.env.PORT || 3001;
 
 // Las columnas de comisión y el estado 'vencido' tienen que existir antes
 // de aceptar recargas
 const migrar = async () => {
-  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios], ['tarjetas NFC', migrarTarjetasNfc], ['activación de empleados', migrarActivacionEmpleados], ['QR seguros', migrarQrSeguro], ['bloqueo por medio', migrarBloqueoMedios], ['código de barras', migrarCodigoBarras]]) {
+  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios], ['tarjetas NFC', migrarTarjetasNfc], ['activación de empleados', migrarActivacionEmpleados], ['QR seguros', migrarQrSeguro], ['bloqueo por medio', migrarBloqueoMedios], ['código de barras', migrarCodigoBarras], ['contactos', migrarContactos]]) {
     try {
       await fn();
     } catch (err) {

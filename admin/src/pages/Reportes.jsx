@@ -30,7 +30,7 @@ export default function Reportes() {
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [tab, setTab] = useState('general')
-  const [branding, setBranding] = useState({ nombre_colegio: 'EduPass', logo: null })
+  const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
   const [generandoPDF, setGenerandoPDF] = useState(false)
 
   // filtros
@@ -178,7 +178,7 @@ export default function Reportes() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `edupass_${fechaDesde}_${fechaHasta}.csv`
+    a.download = `koletap_${fechaDesde}_${fechaHasta}.csv`
     a.click()
     URL.revokeObjectURL(url)
     showMsg('ok', `CSV exportado: ${txsFiltradas.length} transacciones`)
@@ -198,7 +198,7 @@ export default function Reportes() {
       }
       doc.setFontSize(16)
       doc.setFont(undefined, 'bold')
-      doc.text(branding.nombre_colegio || 'EduPass', branding.logo ? 34 : 14, 18)
+      doc.text(branding.nombre_colegio || 'KoleTap', branding.logo ? 34 : 14, 18)
       doc.setFontSize(10)
       doc.setFont(undefined, 'normal')
       doc.setTextColor(120)
@@ -295,10 +295,10 @@ export default function Reportes() {
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i)
         doc.setFontSize(8); doc.setTextColor(150)
-        doc.text(`Página ${i} de ${pageCount} — Generado por EduPass`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' })
+        doc.text(`Página ${i} de ${pageCount} — Generado por KoleTap`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' })
       }
 
-      doc.save(`edupass_reporte_${fechaDesde}_${fechaHasta}.pdf`)
+      doc.save(`koletap_reporte_${fechaDesde}_${fechaHasta}.pdf`)
       showMsg('ok', 'PDF generado correctamente')
     } catch (err) {
       console.error(err)

@@ -1,12 +1,12 @@
-// EduPass POS para Windows: abre el POS publicado (se actualiza solo) y le
+// KoleTap POS para Windows: abre el POS publicado (se actualiza solo) y le
 // pasa las tarjetas que lee el ACR122U (o cualquier lector PC/SC).
 const path = require('path');
 const fs = require('fs');
 const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const { iniciarLector } = require('./lector');
 
-// Variables de entorno: también se aceptan las viejas EDUWALLET_* (antes del cambio de nombre)
-const entorno = nombre => process.env['EDUPASS_' + nombre] || process.env['EDUWALLET_' + nombre];
+// Variables de entorno: también se aceptan las de nombres anteriores (EDUPASS_*, EDUWALLET_*)
+const entorno = nombre => process.env['KOLETAP_' + nombre] || process.env['EDUPASS_' + nombre] || process.env['EDUWALLET_' + nombre];
 const SIMULAR_TARJETA = entorno('SIMULAR_TARJETA');
 const POS_URL = entorno('POS_URL') || 'https://edu-wallet-qm2q.vercel.app';
 const ADMIN_URL = entorno('ADMIN_URL') || 'https://edu-wallet-tkw2.vercel.app';
@@ -61,20 +61,20 @@ function crearVentana(url, titulo) {
     v.loadFile(path.join(__dirname, 'sin-conexion.html'), { query: { volver: urlFallida } });
   });
 
-  v.webContents.on('did-finish-load', () => v.webContents.send('edupass:lector', estadoLector));
+  v.webContents.on('did-finish-load', () => v.webContents.send('koletap:lector', estadoLector));
   v.loadURL(url);
   return v;
 }
 
 function abrirPos() {
   if (ventanaPos && !ventanaPos.isDestroyed()) { ventanaPos.focus(); return; }
-  ventanaPos = crearVentana(POS_URL, 'EduPass POS');
+  ventanaPos = crearVentana(POS_URL, 'KoleTap POS');
   ventanaPos.on('closed', () => { ventanaPos = null; });
 }
 
 function abrirAdmin() {
   if (ventanaAdmin && !ventanaAdmin.isDestroyed()) { ventanaAdmin.focus(); return; }
-  ventanaAdmin = crearVentana(ADMIN_URL, 'EduPass — Panel admin');
+  ventanaAdmin = crearVentana(ADMIN_URL, 'KoleTap — Panel admin');
   ventanaAdmin.on('closed', () => { ventanaAdmin = null; });
 }
 
@@ -91,7 +91,7 @@ function armarMenu() {
   const iniciaConWindows = app.getLoginItemSettings().openAtLogin;
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     {
-      label: 'EduPass',
+      label: 'KoleTap',
       submenu: [
         { label: 'Punto de venta', accelerator: 'CmdOrCtrl+1', click: abrirPos },
         { label: 'Panel admin (asignar tarjetas)', accelerator: 'CmdOrCtrl+2', click: abrirAdmin },
@@ -128,21 +128,21 @@ function armarMenu() {
   ]));
 }
 
-ipcMain.handle('edupass:estado-lector', () => estadoLector);
+ipcMain.handle('koletap:estado-lector', () => estadoLector);
 
 app.whenReady().then(() => {
   configurarInicioConWindows();
   armarMenu();
   abrirPos();
 
-  const enviarTarjeta = uid => ventanas().forEach(v => v.webContents.send('edupass:tarjeta', uid));
+  const enviarTarjeta = uid => ventanas().forEach(v => v.webContents.send('koletap:tarjeta', uid));
   const enviarEstado = estado => {
     estadoLector = estado;
-    ventanas().forEach(v => v.webContents.send('edupass:lector', estado));
+    ventanas().forEach(v => v.webContents.send('koletap:lector', estado));
   };
 
   // Modo simulación (sin lector, para probar o hacer demos):
-  //   EDUPASS_SIMULAR_TARJETA=04A23F1B  -> "apoya" esa tarjeta cada 8 segundos
+  //   KOLETAP_SIMULAR_TARJETA=04A23F1B  -> "apoya" esa tarjeta cada 8 segundos
   if (SIMULAR_TARJETA) {
     enviarEstado({ conectado: true, lectores: ['Lector simulado'], error: null });
     const t = setInterval(() => enviarTarjeta(SIMULAR_TARJETA), 8000);

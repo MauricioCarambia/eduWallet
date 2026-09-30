@@ -137,7 +137,7 @@ const migrar = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS configuracion (
         id                SERIAL PRIMARY KEY,
-        nombre_colegio    VARCHAR(150) DEFAULT 'EduPass',
+        nombre_colegio    VARCHAR(150) DEFAULT 'KoleTap',
         direccion         VARCHAR(200),
         telefono          VARCHAR(50),
         email_admin       VARCHAR(150),

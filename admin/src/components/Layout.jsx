@@ -26,7 +26,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [branding, setBranding] = useState({ nombre_colegio: 'EduPass', logo: null })
+  const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
 
   useEffect(() => {
     api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
@@ -61,7 +61,7 @@ export default function Layout({ children }) {
                 }
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'white', lineHeight: 1.2 }}>{branding.nombre_colegio || 'EduPass'}</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'white', lineHeight: 1.2 }}>{branding.nombre_colegio || 'KoleTap'}</p>
                 <p style={{ margin: 0, fontSize: 10, color: sidebarText }}>{t('common.administracion')}</p>
               </div>
             </div>

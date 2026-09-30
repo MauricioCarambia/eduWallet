@@ -70,7 +70,7 @@ export default function Empleados() {
   }
 
   const colegio = (() => { try { return localStorage.getItem('admin_colegio') || '' } catch { return '' } })()
-  const textoActivacion = a => `Hola ${a.nombre}. Para activar tu cuenta del punto de venta de EduPass: entrá al POS, tocá "Activar cuenta" y completá colegio: ${colegio}, usuario: ${a.usuario} y el código ${a.codigo_activacion}. Ahí elegís tu PIN. El código vence el ${vence(a.expira)}.`
+  const textoActivacion = a => `Hola ${a.nombre}. Para activar tu cuenta del punto de venta de KoleTap: entrá al POS, tocá "Activar cuenta" y completá colegio: ${colegio}, usuario: ${a.usuario} y el código ${a.codigo_activacion}. Ahí elegís tu PIN. El código vence el ${vence(a.expira)}.`
 
   const copiarCodigo = async () => {
     try { await navigator.clipboard.writeText(textoActivacion(activacion)); setCopiado(true); setTimeout(() => setCopiado(false), 2000) }

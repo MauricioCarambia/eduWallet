@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EduPass · Billetera escolar</title>
+<title>KoleTap · Billetera escolar</title>
 <meta name="description" content="Los chicos pagan en el kiosco, el comedor y la librería con su credencial. Las familias cargan saldo con Mercado Pago y ven cada compra al instante.">
-<meta property="og:title" content="EduPass · Billetera escolar">
+<meta property="og:title" content="KoleTap · Billetera escolar">
 <meta property="og:description" content="Los chicos pagan con su credencial, sin efectivo en la mochila. Las familias cargan saldo con Mercado Pago y controlan cada compra.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="/capturas/pos-venta.jpg">
@@ -799,7 +799,7 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
         <h2 id="t-contacto" style="margin-top:.75rem">Probalo con un curso antes de sumar a todo el colegio.</h2>
         <p class="lectura" style="margin-top:1rem">Te mostramos el sistema funcionando con credenciales y un punto de venta de prueba, y te ayudamos a elegir los equipos.</p>
         <div class="directo">
-          <a class="wa" href="https://wa.me/5491156410025?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20EduPass%20para%20mi%20colegio." target="_blank" rel="noopener">WhatsApp 11 5641-0025</a>
+          <a class="wa" href="https://wa.me/5491156410025?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20KoleTap%20para%20mi%20colegio." target="_blank" rel="noopener">WhatsApp 11 5641-0025</a>
           <div class="mail">Email: <a href="mailto:mcarambia@gmail.com">mcarambia@gmail.com</a> <button type="button" id="copiar-mail">Copiar</button></div>
         </div>
       </div>
@@ -857,7 +857,7 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
   </div>
 
   <footer>
-    <span>EduPass · Billetera escolar</span>
+    <span>KoleTap · Billetera escolar</span>
     <span>Los pagos se procesan con Mercado Pago.</span>
   </footer>
 </main>
@@ -974,8 +974,8 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
 
 (function () {
   const b = document.getElementById('copiar-familias'); if (!b) return;
-  const texto = 'Desde ahora los chicos pagan en el colegio con su credencial EduPass.\n\n' +
-    '1. Registrate desde el celular en la app de padres de EduPass con tu email y una contraseña.\n' +
+  const texto = 'Desde ahora los chicos pagan en el colegio con su credencial KoleTap.\n\n' +
+    '1. Registrate desde el celular en la app de padres de KoleTap con tu email y una contraseña.\n' +
     '2. Vinculá a tu hijo con el código que te pasa el colegio. Si tenés más de un hijo, sumalos a la misma cuenta.\n' +
     '3. Cargá saldo con Mercado Pago: se acredita solo apenas se aprueba el pago.\n' +
     '4. Seguí cada compra al momento, poné un límite diario y, si se pierde la credencial, bloqueala desde la app.';
@@ -1005,7 +1005,7 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
     if (!d.email && !d.telefono) return mostrar('mal', 'Dejanos un email o un teléfono para responderte.');
     if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return mostrar('mal', 'Revisá el email: no parece válido.');
 
-    const resumen = 'Hola, soy ' + d.nombre + ' del colegio ' + d.colegio + '. Quiero saber más sobre EduPass.' + (d.mensaje ? ' ' + d.mensaje : '');
+    const resumen = 'Hola, soy ' + d.nombre + ' del colegio ' + d.colegio + '. Quiero saber más sobre KoleTap.' + (d.mensaje ? ' ' + d.mensaje : '');
     enviar.disabled = true; enviar.textContent = 'Enviando...';
     mostrar('', 'Enviando tu consulta...');
     const ctrl = new AbortController();

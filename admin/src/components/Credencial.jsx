@@ -19,11 +19,11 @@ export default function Credencial({ credencial, colegio, logo }) {
       <div className="cred-datos">
         <div className="cred-colegio">
           {logo && <img src={logo} alt="" />}
-          <span>{colegio || 'EduPass'}</span>
+          <span>{colegio || 'KoleTap'}</span>
         </div>
         <div className="cred-nombre">{credencial.nombre}</div>
         <div className="cred-curso">{credencial.curso}</div>
-        <div className="cred-pie">Credencial EduPass · personal e intransferible</div>
+        <div className="cred-pie">Credencial KoleTap · personal e intransferible</div>
       </div>
       <img className="cred-qr" src={credencial.qr_img} alt={`QR de ${credencial.nombre}`} />
     </div>

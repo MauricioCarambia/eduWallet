@@ -1,6 +1,6 @@
 {
-  "name": "EduPass — Portal de Padres",
-  "short_name": "EduPass",
+  "name": "KoleTap — Portal de Padres",
+  "short_name": "KoleTap",
   "description": "Administrá el saldo escolar de tus hijos",
   "start_url": "/",
   "display": "standalone",

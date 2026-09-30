@@ -250,7 +250,7 @@ export default function Administracion({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "edupass_txs.csv";
+    a.download = "koletap_txs.csv";
     a.click();
   };
 

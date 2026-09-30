@@ -4,10 +4,10 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import es from './locales/es.json'
 import en from './locales/en.json'
 
-// Idioma elegido antes del cambio de nombre (EduWallet → EduPass)
+// Idioma elegido antes del cambio de nombre (EduWallet, EduPass → KoleTap)
 try {
-  const viejo = localStorage.getItem('eduwallet_idioma')
-  if (viejo && !localStorage.getItem('edupass_idioma')) localStorage.setItem('edupass_idioma', viejo)
+  const viejo = localStorage.getItem('edupass_idioma') || localStorage.getItem('eduwallet_idioma')
+  if (viejo && !localStorage.getItem('koletap_idioma')) localStorage.setItem('koletap_idioma', viejo)
 } catch { /* sin localStorage */ }
 
 i18n
@@ -24,7 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'edupass_idioma',
+      lookupLocalStorage: 'koletap_idioma',
     },
   })
 

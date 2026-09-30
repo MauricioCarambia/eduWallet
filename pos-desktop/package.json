@@ -1,8 +1,8 @@
 {
-  "name": "edupass-pos-desktop",
-  "productName": "EduPass POS",
-  "version": "1.1.0",
-  "description": "Punto de venta de EduPass para Windows, con lector NFC ACR122U (PC/SC)",
+  "name": "koletap-pos-desktop",
+  "productName": "KoleTap POS",
+  "version": "1.2.0",
+  "description": "Punto de venta de KoleTap para Windows, con lector NFC ACR122U (PC/SC)",
   "main": "src/main.js",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "dist": "electron-builder --win nsis"
   },
   "build": {
-    "appId": "com.edupass.pos",
-    "productName": "EduPass POS",
+    "appId": "com.koletap.pos",
+    "productName": "KoleTap POS",
     "files": [
       "src/**/*",
       "package.json"
@@ -26,7 +26,7 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
-      "shortcutName": "EduPass POS"
+      "shortcutName": "KoleTap POS"
     }
   },
   "dependencies": {

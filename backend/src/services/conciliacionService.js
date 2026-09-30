@@ -1,4 +1,4 @@
-// Conciliación Mercado Pago ↔ saldo EduPass.
+// Conciliación Mercado Pago ↔ saldo KoleTap.
 //
 // Revisa los pagos de los últimos días contra lo que dice Mercado Pago y
 // corrige lo que se puede corregir sin intervención (MP es la fuente de verdad):

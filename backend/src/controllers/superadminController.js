@@ -133,12 +133,12 @@ const ajustarSaldo = async (req, res) => {
     const actualizado = await db.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2 RETURNING saldo', [n, alumno.id]);
     await db.query(
       `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
-       VALUES ($1, $2, 'ajuste', 'Ajuste EduPass', $3, $4)`,
+       VALUES ($1, $2, 'ajuste', 'Ajuste KoleTap', $3, $4)`,
       [alumno.id, n, motivo.trim().slice(0, 200), alumno.colegio_id]
     );
     await db.query(
       'INSERT INTO auditoria (empleado_id, colegio_id, accion, detalle) VALUES (NULL, $1, $2, $3)',
-      [alumno.colegio_id, 'Ajuste de saldo (EduPass)', `${alumno.nombre} +${n} — ${motivo.trim().slice(0, 200)}`]
+      [alumno.colegio_id, 'Ajuste de saldo (KoleTap)', `${alumno.nombre} +${n} — ${motivo.trim().slice(0, 200)}`]
     );
     await db.query('COMMIT');
     res.json({ id: alumno.id, nombre: alumno.nombre, saldo: actualizado.rows[0].saldo });

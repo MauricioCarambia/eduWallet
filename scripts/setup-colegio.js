@@ -19,7 +19,7 @@ const log = (msg, color = 'reset') => {
 
 async function main() {
   log('\n╔══════════════════════════════════════╗', 'bold');
-  log('║     EduPass — Setup Nuevo Colegio   ║', 'bold');
+  log('║     KoleTap — Setup Nuevo Colegio   ║', 'bold');
   log('╚══════════════════════════════════════╝\n', 'bold');
 
   // datos del colegio
@@ -68,7 +68,7 @@ async function main() {
   const hash = await bcrypt.hash(adminPin, 10);
 
   const sql = `
--- Setup EduPass para ${nombre}
+-- Setup KoleTap para ${nombre}
 -- Generado el ${new Date().toLocaleString('es-AR')}
 
 CREATE TABLE IF NOT EXISTS empleados (
@@ -199,7 +199,7 @@ FROM_EMAIL=onboarding@resend.dev
 
   // generar guía de entrega
   const guia = `
-# EduPass — ${nombre}
+# KoleTap — ${nombre}
 Generado el ${new Date().toLocaleString('es-AR')}
 
 ## Accesos
@@ -228,7 +228,7 @@ URL: ${backendUrl}
 4. Configurar el email en el Panel de Administración → Configuración
 
 ## Soporte
-Para soporte técnico contactar a EduPass.
+Para soporte técnico contactar a KoleTap.
 `;
 
   fs.writeFileSync(path.join(dir, 'GUIA_ENTREGA.md'), guia);

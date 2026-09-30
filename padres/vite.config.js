@@ -15,8 +15,8 @@ export default defineConfig({
       },
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'EduPass — Portal de Padres',
-        short_name: 'EduPass',
+        name: 'KoleTap — Portal de Padres',
+        short_name: 'KoleTap',
         description: 'Administrá el saldo escolar de tus hijos',
         theme_color: '#111111',
         background_color: '#F8F9FA',

@@ -54,7 +54,7 @@ export default function useLectorTarjeta(onLeer, activo = true) {
     }
 
     document.addEventListener('keydown', onKeyDown, true)
-    // App de escritorio (EduPass POS para Windows): el lector PC/SC
+    // App de escritorio (KoleTap POS para Windows): el lector PC/SC
     // (ACR122U) manda las tarjetas directo, sin pasar por el teclado
     const desuscribir = escritorio()?.onTarjeta(uid => leer(uid))
     return () => {
@@ -65,7 +65,7 @@ export default function useLectorTarjeta(onLeer, activo = true) {
 }
 
 // ─── App de escritorio ──────────────────────────────────────────────────────
-const escritorio = () => (typeof window !== 'undefined' ? (window.edupassEscritorio || window.eduwalletEscritorio) : undefined) // eduwallet: app de escritorio instalada antes del cambio de nombre
+const escritorio = () => (typeof window !== 'undefined' ? (window.koletapEscritorio || window.edupassEscritorio || window.eduwalletEscritorio) : undefined) // edupass/eduwallet: app de escritorio instalada con un nombre anterior
 
 // Estado del lector de la app de escritorio: { disponible, conectado, lectores }
 // (disponible = false cuando se usa desde el navegador)

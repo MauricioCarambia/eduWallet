@@ -4,11 +4,11 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(() => {
-    return (localStorage.getItem('edupass_theme') ?? localStorage.getItem('eduwallet_theme')) === 'dark'
+    return (localStorage.getItem('koletap_theme') ?? localStorage.getItem('edupass_theme') ?? localStorage.getItem('eduwallet_theme')) === 'dark'
   })
 
   useEffect(() => {
-    localStorage.setItem('edupass_theme', dark ? 'dark' : 'light')
+    localStorage.setItem('koletap_theme', dark ? 'dark' : 'light')
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
   }, [dark])
 

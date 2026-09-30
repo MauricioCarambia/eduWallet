@@ -71,7 +71,7 @@ export default function Dashboard({ sesion, onLogout }) {
           </div>
           <div>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
-              EduPass
+              KoleTap
             </h2>
             <p style={{ margin: 0, fontSize: 11, color: "#666" }}>
               Hola, {sesion.nombre} ·{" "}

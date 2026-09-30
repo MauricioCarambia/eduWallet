@@ -12,7 +12,7 @@ describe('Salud de la API', () => {
     const res = await request(app).get('/api/docs.json');
     expect(res.status).toBe(200);
     expect(res.body.openapi).toBe('3.0.0');
-    expect(res.body.info.title).toBe('EduPass API');
+    expect(res.body.info.title).toBe('KoleTap API');
     expect(Object.keys(res.body.paths).length).toBeGreaterThan(0);
   });
 

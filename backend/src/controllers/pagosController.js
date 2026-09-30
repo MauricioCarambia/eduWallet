@@ -250,7 +250,7 @@ const crearPreferencia = async (req, res) => {
 
     const items = [{
       id: `recarga_${alumno_id}`,
-      title: `Recarga EduPass — ${alumno.nombre}`,
+      title: `Recarga KoleTap — ${alumno.nombre}`,
       description: `Saldo para consumos en el colegio de ${alumno.nombre}`,
       category_id: 'services',
       quantity: 1,
@@ -260,7 +260,7 @@ const crearPreferencia = async (req, res) => {
     if (calc.comision > 0) {
       items.push({
         id: 'cargo_servicio',
-        title: 'Cargo por servicio EduPass',
+        title: 'Cargo por servicio KoleTap',
         description: 'Comisión de la plataforma',
         category_id: 'services',
         quantity: 1,
@@ -278,7 +278,7 @@ const crearPreferencia = async (req, res) => {
         pending: `${process.env.PADRES_URL}/recargar?status=pending`,
       },
       auto_return: 'approved',
-      statement_descriptor: 'EDUPASS',
+      statement_descriptor: 'KOLETAP',
       external_reference: externalReference,
       notification_url: notificationUrl(alumno.colegio_id),
       expires: true,
@@ -338,7 +338,7 @@ const procesarPago = async (req, res) => {
     const body = {
       transaction_amount: calc.total,
       token,
-      description: `Recarga EduPass alumno ${alumno_id}`,
+      description: `Recarga KoleTap alumno ${alumno_id}`,
       installments: Number(installments) || 1,
       payment_method_id,
       issuer_id,
@@ -346,7 +346,7 @@ const procesarPago = async (req, res) => {
         email: payer?.email || email,
         identification: payer?.identification
       },
-      statement_descriptor: 'EDUPASS',
+      statement_descriptor: 'KOLETAP',
       external_reference: externalReference,
       notification_url: notificationUrl(alumno.colegio_id),
     };
@@ -536,7 +536,7 @@ const crearLinkPago = async (req, res) => {
 
     const items = [{
       id: `recarga_${alumno.id}`,
-      title: `Recarga EduPass — ${alumno.nombre}`,
+      title: `Recarga KoleTap — ${alumno.nombre}`,
       description: `Saldo para consumos en el colegio de ${alumno.nombre}`,
       category_id: 'services',
       quantity: 1,
@@ -546,7 +546,7 @@ const crearLinkPago = async (req, res) => {
     if (calc.comision > 0) {
       items.push({
         id: 'cargo_servicio',
-        title: 'Cargo por servicio EduPass',
+        title: 'Cargo por servicio KoleTap',
         description: 'Comisión de la plataforma',
         category_id: 'services',
         quantity: 1,
@@ -556,7 +556,7 @@ const crearLinkPago = async (req, res) => {
     }
     const body = {
       items,
-      statement_descriptor: 'EDUPASS',
+      statement_descriptor: 'KOLETAP',
       external_reference: externalReference,
       notification_url: notificationUrl(alumno.colegio_id),
       expires: true,

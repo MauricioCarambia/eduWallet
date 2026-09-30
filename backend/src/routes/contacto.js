@@ -7,7 +7,7 @@ const { contactoLimiter } = require('../middlewares/rateLimiter');
  * @swagger
  * /contacto:
  *   post:
- *     summary: Consulta desde el formulario de la página de EduPass (sin login)
+ *     summary: Consulta desde el formulario de la página de KoleTap (sin login)
  *     tags: [Contacto]
  *     requestBody:
  *       required: true

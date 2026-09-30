@@ -175,7 +175,7 @@ export default function Alumnos() {
     } finally { setGenerandoLink(false) }
   }
 
-  const textoLink = l => `Link para recargar ${fmt(l.monto)} de saldo a ${l.alumno} en EduPass (total a pagar ${fmt(l.total)}, incluye cargo por servicio). Podés pagar con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras) o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago: ${l.url}`
+  const textoLink = l => `Link para recargar ${fmt(l.monto)} de saldo a ${l.alumno} en KoleTap (total a pagar ${fmt(l.total)}, incluye cargo por servicio). Podés pagar con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras) o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago: ${l.url}`
 
   const copiarLink = async () => {
     try {
@@ -220,12 +220,12 @@ export default function Alumnos() {
   }
 
   const enviarWhatsApp = async () => {
-    const texto = `Credencial EduPass de ${qrModal.alumno.nombre} (${qrModal.alumno.curso}). Mostrala donde corresponda para pagar con el saldo.`
+    const texto = `Credencial KoleTap de ${qrModal.alumno.nombre} (${qrModal.alumno.curso}). Mostrala donde corresponda para pagar con el saldo.`
     try {
       const archivo = await archivoCredencial()
       // Celulares (y navegadores que lo permiten): menú de compartir con la imagen, se elige WhatsApp
       if (navigator.canShare?.({ files: [archivo] })) {
-        try { await navigator.share({ files: [archivo], title: 'Credencial EduPass', text: texto }) }
+        try { await navigator.share({ files: [archivo], title: 'Credencial KoleTap', text: texto }) }
         catch (err) { if (err?.name !== 'AbortError') throw err }
         return
       }

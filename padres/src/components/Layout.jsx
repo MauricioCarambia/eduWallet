@@ -19,7 +19,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate()
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [mostrarInstalar, setMostrarInstalar] = useState(false)
-  const [branding, setBranding] = useState({ nombre_colegio: 'EduPass', logo: null })
+  const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
 
   useEffect(() => {
     api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
@@ -60,7 +60,7 @@ export default function Layout({ children }) {
               }
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'EduPass' })}</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'KoleTap' })}</p>
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{t('pwa.instalar_subtitulo')}</p>
             </div>
           </div>
@@ -80,7 +80,7 @@ export default function Layout({ children }) {
               : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             }
           </div>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{branding.nombre_colegio || 'EduPass'}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{branding.nombre_colegio || 'KoleTap'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{padre?.nombre?.split(' ')[0]}</span>

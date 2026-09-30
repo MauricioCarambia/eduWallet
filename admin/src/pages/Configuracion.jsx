@@ -111,7 +111,7 @@ export default function Configuracion() {
     try {
       const res = await api.get('/backup/descargar', { responseType: 'blob' })
       const url = URL.createObjectURL(res.data)
-      const a = document.createElement('a'); a.href = url; a.download = `edupass-backup-${new Date().toISOString().slice(0, 10)}.sql`; a.click()
+      const a = document.createElement('a'); a.href = url; a.download = `koletap-backup-${new Date().toISOString().slice(0, 10)}.sql`; a.click()
       URL.revokeObjectURL(url)
       showMsg('ok', 'Backup descargado correctamente')
     } catch { showMsg('error', 'Error al descargar backup') }

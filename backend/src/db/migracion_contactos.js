@@ -1,5 +1,5 @@
 /**
- * Consultas que llegan desde el formulario de la página de EduPass.
+ * Consultas que llegan desde el formulario de la página de KoleTap.
  * Se guardan siempre, aunque falle el aviso por email.
  *
  * Idempotente. Corre sola al iniciar el servidor (src/index.js); también

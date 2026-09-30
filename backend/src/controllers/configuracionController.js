@@ -19,7 +19,7 @@ const getMiColegio = async (req, res) => {
       'SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1',
       [req.empleado.colegio_id]
     );
-    res.json(resultado.rows[0] || { nombre_colegio: 'EduPass', logo: null });
+    res.json(resultado.rows[0] || { nombre_colegio: 'KoleTap', logo: null });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -29,14 +29,14 @@ const getMiColegio = async (req, res) => {
 const getBranding = async (req, res) => {
   try {
     const { colegio } = req.query;
-    if (!colegio) return res.json({ nombre_colegio: 'EduPass', logo: null });
+    if (!colegio) return res.json({ nombre_colegio: 'KoleTap', logo: null });
     const resultado = await pool.query(
       `SELECT c.nombre_colegio, c.logo FROM configuracion c
        JOIN colegios col ON col.id = c.colegio_id
        WHERE col.slug = $1`,
       [colegio]
     );
-    res.json(resultado.rows[0] || { nombre_colegio: 'EduPass', logo: null });
+    res.json(resultado.rows[0] || { nombre_colegio: 'KoleTap', logo: null });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

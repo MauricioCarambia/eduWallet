@@ -44,7 +44,7 @@ export default function CredencialPagina() {
       const nombre = `Credencial ${datos.credencial.nombre}.png`.replace(/[\\/:*?"<>|]/g, '')
       const archivo = new File([blob], nombre, { type: 'image/png' })
       if (navigator.canShare?.({ files: [archivo] })) {
-        try { await navigator.share({ files: [archivo], title: 'Credencial EduPass' }) }
+        try { await navigator.share({ files: [archivo], title: 'Credencial KoleTap' }) }
         catch (err) { if (err?.name !== 'AbortError') throw err }
         return
       }

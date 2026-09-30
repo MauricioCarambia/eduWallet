@@ -85,6 +85,13 @@ const migrarControlFamilias = async () => {
       ejecutado_en TIMESTAMP DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_conciliaciones_colegio ON conciliaciones (colegio_id, ejecutado_en DESC);
+
+    -- Qué día se hizo por última vez cada tarea diaria (cierre de cajas, gasto en 0)
+    CREATE TABLE IF NOT EXISTS tareas_estado (
+      clave       VARCHAR(50) PRIMARY KEY,
+      dia         DATE NOT NULL,
+      actualizado TIMESTAMP DEFAULT NOW()
+    );
   `);
 
   // Alumnos que tenían la alergia escrita a mano: se pasan a la lista

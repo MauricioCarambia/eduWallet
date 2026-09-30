@@ -1,48 +1,24 @@
 const cron = require('node-cron');
-const pool = require('./db/conexion');
+const { cierreDiario, ZONA } = require('./services/tareasDiarias');
 
 let tareasInicializadas = false;
 
+// Estas tareas corren sólo si el servidor está despierto a esa hora. Como en
+// Render se duerme cuando no se usa, el cierre diario también lo hace el
+// primer pedido de cada día (middleware alDia en app.js), y una tabla evita
+// que se haga dos veces. Los horarios son de Argentina.
 if (!tareasInicializadas) {
   tareasInicializadas = true;
 
-  // Reset gasto diario a medianoche
+  // Medianoche: cerrar cajas del día anterior, gasto diario en 0 y, en
+  // segundo plano, backups, renovación de tokens de MP y conciliación
   cron.schedule('0 0 * * *', async () => {
     try {
-      await pool.query('UPDATE alumnos SET gasto_hoy = 0');
-      console.log('Gasto diario reseteado correctamente');
+      await cierreDiario();
     } catch (err) {
-      console.error('Error al resetear gasto diario:', err.message);
+      console.error('Error en el cierre diario:', err.message);
     }
-  });
-
-  // Cerrar cajas abiertas a medianoche
-  cron.schedule('0 0 * * *', async () => {
-    try {
-      await pool.query(`UPDATE cajas SET abierta = false, cierre = NOW() WHERE abierta = true`);
-      console.log('Cajas cerradas automáticamente');
-    } catch (err) {
-      console.error('Error al cerrar cajas:', err.message);
-    }
-  });
-
-  // Backup diario a las 3am — uno por cada colegio activo
-  cron.schedule('0 3 * * *', async () => {
-    try {
-      const { hacerBackup } = require('./services/backupService');
-      const colegios = await pool.query('SELECT id FROM colegios WHERE activo = true');
-      for (const { id } of colegios.rows) {
-        try {
-          await hacerBackup(id, true);
-        } catch (err) {
-          console.error(`Error en backup diario del colegio ${id}:`, err.message);
-        }
-      }
-      console.log(`Backup diario completado (${colegios.rows.length} colegios)`);
-    } catch (err) {
-      console.error('Error en backup diario:', err.message);
-    }
-  });
+  }, { timezone: ZONA });
 
   // Vencer intentos de recarga que nunca se pagaron (más de 24 h) — cada hora
   cron.schedule('0 * * * *', async () => {
@@ -53,29 +29,7 @@ if (!tareasInicializadas) {
     } catch (err) {
       console.error('Error venciendo recargas pendientes:', err.message);
     }
-  });
-
-  // Conciliación Mercado Pago ↔ saldo de todos los colegios — 5:30am.
-  // Acredita pagos aprobados que no sumaron saldo y descuenta devoluciones
-  // y contracargos; lo demás queda listado para que el colegio lo revise.
-  cron.schedule('30 5 * * *', async () => {
-    try {
-      const { conciliarTodos } = require('./controllers/conciliacionController');
-      await conciliarTodos();
-    } catch (err) {
-      console.error('Error en la conciliación automática:', err.message);
-    }
-  });
-
-  // Renovar tokens de Mercado Pago (OAuth) que vencen pronto — 4am
-  cron.schedule('0 4 * * *', async () => {
-    try {
-      const { renovarTokensPorVencer } = require('./services/mercadoPagoService');
-      await renovarTokensPorVencer();
-    } catch (err) {
-      console.error('Error renovando tokens de Mercado Pago:', err.message);
-    }
-  });
+  }, { timezone: ZONA });
 
   console.log('Tareas programadas activas');
 }

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth');
-const { getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion, asignarTarjeta, quitarTarjeta, buscarPorTarjeta, identificarAlumno, regenerarQr, getCredenciales } = require('../controllers/alumnosController');
+const { getControlAlumno, getAlumnos, getAlumno, crearAlumno, actualizarAlumno, toggleAlumno, eliminarAlumno, getGastoSemanal, getQR, importarAlumnos, regenerarCodigoVinculacion, asignarTarjeta, quitarTarjeta, buscarPorTarjeta, identificarAlumno, regenerarQr, getCredenciales } = require('../controllers/alumnosController');
 
 /**
  * @swagger
@@ -201,6 +201,18 @@ router.delete('/:id', verificarToken, soloAdmin, eliminarAlumno);
  *         description: Gasto agrupado por día
  */
 router.get('/:id/gasto-semanal', verificarToken, getGastoSemanal);
+
+/**
+ * @swagger
+ * /alumnos/{id}/control:
+ *   get:
+ *     summary: Reglas de compra de la familia, alergias y consumo de hoy / de la semana (para el POS)
+ *     tags: [Alumnos]
+ *     responses:
+ *       200:
+ *         description: restricciones, limite_semanal, alergenos, bloquear_alergenos, hoy_por_categoria, gasto_semana, resumen
+ */
+router.get('/:id/control', verificarToken, getControlAlumno);
 
 /**
  * @swagger

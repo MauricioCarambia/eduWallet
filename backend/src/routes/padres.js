@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { registro, login, getAlumnos, getCredencial, bloquearMedio, vincularAlumno, getTransaccionesAlumno, toggleBloqueo, actualizarLimite, solicitarRecuperacion, resetearPassword } = require('../controllers/padresController');
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
+const { getCatalogo, guardarRestricciones, guardarAlergias, getNotificaciones, guardarNotificaciones } = require('../controllers/controlFamiliaController');
 const { verificarPadre } = require('../middlewares/auth');
 const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
 
@@ -246,6 +247,49 @@ router.patch('/alumnos/:alumno_id/toggle', verificarPadre, toggleBloqueo);
  *         description: Límite actualizado
  */
 router.patch('/alumnos/:alumno_id/limite', verificarPadre, actualizarLimite);
+
+/**
+ * @swagger
+ * /padres/alumnos/{alumno_id}/catalogo:
+ *   get:
+ *     summary: Productos y zonas del colegio del alumno, categorías y alérgenos (para armar las reglas de compra)
+ *     tags: [Padres]
+ * /padres/alumnos/{alumno_id}/restricciones:
+ *   put:
+ *     summary: Reglas de compra del hijo (categorías, productos y zonas bloqueadas, máximos por día, límite semanal)
+ *     tags: [Padres]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               categorias_bloqueadas: { type: array, items: { type: string } }
+ *               productos_bloqueados: { type: array, items: { type: integer } }
+ *               zonas_bloqueadas: { type: array, items: { type: string } }
+ *               maximos: { type: object, additionalProperties: { type: integer }, example: { bebida: 1 } }
+ *               limite_semanal: { type: number, nullable: true }
+ * /padres/alumnos/{alumno_id}/alergias:
+ *   put:
+ *     summary: Alérgenos del hijo y si la venta de productos con esos alérgenos se bloquea (true) o se avisa al cajero (false)
+ *     tags: [Padres]
+ */
+router.get('/alumnos/:alumno_id/catalogo', verificarPadre, getCatalogo);
+router.put('/alumnos/:alumno_id/restricciones', verificarPadre, guardarRestricciones);
+router.put('/alumnos/:alumno_id/alergias', verificarPadre, guardarAlergias);
+
+/**
+ * @swagger
+ * /padres/notificaciones:
+ *   get:
+ *     summary: Qué avisos recibe el padre y por qué medio
+ *     tags: [Padres]
+ *   put:
+ *     summary: Guardar las preferencias de avisos (compras, saldo bajo, bloqueos, compras rechazadas; email y push)
+ *     tags: [Padres]
+ */
+router.get('/notificaciones', verificarPadre, getNotificaciones);
+router.put('/notificaciones', verificarPadre, guardarNotificaciones);
 
 /**
  * @swagger

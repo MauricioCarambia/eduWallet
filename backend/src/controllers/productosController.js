@@ -1,5 +1,6 @@
 const pool = require('../db/conexion');
 const { registrar } = require('./auditoriaController');
+const { normalizarAlergenos, deducirAlergenos } = require('../services/reglasCompra');
 
 const getProductos = async (req, res) => {
   try {
@@ -67,6 +68,7 @@ const crearProducto = async (req, res) => {
   if (error) return res.status(400).json({ error });
   const categoria = normalizarCategoria(req.body.categoria) || 'otro';
   const codigo = normalizarCodigoBarras(req.body.codigo_barras);
+  const alergenos = normalizarAlergenos(req.body.alergenos);
   try {
     // Un empleado con zona fija siempre crea en su zona
     const zona = await zonaDelEmpleado(req.empleado);
@@ -75,9 +77,9 @@ const crearProducto = async (req, res) => {
     if (existe.rows.length === 0) return res.status(400).json({ error: 'Zona inválida' });
 
     const resultado = await pool.query(
-      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo]
+      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo, alergenos]
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo producto', `${String(nombre).trim()} — ${Number(precio)} (${local})`);
     res.json(resultado.rows[0]);
@@ -101,9 +103,10 @@ const actualizarProducto = async (req, res) => {
       return res.status(403).json({ error: `Sólo podés modificar productos de tu zona` });
     }
     const resultado = await pool.query(
-      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4 WHERE id = $5 RETURNING *',
+      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4, alergenos = $5 WHERE id = $6 RETURNING *',
       [nombre.trim(), Number(precio), normalizarCategoria(req.body.categoria) || producto.categoria,
-        'codigo_barras' in req.body ? normalizarCodigoBarras(req.body.codigo_barras) : producto.codigo_barras, id]
+        'codigo_barras' in req.body ? normalizarCodigoBarras(req.body.codigo_barras) : producto.codigo_barras,
+        Array.isArray(req.body.alergenos) ? normalizarAlergenos(req.body.alergenos) : producto.alergenos, id]
     );
     const cambios = [
       producto.nombre !== nombre.trim() && `nombre: ${producto.nombre} → ${nombre.trim()}`,
@@ -189,6 +192,7 @@ const importarProductos = async (req, res) => {
       const precio = Number(f.precio);
       const categoria = normalizarCategoria(f.categoria);
       const codigo = normalizarCodigoBarras(f.codigo_barras);
+      const alergenos = String(f.alergenos ?? '').trim() ? deducirAlergenos(f.alergenos) : null;
 
       let previo = null;
       if (codigo) {
@@ -204,16 +208,16 @@ const importarProductos = async (req, res) => {
         if (previo) {
           await db.query(
             `UPDATE productos SET nombre = $1, precio = $2, categoria = COALESCE($3, categoria),
-               codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock)
+               codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock), alergenos = COALESCE($7, alergenos)
              WHERE id = $6`,
-            [nombre, precio, categoria, codigo, stock, previo.id]
+            [nombre, precio, categoria, codigo, stock, previo.id, alergenos]
           );
           actualizados++;
         } else {
           await db.query(
-            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo]
+            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo, alergenos || []]
           );
           creados++;
         }

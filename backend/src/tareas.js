@@ -55,6 +55,18 @@ if (!tareasInicializadas) {
     }
   });
 
+  // Conciliación Mercado Pago ↔ saldo de todos los colegios — 5:30am.
+  // Acredita pagos aprobados que no sumaron saldo y descuenta devoluciones
+  // y contracargos; lo demás queda listado para que el colegio lo revise.
+  cron.schedule('30 5 * * *', async () => {
+    try {
+      const { conciliarTodos } = require('./controllers/conciliacionController');
+      await conciliarTodos();
+    } catch (err) {
+      console.error('Error en la conciliación automática:', err.message);
+    }
+  });
+
   // Renovar tokens de Mercado Pago (OAuth) que vencen pronto — 4am
   cron.schedule('0 4 * * *', async () => {
     try {

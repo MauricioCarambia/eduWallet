@@ -3,6 +3,7 @@ const pool = require("../db/conexion");
 const { enviarPush } = require("../services/pushService");
 const { calcularRecarga, clienteColegio, buscarPago } = require("../services/mercadoPagoService");
 const { registrar } = require("./auditoriaController");
+const { notificarReversion } = require("../services/notificacionesService");
 require("dotenv").config();
 
 // Notifica que la recarga por Mercado Pago fue acreditada: al padre que la
@@ -32,6 +33,60 @@ const mapEstado = (mpStatus) => {
 };
 
 const MONTO_MAXIMO = 1000000;
+
+// Estados de un pago cuyo saldo ya se acreditó alguna vez
+const YA_ACREDITADOS = ['acreditado', 'devuelto_parcial', 'devuelto', 'contracargo', 'en_disputa'];
+const redondear = n => Math.round(Number(n) * 100) / 100;
+
+// Mercado Pago cambió un pago que ya habíamos acreditado: devolución (total o
+// parcial), contracargo o disputa. Lo devuelto se descuenta del saldo del
+// alumno con un movimiento 'reversion'; el saldo puede quedar negativo y así
+// el alumno no compra hasta que la familia recargue. monto_revertido lleva la
+// cuenta de lo ya descontado, así un aviso repetido no descuenta dos veces.
+// Se llama con la fila de pagos bloqueada (FOR UPDATE) dentro de la transacción.
+const aplicarCambiosPosteriores = async (db, pago, pagoData) => {
+  const monto = Number(pago.monto);
+  const yaRevertido = Number(pago.monto_revertido || 0);
+  const reembolsado = Number(pagoData.transaction_amount_refunded || 0);
+  let objetivo = yaRevertido;
+  let estado = pago.estado;
+  let motivo = 'Devolución';
+
+  if (pagoData.status === 'charged_back') {
+    objetivo = monto; estado = 'contracargo'; motivo = 'Contracargo';
+  } else if (pagoData.status === 'refunded' || pagoData.status === 'cancelled') {
+    objetivo = monto; estado = 'devuelto';
+  } else if (pagoData.status === 'in_mediation') {
+    estado = 'en_disputa';
+  } else if (pagoData.status === 'approved') {
+    if (reembolsado > 0) {
+      objetivo = Math.min(monto, reembolsado);
+      estado = objetivo >= monto ? 'devuelto' : 'devuelto_parcial';
+    } else if (estado === 'en_disputa') {
+      estado = yaRevertido > 0 ? 'devuelto_parcial' : 'acreditado'; // la disputa se resolvió a favor
+    }
+  }
+  objetivo = redondear(Math.max(objetivo, yaRevertido)); // nunca se "des-revierte"
+  const delta = redondear(objetivo - yaRevertido);
+
+  let saldoNuevo = null;
+  if (delta > 0) {
+    const a = await db.query('UPDATE alumnos SET saldo = saldo - $1 WHERE id = $2 RETURNING saldo', [delta, pago.alumno_id]);
+    saldoNuevo = a.rows[0]?.saldo;
+    await db.query(
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'reversion', 'Mercado Pago', $3, $4)`,
+      [pago.alumno_id, delta, `${motivo} de recarga MP:${pagoData.id}`, pago.colegio_id]
+    );
+  }
+  if (estado !== pago.estado || delta > 0) {
+    await db.query(
+      'UPDATE pagos SET estado = $1, monto_revertido = $2, detalle = $3, actualizado_en = NOW() WHERE id = $4',
+      [estado, objetivo, pagoData.status_detail || pagoData.status || pago.detalle, pago.id]
+    );
+  }
+  return { estado, revertido: delta, motivo, saldoNuevo };
+};
 
 // Un intento de recarga que no se pagó en este plazo pasa a 'vencido'. La
 // preferencia de MP vence al mismo tiempo, así el link ya no se puede pagar.
@@ -117,10 +172,16 @@ const acreditarPago = async (pagoData) => {
     }
     pago = r.rows[0];
 
-    if (pago.estado === 'acreditado') {
-      // Ya se acreditó antes: nada que hacer (no se "desacredita" acá)
+    if (YA_ACREDITADOS.includes(pago.estado)) {
+      // Ya se acreditó antes: sólo pueden venir devoluciones, contracargos o disputas
+      const cambio = await aplicarCambiosPosteriores(db, pago, pagoData);
       await db.query('COMMIT');
-      return { estado: 'acreditado', acreditado: false, pago };
+      if (cambio.revertido > 0) {
+        await registrar(null, pago.colegio_id, `Recarga revertida por Mercado Pago (${cambio.motivo.toLowerCase()})`,
+          `Pago MP ${paymentId}: se descontaron ${cambio.revertido} del alumno #${pago.alumno_id}`).catch(() => {});
+        await notificarReversion({ colegioId: pago.colegio_id, alumnoId: pago.alumno_id, monto: cambio.revertido, motivo: cambio.motivo, saldoNuevo: cambio.saldoNuevo });
+      }
+      return { estado: cambio.estado, acreditado: false, pago, revertido: cambio.revertido };
     }
 
     let detalle = pagoData.status_detail || null;
@@ -358,7 +419,7 @@ const verificarPago = async (req, res) => {
   }
 };
 
-const ESTADOS_PAGO = ['pendiente', 'acreditado', 'rechazado', 'vencido'];
+const ESTADOS_PAGO = ['pendiente', 'acreditado', 'rechazado', 'vencido', 'devuelto', 'devuelto_parcial', 'contracargo', 'en_disputa'];
 
 // Historial de recargas del padre logueado (últimas 50), opcionalmente
 // filtrado por estado: ?estado=pendiente|acreditado|rechazado|vencido

@@ -1,4 +1,6 @@
 const pool = require("../db/conexion");
+const { normalizarAlergenos, resumenReglas } = require("../services/reglasCompra");
+const { compradoHoyPorCategoria, gastoDeLaSemana } = require("../services/consumoAlumno");
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
@@ -39,12 +41,13 @@ const getAlumno = async (req, res) => {
 const crearAlumno = async (req, res) => {
   const { nombre, curso, limite_diario, tutor, tutor_tel, contacto2, contacto2_tel, alergias } =
     req.body;
+  const alergenos = normalizarAlergenos(req.body.alergenos);
   try {
     const qr = nuevoCodigoQr();
     const codigoVinculacion = generarCodigoVinculacion();
     const resultado = await pool.query(
-      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id, contacto2, contacto2_tel)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO alumnos (nombre, curso, saldo, limite_diario, tutor, tutor_tel, alergias, qr, codigo_vinculacion, colegio_id, contacto2, contacto2_tel, alergenos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         nombre,
@@ -59,6 +62,7 @@ const crearAlumno = async (req, res) => {
         req.empleado.colegio_id,
         contacto2 || null,
         contacto2_tel || null,
+        alergenos,
       ],
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, "Nuevo alumno", nombre);
@@ -71,12 +75,13 @@ const crearAlumno = async (req, res) => {
 const actualizarAlumno = async (req, res) => {
   const { id } = req.params;
   const { nombre, curso, limite_diario, tutor, tutor_tel, contacto2, contacto2_tel, alergias } = req.body;
+  const alergenos = Array.isArray(req.body.alergenos) ? normalizarAlergenos(req.body.alergenos) : null;
   try {
     const resultado = await pool.query(
       `UPDATE alumnos SET nombre=$1, curso=$2, limite_diario=$3, tutor=$4, tutor_tel=$5, alergias=$6,
-              contacto2=$9, contacto2_tel=$10
+              contacto2=$9, contacto2_tel=$10, alergenos=COALESCE($11, alergenos)
        WHERE id=$7 AND colegio_id=$8 RETURNING *`,
-      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id, req.empleado.colegio_id, contacto2 || null, contacto2_tel || null],
+      [nombre, curso, limite_diario, tutor, tutor_tel, alergias, id, req.empleado.colegio_id, contacto2 || null, contacto2_tel || null, alergenos],
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
     res.json(resultado.rows[0]);
@@ -457,7 +462,32 @@ const getCredenciales = async (req, res) => {
   }
 };
 
+// Lo que el POS necesita saber del alumno para vender: reglas de la
+// familia, alergias y cuánto consumió hoy / esta semana
+const getControlAlumno = async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT id, nombre, restricciones, limite_semanal, alergenos, bloquear_alergenos FROM alumnos WHERE id = $1 AND colegio_id = $2',
+      [req.params.id, req.empleado.colegio_id]
+    );
+    const a = r.rows[0];
+    if (!a) return res.status(404).json({ error: "Alumno no encontrado" });
+    res.json({
+      restricciones: a.restricciones || {},
+      limite_semanal: a.limite_semanal,
+      alergenos: a.alergenos || [],
+      bloquear_alergenos: a.bloquear_alergenos,
+      hoy_por_categoria: await compradoHoyPorCategoria(pool, a.id),
+      gasto_semana: a.limite_semanal != null ? await gastoDeLaSemana(pool, a.id) : null,
+      resumen: resumenReglas(a),
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Error del servidor" });
+  }
+};
+
 module.exports = {
+  getControlAlumno,
   identificarAlumno,
   regenerarQr,
   getCredenciales,

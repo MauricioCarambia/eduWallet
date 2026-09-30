@@ -48,7 +48,7 @@ export default function OlvidePassword() {
               </div>
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 8px' }}>Email enviado</p>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 20px' }}>{mensaje}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 16px' }}>Revisá tu bandeja de entrada y spam. El enlace expira en 1 hora.</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Revisá tu bandeja de entrada y spam. El enlace expira en 1 hora.</p>
               <Link to="/" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Volver al inicio de sesión</Link>
             </div>
           ) : (
@@ -66,7 +66,7 @@ export default function OlvidePassword() {
               </div>
 
               {estado === 'error' && (
-                <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>
+                <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>
                   {mensaje}
                 </div>
               )}
@@ -74,7 +74,7 @@ export default function OlvidePassword() {
               <button
                 onClick={handleSubmit}
                 disabled={estado === 'cargando' || !email}
-                style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: (estado === 'cargando' || !email) ? 0.7 : 1, cursor: (estado === 'cargando' || !email) ? 'not-allowed' : 'pointer', marginBottom: 14 }}
+                style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, opacity: (estado === 'cargando' || !email) ? 0.7 : 1, cursor: (estado === 'cargando' || !email) ? 'not-allowed' : 'pointer', marginBottom: 14 }}
               >
                 {estado === 'cargando' ? 'Enviando...' : 'Enviar enlace'}
               </button>

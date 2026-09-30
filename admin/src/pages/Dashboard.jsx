@@ -12,7 +12,7 @@ function StatCard({ label, value, sub, color, icon }) {
         <div>
           <p style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</p>
           <p style={{ margin: 0, fontSize: 26, fontWeight: 700, color: color || 'var(--text)' }}>{value}</p>
-          {sub && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-tertiary)' }}>{sub}</p>}
+          {sub && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{sub}</p>}
         </div>
         {icon && (
           <div style={{ width: 40, height: 40, borderRadius: 'var(--radius)', background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
@@ -106,11 +106,11 @@ export default function Dashboard() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {ultimaActualizacion && (
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               {autoActualizar && (
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'pulse-dot 1.4s ease-in-out infinite' }} />
               )}
@@ -174,7 +174,7 @@ export default function Dashboard() {
         {/* top productos */}
         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
           <SectionTitle>Productos más vendidos</SectionTitle>
-          {topProds.length === 0 ? <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Sin datos</p> : topProds.map(([nombre, cnt], i) => (
+          {topProds.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin datos</p> : topProds.map(([nombre, cnt], i) => (
             <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: i < topProds.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</span>
@@ -197,7 +197,7 @@ export default function Dashboard() {
             <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.nombre}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{[[a.tutor, a.tutor_tel].filter(Boolean).join(' '), [a.contacto2, a.contacto2_tel].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{[[a.tutor, a.tutor_tel].filter(Boolean).join(' '), [a.contacto2, a.contacto2_tel].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)' }}>{fmt(a.saldo)}</span>
             </div>
@@ -218,7 +218,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
               </div>
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>

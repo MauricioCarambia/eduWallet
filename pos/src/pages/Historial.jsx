@@ -45,10 +45,10 @@ export default function Historial() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Historial de ventas</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{txsFiltradas.length} transacciones</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{txsFiltradas.length} transacciones</p>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
         {[
@@ -57,7 +57,7 @@ export default function Historial() {
           { label: 'Ticket promedio', value: txsFiltradas.length > 0 ? fmt(Math.round(totalFiltrado / txsFiltradas.length)) : '$0', color: 'var(--text)' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '1rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: s.color }}>{s.value}</p>
           </div>
         ))}
@@ -65,14 +65,14 @@ export default function Historial() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {[['turno', 'Mi turno'], ['hoy', 'Hoy'], ['todo', 'Todo']].map(([val, label]) => (
-          <button key={val} onClick={() => setFiltro(val)} style={{ padding: '6px 14px', border: `1px solid ${filtro === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: filtro === val ? 'var(--brand)' : 'var(--bg-card)', color: filtro === val ? 'white' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontWeight: filtro === val ? 500 : 400 }}>{label}</button>
+          <button key={val} onClick={() => setFiltro(val)} style={{ padding: '6px 14px', border: `1px solid ${filtro === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: filtro === val ? 'var(--brand)' : 'var(--bg-card)', color: filtro === val ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontWeight: filtro === val ? 500 : 400 }}>{label}</button>
         ))}
         <input placeholder="Buscar alumno o producto..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
       </div>
 
       <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         {txsFiltradas.length === 0
-          ? <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin transacciones</p>
+          ? <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin transacciones</p>
           : txsFiltradas.map((t, i) => (
             <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < txsFiltradas.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -81,7 +81,7 @@ export default function Historial() {
                 </div>
                 <div>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
                 </div>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{fmt(t.monto)}</span>

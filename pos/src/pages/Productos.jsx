@@ -15,7 +15,7 @@ function Modal({ title, onClose, children, ancho = 440 }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: ancho, maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -28,7 +28,7 @@ function Campo({ label, children, ayuda }) {
     <div style={{ marginBottom: 14 }}>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</label>
       {children}
-      {ayuda && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>{ayuda}</p>}
+      {ayuda && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>{ayuda}</p>}
     </div>
   )
 }
@@ -63,7 +63,7 @@ function SelectCategoria({ value, onChange }) {
 }
 
 const btnSec = { padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }
-const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
+const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
 
 const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [] }
 const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
@@ -190,7 +190,7 @@ export default function Productos() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Productos</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{productos.length} productos en total · escaneá un código de barras para cargarlo o sumar stock</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{productos.length} productos en total · escaneá un código de barras para cargarlo o sumar stock</p>
         </div>
         {local && (
           <div style={{ display: 'flex', gap: 8 }}>
@@ -200,7 +200,7 @@ export default function Productos() {
         )}
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       {stockBajo.length > 0 && (
         <div style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--amber-bg)', border: '1px solid var(--amber)', marginBottom: 16, fontSize: 13, color: 'var(--amber)', borderLeft: '3px solid var(--amber)' }}>
@@ -211,7 +211,7 @@ export default function Productos() {
       {!zonaFija && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
           {locales.map(l => (
-            <button key={l} onClick={() => setLocal(l)} style={{ padding: '7px 18px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: local === l ? 500 : 400, cursor: 'pointer' }}>{l}</button>
+            <button key={l} onClick={() => setLocal(l)} style={{ padding: '7px 18px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, fontWeight: local === l ? 500 : 400, cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
       )}
@@ -223,7 +223,7 @@ export default function Productos() {
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
-                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
+                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -232,7 +232,7 @@ export default function Productos() {
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                 <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
                   {p.nombre}
-                  {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
+                  {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
                   {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>⚠ {nombresAlergenos(p.alergenos)}</div>}
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
@@ -254,7 +254,7 @@ export default function Productos() {
             ))}
           </tbody>
         </table>
-        {prodsFiltrados.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin productos</p>}
+        {prodsFiltrados.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin productos</p>}
       </div>
 
       {modal === 'nuevo' && (
@@ -347,13 +347,13 @@ export default function Productos() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--bg)', position: 'sticky', top: 0 }}>
-                          {['Fila', 'Nombre', 'Precio', 'Stock', 'Categoría', 'Código'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontWeight: 600 }}>{h}</th>)}
+                          {['Fila', 'Nombre', 'Precio', 'Stock', 'Categoría', 'Código'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>)}
                         </tr>
                       </thead>
                       <tbody>
                         {importacion.filas.slice(0, 100).map(f => (
                           <tr key={f.fila} style={{ borderTop: '1px solid var(--border-light)', color: f.aviso ? 'var(--red)' : 'var(--text)' }} title={f.aviso || ''}>
-                            <td style={{ padding: '5px 8px', color: 'var(--text-tertiary)' }}>{f.fila}</td>
+                            <td style={{ padding: '5px 8px', color: 'var(--text-secondary)' }}>{f.fila}</td>
                             <td style={{ padding: '5px 8px' }}>{f.nombre || <i style={{ color: 'var(--red)' }}>falta</i>}</td>
                             <td style={{ padding: '5px 8px' }}>{typeof f.precio === 'number' ? fmt(f.precio) : <i style={{ color: 'var(--red)' }}>{f.precio || 'falta'}</i>}</td>
                             <td style={{ padding: '5px 8px' }}>{f.stock === '' ? '—' : f.stock}</td>
@@ -364,7 +364,7 @@ export default function Productos() {
                       </tbody>
                     </table>
                   </div>
-                  {importacion.filas.length > 100 && <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '-6px 0 12px' }}>Se muestran los primeros 100.</p>}
+                  {importacion.filas.length > 100 && <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '-6px 0 12px' }}>Se muestran los primeros 100.</p>}
                   {importacion.filas.some(f => f.aviso) && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 12px' }}>⚠ {importacion.filas.find(f => f.aviso).aviso}</p>}
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button onClick={cerrarModal} style={btnSec}>Cancelar</button>

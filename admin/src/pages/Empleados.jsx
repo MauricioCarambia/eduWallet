@@ -11,7 +11,7 @@ function Modal({ title, onClose, children }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -121,7 +121,7 @@ export default function Empleados() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Empleados</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{empleados.length} empleados registrados</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{empleados.length} empleados registrados</p>
         </div>
         <button onClick={() => setModal('nuevo')} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Nuevo empleado</button>
       </div>
@@ -151,7 +151,7 @@ export default function Empleados() {
                     ? <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>📍 {e.local_nombre}</span>
                     : e.rol === 'staff' && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin zona</span>}
                 </div>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>@{e.usuario} · {cajasE.length} turnos · Total: <b style={{ color: 'var(--text)' }}>{fmt(totalE)}</b></p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>@{e.usuario} · {cajasE.length} turnos · Total: <b style={{ color: 'var(--text)' }}>{fmt(totalE)}</b></p>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {[
@@ -186,7 +186,7 @@ export default function Empleados() {
               </select>
             </Campo>
           )}
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 12px' }}>No hace falta cargar un PIN: al registrarlo se genera un código de activación y el empleado elige su propio PIN. Así nadie más lo conoce.</p>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 12px' }}>No hace falta cargar un PIN: al registrarlo se genera un código de activación y el empleado elige su propio PIN. Así nadie más lo conoce.</p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
             <button onClick={guardarNuevo} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
@@ -214,7 +214,7 @@ export default function Empleados() {
         <Modal title={`Código de activación — ${activacion.nombre}`} onClose={cerrarModal}>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Pasale este código al empleado. Se usa una sola vez y vence el <b>{vence(activacion.expira)}</b>. No se vuelve a mostrar: si se pierde, generá uno nuevo.</p>
           <div style={{ textAlign: 'center', padding: '16px', borderRadius: 'var(--radius)', background: 'var(--bg)', border: '1.5px dashed var(--border)', marginBottom: 12 }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Código</p>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Código</p>
             <p style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', color: 'var(--text)' }}>{activacion.codigo_activacion}</p>
           </div>
           <ol style={{ margin: '0 0 16px', paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', display: 'grid', gap: 4 }}>
@@ -240,17 +240,17 @@ export default function Empleados() {
               </div>
             ))}
           </div>
-          {cajasEmpleado.length === 0 ? <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Sin turnos</p> : cajasEmpleado.map(c => (
+          {cajasEmpleado.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin turnos</p> : cajasEmpleado.map(c => (
             <div key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div>
                   <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{c.local}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(c.apertura).toLocaleString('es-AR')}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{c.tx_count} tx · Fondo: {fmt(c.fondo)}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(c.apertura).toLocaleString('es-AR')}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{c.tx_count} tx · Fondo: {fmt(c.fondo)}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
-                  <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-tertiary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
+                  <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
                 </div>
               </div>
             </div>

@@ -59,10 +59,10 @@ export default function Caja() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Caja</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Control de turno y arqueo</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Control de turno y arqueo</p>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       {caja ? (
         <div style={{ marginBottom: 24 }}>
@@ -75,7 +75,7 @@ export default function Caja() {
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--green)' }}>Apertura: {new Date(caja.apertura).toLocaleString('es-AR')}</p>
               </div>
-              <button onClick={handleCerrarCaja} style={{ padding: '8px 18px', border: 'none', borderRadius: 10, background: 'var(--red)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cerrar caja</button>
+              <button onClick={handleCerrarCaja} style={{ padding: '8px 18px', border: 'none', borderRadius: 10, background: 'var(--red)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cerrar caja</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
               {[
@@ -97,12 +97,12 @@ export default function Caja() {
               <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Últimas ventas del turno</h2>
             </div>
             {txsCaja.length === 0
-              ? <p style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin ventas aún</p>
+              ? <p style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin ventas aún</p>
               : txsCaja.slice(0, 8).map(t => (
                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 16px', borderBottom: '1px solid var(--border-light)' }}>
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmt(t.monto)}</span>
                 </div>
@@ -116,11 +116,11 @@ export default function Caja() {
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
             {zonaFija ? (
-              <div style={{ padding: '10px', border: '1.5px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+              <div style={{ padding: '10px', border: '1.5px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
             ) : (
               <div style={{ display: 'flex', gap: 8 }}>
                 {locales.map(l => (
-                  <button key={l} onClick={() => setLocal(l)} style={{ flex: 1, padding: '10px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+                  <button key={l} onClick={() => setLocal(l)} style={{ flex: 1, padding: '10px', border: `1.5px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
                 ))}
               </div>
             )}
@@ -129,12 +129,12 @@ export default function Caja() {
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               {[500, 1000, 2000].map(n => (
-                <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '9px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'white' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
+                <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '9px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
               ))}
             </div>
             <input type="number" value={fondoCaja} onChange={e => setFondoCaja(e.target.value)} placeholder="Otro monto" />
           </div>
-          <button onClick={handleAbrirCaja} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--green)', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Abrir caja</button>
+          <button onClick={handleAbrirCaja} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--green)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Abrir caja</button>
         </div>
       )}
 
@@ -143,19 +143,19 @@ export default function Caja() {
           <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Mis turnos anteriores</h2>
         </div>
         {misCajas.filter(c => !c.abierta).length === 0
-          ? <p style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin turnos anteriores</p>
+          ? <p style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin turnos anteriores</p>
           : misCajas.filter(c => !c.abierta).map(c => (
             <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{c.local}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
                   {new Date(c.apertura).toLocaleString('es-AR')}{c.cierre && ` → ${new Date(c.cierre).toLocaleString('es-AR')}`}
                 </p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>Fondo: {fmt(c.fondo)} · {c.tx_count} transacciones</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Fondo: {fmt(c.fondo)} · {c.tx_count} transacciones</p>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>Total vendido</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Total vendido</p>
               </div>
             </div>
           ))}

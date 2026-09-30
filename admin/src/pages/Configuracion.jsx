@@ -9,7 +9,7 @@ function Campo({ label, hint, children }) {
     <div style={{ marginBottom: 16 }}>
       <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>{label}</label>
       {children}
-      {hint && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>{hint}</p>}
+      {hint && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>{hint}</p>}
     </div>
   )
 }
@@ -178,7 +178,7 @@ export default function Configuracion() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Configuración</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Parámetros generales del sistema</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Parámetros generales del sistema</p>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -196,7 +196,7 @@ export default function Configuracion() {
             <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text)' }}>
               {config.logo ? 'Logo cargado correctamente' : 'Sin logo configurado'}
             </p>
-            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-tertiary)' }}>
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-secondary)' }}>
               Se mostrará en los 3 portales y en los emails. Máx 1MB · Se redimensiona a 200×200px.
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -233,7 +233,7 @@ export default function Configuracion() {
         </p>
         {cargandoLocales ? <SkeletonLine /> : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-            {locales.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Todavía no hay locales creados.</p>}
+            {locales.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Todavía no hay locales creados.</p>}
             {locales.map(l => (
               <button key={l.id} onClick={() => toggleLocal(l.id)}
                 title={l.activo ? 'Click para desactivar' : 'Click para reactivar'}
@@ -273,7 +273,7 @@ export default function Configuracion() {
                 Desconectar
               </button>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '8px 0 0' }}>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '8px 0 0' }}>
               Para cambiar de cuenta, primero cerrá sesión en mercadopago.com.ar o usá una ventana de incógnito.
             </p>
           </div>
@@ -339,7 +339,7 @@ export default function Configuracion() {
             Enviar por email
           </button>
         </div>
-        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-tertiary)' }}>El backup se envía al email de administración configurado arriba.</p>
+        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>El backup se envía al email de administración configurado arriba.</p>
       </Section>
 
       <Section title="Sistema">

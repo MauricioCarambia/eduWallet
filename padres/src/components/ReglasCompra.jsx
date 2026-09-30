@@ -98,7 +98,7 @@ export default function ReglasCompra({ alumno, catalogo, onGuardado, showMsg }) 
           {resultados.map(p => (
             <button key={p.id} type="button" onClick={() => { setProductosBloq(x => [...x, p.id]); setBusq('') }}
               style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: 'none', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}>
-              <span>{p.nombre} <span style={{ color: 'var(--text-tertiary)' }}>· {p.local}</span></span>
+              <span>{p.nombre} <span style={{ color: 'var(--text-secondary)' }}>· {p.local}</span></span>
               <span style={{ color: 'var(--red)', fontWeight: 600, flexShrink: 0 }}>Bloquear</span>
             </button>
           ))}

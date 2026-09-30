@@ -57,7 +57,7 @@ export default function Conciliacion() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
         <div style={{ maxWidth: 620 }}>
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Conciliación con Mercado Pago</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
             Compara las recargas con lo que registró Mercado Pago. Si un pago aprobado no sumó saldo, lo acredita; si una recarga se devolvió o tuvo un contracargo, lo descuenta.
             Lo que necesita una persona queda marcado para revisar. Se hace sola todas las noches.
           </p>
@@ -67,7 +67,7 @@ export default function Conciliacion() {
           <select id="dias" value={dias} onChange={e => setDias(Number(e.target.value))} style={{ width: 'auto' }}>
             {[7, 30, 60, 90].map(d => <option key={d} value={d}>{d} días</option>)}
           </select>
-          <button onClick={revisarAhora} disabled={ejecutando} style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: ejecutando ? 'wait' : 'pointer', opacity: ejecutando ? 0.6 : 1 }}>
+          <button onClick={revisarAhora} disabled={ejecutando} style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: ejecutando ? 'wait' : 'pointer', opacity: ejecutando ? 0.6 : 1 }}>
             {ejecutando ? 'Revisando...' : 'Revisar ahora'}
           </button>
         </div>
@@ -76,7 +76,7 @@ export default function Conciliacion() {
       {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)' }}>{msg.texto}</div>}
 
       {!actual ? (
-        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 14, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }}>
           Todavía no hay revisiones. La primera se hace esta noche, o tocá <b>Revisar ahora</b>.
         </div>
       ) : (
@@ -105,7 +105,7 @@ export default function Conciliacion() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      {['Estado', 'Qué pasó', 'Alumno', 'Monto', 'Detalle'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>)}
+                      {['Estado', 'Qué pasó', 'Alumno', 'Monto', 'Detalle'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>

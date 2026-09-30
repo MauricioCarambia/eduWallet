@@ -85,13 +85,13 @@ export default function Inicio() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Hola, {padre?.nombre.split(' ')[0]}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>
           {alumnos.length === 0 ? 'Vinculá a tus hijos para comenzar' : `${alumnos.length} alumno${alumnos.length > 1 ? 's' : ''} vinculado${alumnos.length > 1 ? 's' : ''}`}
         </p>
       </div>
 
       {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
+        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
           {msg.texto}
         </div>
       )}
@@ -106,10 +106,10 @@ export default function Inicio() {
             <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Enterate al instante de recargas, compras y saldo bajo.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <button onClick={habilitarPush} disabled={activandoPush} style={{ padding: '6px 12px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', opacity: activandoPush ? 0.7 : 1 }}>
+            <button onClick={habilitarPush} disabled={activandoPush} style={{ padding: '6px 12px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', opacity: activandoPush ? 0.7 : 1 }}>
               {activandoPush ? 'Activando...' : 'Activar'}
             </button>
-            <button onClick={descartarPush} style={{ padding: '4px 12px', border: 'none', background: 'none', color: 'var(--text-tertiary)', fontSize: 11, cursor: 'pointer' }}>
+            <button onClick={descartarPush} style={{ padding: '4px 12px', border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>
               Ahora no
             </button>
           </div>
@@ -123,7 +123,7 @@ export default function Inicio() {
           </div>
           <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text)' }}>Sin alumnos vinculados</p>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>Vinculá a tu hijo/a para ver su saldo y movimientos</p>
-          <button onClick={() => setModalVincular(true)} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+          <button onClick={() => setModalVincular(true)} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
             + Vincular alumno
           </button>
         </div>
@@ -157,25 +157,25 @@ export default function Inicio() {
                 </div>
 
                 {parseFloat(a.saldo) < 0 ? (
-                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
                     ⚠ Saldo negativo por una recarga devuelta en Mercado Pago. Hasta que recargues, {a.nombre.split(' ')[0]} no puede comprar.
                   </div>
                 ) : parseFloat(a.saldo) < 200 && (
-                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
                     ⚠ Saldo bajo — recargá para evitar inconvenientes
                   </div>
                 )}
 
                 {a.alergias !== 'Ninguna' && (
-                  <div style={{ padding: '8px 12px', background: 'var(--amber-bg)', borderRadius: 8, fontSize: 13, color: 'var(--amber)', marginBottom: 12, borderLeft: '3px solid var(--amber)' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--amber-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--amber)', marginBottom: 12, borderLeft: '3px solid var(--amber)' }}>
                     ⚠ Alergia registrada: {a.alergias}
                   </div>
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button onClick={() => navigate('/recargar')} style={{ padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Recargar saldo</button>
+                  <button onClick={() => navigate('/recargar')} style={{ padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Recargar saldo</button>
                   <button onClick={() => navigate('/historial')} style={{ padding: '10px', border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>Ver historial</button>
-                  <button onClick={() => navigate(`/credencial/${a.id}`)} style={{ gridColumn: '1 / -1', padding: '10px', border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>🪪 Ver credencial</button>
+                  <button onClick={() => navigate(`/credencial/${a.id}`)} style={{ gridColumn: '1 / -1', padding: '10px', border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>Ver credencial</button>
                 </div>
               </div>
             ))}
@@ -191,7 +191,7 @@ export default function Inicio() {
           <div style={{ background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Vincular alumno</h2>
-              <button onClick={() => { setModalVincular(false); setCodigoVinculacion('') }} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+              <button onClick={() => { setModalVincular(false); setCodigoVinculacion('') }} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
             </div>
             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
               Pedí el código de vinculación del alumno en la administración del colegio e ingresalo a continuación.
@@ -205,7 +205,7 @@ export default function Inicio() {
                 autoFocus
               />
               <button type="submit" disabled={vinculando || !codigoVinculacion.trim()}
-                style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 500, cursor: vinculando || !codigoVinculacion.trim() ? 'not-allowed' : 'pointer', opacity: vinculando || !codigoVinculacion.trim() ? 0.7 : 1 }}>
+                style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 500, cursor: vinculando || !codigoVinculacion.trim() ? 'not-allowed' : 'pointer', opacity: vinculando || !codigoVinculacion.trim() ? 0.7 : 1 }}>
                 {vinculando ? 'Vinculando...' : 'Vincular'}
               </button>
             </form>

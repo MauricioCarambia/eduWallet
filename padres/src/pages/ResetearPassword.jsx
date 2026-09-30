@@ -76,7 +76,7 @@ export default function ResetearPassword() {
               </div>
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 8px' }}>¡Contraseña actualizada!</p>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>{mensaje}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>Redirigiendo al inicio de sesión...</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>Redirigiendo al inicio de sesión...</p>
             </div>
           ) : (
             <>
@@ -90,7 +90,7 @@ export default function ResetearPassword() {
               </div>
 
               {mensaje && (
-                <div style={{ padding: '10px 14px', background: estado === 'error' ? 'var(--red-bg)' : 'var(--amber-bg)', color: estado === 'error' ? 'var(--red)' : 'var(--amber)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: `3px solid ${estado === 'error' ? 'var(--red)' : 'var(--amber)'}` }}>
+                <div style={{ padding: '10px 14px', background: estado === 'error' ? 'var(--red-bg)' : 'var(--amber-bg)', color: estado === 'error' ? 'var(--red)' : 'var(--amber)', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, borderLeft: `3px solid ${estado === 'error' ? 'var(--red)' : 'var(--amber)'}` }}>
                   {mensaje}
                 </div>
               )}
@@ -98,7 +98,7 @@ export default function ResetearPassword() {
               <button
                 onClick={handleSubmit}
                 disabled={estado === 'cargando' || !password || !confirmar}
-                style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: (estado === 'cargando' || !password || !confirmar) ? 0.7 : 1, cursor: (estado === 'cargando' || !password || !confirmar) ? 'not-allowed' : 'pointer', marginBottom: 14 }}
+                style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, opacity: (estado === 'cargando' || !password || !confirmar) ? 0.7 : 1, cursor: (estado === 'cargando' || !password || !confirmar) ? 'not-allowed' : 'pointer', marginBottom: 14 }}
               >
                 {estado === 'cargando' ? 'Guardando...' : 'Guardar contraseña'}
               </button>

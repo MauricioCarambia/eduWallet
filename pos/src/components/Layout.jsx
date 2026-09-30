@@ -50,14 +50,13 @@ export default function Layout({ children }) {
     i18n.changeLanguage(nuevo)
   }
 
-  const sidebarBg = dark ? '#162032' : '#1E3A5F'
   const sidebarText = 'rgba(255,255,255,0.7)'
   const sidebarBorder = 'rgba(255,255,255,0.08)'
   const sidebarActive = 'rgba(255,255,255,0.15)'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      <aside style={{ width: collapsed ? 64 : 220, flexShrink: 0, background: sidebarBg, display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: '2px 0 8px rgba(0,0,0,0.15)' }}>
+      <aside className="sidebar" style={{ width: collapsed ? 64 : 220, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: '2px 0 8px rgba(0,0,0,0.15)' }}>
 
         <div style={{ padding: collapsed ? '20px 0' : '20px 16px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
@@ -96,7 +95,7 @@ export default function Layout({ children }) {
             <NavLink key={item.path} to={item.path} style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10,
               padding: collapsed ? '10px 0' : '9px 12px',
-              borderRadius: 8, textDecoration: 'none', marginBottom: 2,
+              borderRadius: 'var(--radius)', textDecoration: 'none', marginBottom: 2,
               justifyContent: collapsed ? 'center' : 'flex-start',
               background: isActive ? sidebarActive : 'transparent',
               color: isActive ? 'white' : sidebarText,
@@ -142,7 +141,7 @@ export default function Layout({ children }) {
           <button onClick={() => setMostrarAlertas(v => !v)} style={{ position: 'relative', width: 38, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: 'var(--shadow)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             {stockBajo.length > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 9, background: 'var(--red)', color: 'white', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 9, background: 'var(--red)', color: 'var(--on-brand)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {stockBajo.length}
               </span>
             )}
@@ -154,13 +153,13 @@ export default function Layout({ children }) {
                 {t('common.alertas_stock')}
               </div>
               {stockBajo.length === 0 ? (
-                <p style={{ padding: '16px 14px', margin: 0, fontSize: 13, color: 'var(--text-tertiary)' }}>{t('common.sin_alertas')}</p>
+                <p style={{ padding: '16px 14px', margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>{t('common.sin_alertas')}</p>
               ) : (
                 stockBajo.map(p => (
                   <div key={p.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{p.nombre}</p>
-                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{p.local} · {p.categoria}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{p.local} · {p.categoria}</p>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 8, color: p.stock === 0 ? 'var(--red)' : 'var(--amber)', background: p.stock === 0 ? 'var(--red-bg)' : 'var(--amber-bg)' }}>
                       {p.stock === 0 ? t('common.sin_stock') : `${t('common.stock')}: ${p.stock}`}

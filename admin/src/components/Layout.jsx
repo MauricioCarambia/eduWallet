@@ -39,7 +39,6 @@ export default function Layout({ children }) {
     i18n.changeLanguage(nuevo)
   }
 
-  const sidebarBg = dark ? '#162032' : '#1E3A5F'
   const sidebarText = 'rgba(255,255,255,0.7)'
   const sidebarActive = 'rgba(255,255,255,0.15)'
   const sidebarBorder = 'rgba(255,255,255,0.08)'
@@ -48,7 +47,7 @@ export default function Layout({ children }) {
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       {mobileOpen && <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
-      <aside style={{ width: collapsed ? 64 : 230, flexShrink: 0, background: sidebarBg, display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: '2px 0 8px rgba(0,0,0,0.15)' }}>
+      <aside className="sidebar" style={{ width: collapsed ? 64 : 230, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: '2px 0 8px rgba(0,0,0,0.15)' }}>
 
         {/* logo */}
         <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
@@ -77,7 +76,7 @@ export default function Layout({ children }) {
             <NavLink key={item.path} to={item.path} onClick={() => setMobileOpen(false)} style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10,
               padding: collapsed ? '10px 0' : '9px 12px',
-              borderRadius: 8, textDecoration: 'none', marginBottom: 2,
+              borderRadius: 'var(--radius)', textDecoration: 'none', marginBottom: 2,
               justifyContent: collapsed ? 'center' : 'flex-start',
               background: isActive ? sidebarActive : 'transparent',
               color: isActive ? 'white' : sidebarText,

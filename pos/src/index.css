@@ -7,12 +7,12 @@
 
 :root {
   --brand: #1E3A5F;
-  --accent: #3B82F6;
+  --accent: #2563EB;
 
-  --bg: #F0F4F8;
+  --bg: #EEF2F7;
   --bg-card: #FFFFFF;
   --bg-hover: #F8FAFC;
-  --bg-input: #FFFFFF;
+  --bg-input: var(--bg-card);
 
   --text: #1E3A5F;
   --text-secondary: #64748B;
@@ -21,17 +21,21 @@
   --border: #E2E8F0;
   --border-light: #F1F5F9;
 
-  --green: #059669;
+  --green: #047857;
   --green-bg: #ECFDF5;
-  --red: #DC2626;
+  --red: #B91C1C;
   --red-bg: #FEF2F2;
-  --amber: #D97706;
+  --amber: #B45309;
   --amber-bg: #FFFBEB;
 
   --shadow: 0 1px 3px rgba(30,58,95,0.08);
   --shadow-md: 0 4px 12px rgba(30,58,95,0.1);
   --radius: 10px;
-  --radius-lg: 14px;
+  --radius-lg: 16px;
+  --brand-light: #EFF6FF;
+  --on-brand: #FFFFFF;
+  --focus-ring: 2px solid var(--accent);
+  --sidebar-bg: #1E3A5F;
 }
 
 [data-theme="dark"] {
@@ -41,24 +45,27 @@
   --bg: #0F172A;
   --bg-card: #1E293B;
   --bg-hover: #263348;
-  --bg-input: #1E293B;
+  --bg-input: var(--bg-card);
 
   --text: #E2E8F0;
   --text-secondary: #94A3B8;
-  --text-tertiary: #475569;
+  --text-tertiary: #8391A7;
 
   --border: #2D3F55;
   --border-light: #243347;
 
   --green: #34D399;
-  --green-bg: #064E3B44;
+  --green-bg: #18333B;
   --red: #F87171;
-  --red-bg: #450A0A44;
+  --red-bg: #28212E;
   --amber: #FBBF24;
-  --amber-bg: #451A0344;
+  --amber-bg: #28252C;
 
   --shadow: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --brand-light: #1E2E45;
+  --on-brand: #0F172A;
+  --sidebar-bg: #162032;
 }
 
 body {
@@ -103,3 +110,22 @@ button:active { opacity: 0.85; transform: scale(0.98); }
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
   border-radius: 8px;
 }
+
+/* Foco visible al navegar con teclado (los inputs tienen outline: none,
+   que acá se reemplaza sólo cuando el foco viene del teclado) */
+button:focus-visible,
+a:focus-visible,
+[role="switch"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Menú lateral oscuro: anillo blanco */
+.sidebar a:focus-visible,
+.sidebar button:focus-visible { outline-color: #ffffff; }
+
+/* El gris más claro queda sólo para los placeholders */
+::placeholder { color: var(--text-tertiary); }

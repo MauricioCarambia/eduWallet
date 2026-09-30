@@ -256,11 +256,11 @@ export default function Venta() {
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Local</label>
           {zonaFija ? (
-            <div style={{ padding: '14px', border: '2px solid var(--brand)', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+            <div style={{ padding: '14px', border: '2px solid var(--brand)', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {locales.map(l => (
-                <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 12, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 15, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+                <button key={l} onClick={() => setLocal(l)} style={{ padding: '14px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 15, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
               ))}
             </div>
           )}
@@ -269,12 +269,12 @@ export default function Venta() {
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             {[500, 1000, 2000].map(n => (
-              <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '10px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'white' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
+              <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '10px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
             ))}
           </div>
           <input type="number" value={fondoCaja} onChange={e => setFondoCaja(e.target.value)} placeholder="Otro monto" />
         </div>
-        <button onClick={handleAbrirCaja} style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 12, background: 'var(--green)', color: 'white', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>Abrir caja</button>
+        <button onClick={handleAbrirCaja} style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 12, background: 'var(--green)', color: 'var(--on-brand)', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>Abrir caja</button>
         {msg && <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 8, fontSize: 13, background: 'var(--red-bg)', color: 'var(--red)' }}>{msg.texto}</div>}
       </div>
     </div>
@@ -293,7 +293,7 @@ export default function Venta() {
           { label: 'Transacciones', value: caja?.tx_count || 0, color: 'var(--text)' }
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '1rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-tertiary)' }}>{s.label}</p>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-secondary)' }}>{s.label}</p>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 600, color: s.color }}>{s.value}</p>
           </div>
         ))}
@@ -301,18 +301,18 @@ export default function Venta() {
       <button onClick={cargarVentasHoy} style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12, cursor: 'pointer' }}>Actualizar</button>
       <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16, boxShadow: 'var(--shadow)' }}>
         {txsHoy.length === 0
-          ? <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 14 }}>Sin ventas aún</p>
+          ? <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>Sin ventas aún</p>
           : txsHoy.map(t => (
             <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
               <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{fmt(t.monto)}</span>
             </div>
           ))}
       </div>
-      <button onClick={handleCerrarCaja} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--red)', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cerrar caja</button>
+      <button onClick={handleCerrarCaja} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--red)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cerrar caja</button>
     </div>
   )
 
@@ -322,13 +322,13 @@ export default function Venta() {
       {avisoAlergia && (
         <div role="alertdialog" aria-modal="true" aria-labelledby="alergia-titulo" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
           <div style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: 'var(--shadow-md)', border: '3px solid var(--red)' }}>
-            <div style={{ background: 'var(--red)', color: 'white', padding: '18px 20px' }}>
+            <div style={{ background: 'var(--red)', color: 'var(--on-brand)', padding: '18px 20px' }}>
               <p id="alergia-titulo" style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: '.3px' }}>{avisoAlergia.titulo}</p>
             </div>
             <div style={{ padding: '18px 20px' }}>
               <p style={{ margin: '0 0 18px', fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>{avisoAlergia.detalle}</p>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button autoFocus onClick={() => setAvisoAlergia(null)} style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>No vender</button>
+                <button autoFocus onClick={() => setAvisoAlergia(null)} style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>No vender</button>
                 <button onClick={() => { const a = avisoAlergia; setAvisoAlergia(null); a.alConfirmar() }} style={{ flex: 1, padding: '13px', border: '1.5px solid var(--red)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--red)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>{avisoAlergia.textoConfirmar || 'Vender igual'}</button>
               </div>
             </div>
@@ -338,7 +338,7 @@ export default function Venta() {
 
       {/* toast */}
       {msg && (
-        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 500, background: msg.tipo === 'ok' ? 'var(--brand)' : msg.tipo === 'warn' ? 'var(--amber)' : 'var(--red)', color: 'white', boxShadow: 'var(--shadow-md)', whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 500, background: msg.tipo === 'ok' ? 'var(--brand)' : msg.tipo === 'warn' ? 'var(--amber)' : 'var(--red)', color: 'var(--on-brand)', boxShadow: 'var(--shadow-md)', whiteSpace: 'nowrap' }}>
           {msg.texto}
         </div>
       )}
@@ -348,7 +348,7 @@ export default function Venta() {
         <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 16px', borderRadius: 10, background: 'var(--bg-card)', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap', border: '1px solid var(--border)' }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Última venta: <b style={{ color: 'var(--text)' }}>{fmt(ultimaVenta.monto)}</b></span>
           <button onClick={anularUltimaVenta} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Anular</button>
-          <button onClick={() => setUltimaVenta(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--text-tertiary)', cursor: 'pointer', padding: '0 2px' }}>×</button>
+          <button onClick={() => setUltimaVenta(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 2px' }}>×</button>
         </div>
       )}
 
@@ -357,9 +357,9 @@ export default function Venta() {
         <div style={{ padding: '12px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             {zonaFija ? (
-              <div style={{ flex: 1, padding: '10px', border: '2px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+              <div style={{ flex: 1, padding: '10px', border: '2px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
             ) : locales.map(l => (
-              <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'white' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+              <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
             ))}
             <button onClick={() => { setVistaVentas(true); cargarVentasHoy() }} title="Ver ventas del turno" style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -379,7 +379,7 @@ export default function Venta() {
                   style={{ padding: '14px 12px', border: `1.5px solid ${alergias.length ? 'var(--red)' : p.stock === 0 ? 'var(--red-bg)' : 'var(--border)'}`, borderRadius: 14, background: p.stock === 0 ? 'var(--red-bg)' : 'var(--bg-card)', textAlign: 'left', opacity: apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
                   <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>{p.nombre}</p>
                   <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-tertiary)' }}>Stock: {p.stock}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-secondary)' }}>Stock: {p.stock}</p>
                   {alergias.length > 0 && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 700, color: 'var(--red)' }}>⚠ {nombresAlergenos(alergias)}</p>}
                   {bloqueo && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>🚫 No permitido</p>}
                 </button>
@@ -394,7 +394,7 @@ export default function Venta() {
         {/* info caja */}
         <div style={{ padding: '8px 14px', background: 'var(--green-bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 500 }}>{caja.local} · {fmt(caja.ventas || 0)}</span>
-          <button onClick={handleCerrarCaja} style={{ fontSize: 11, padding: '3px 10px', border: 'none', borderRadius: 6, background: 'var(--red)', color: 'white', cursor: 'pointer' }}>Cerrar caja</button>
+          <button onClick={handleCerrarCaja} style={{ fontSize: 11, padding: '3px 10px', border: 'none', borderRadius: 6, background: 'var(--red)', color: 'var(--on-brand)', cursor: 'pointer' }}>Cerrar caja</button>
         </div>
 
         {/* alumno */}
@@ -407,9 +407,9 @@ export default function Venta() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{alumno.nombre}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{alumno.curso}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{alumno.curso}</p>
                 </div>
-                <button onClick={() => { setAlumno(null); setCarrito([]); setConfirmados([]) }} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+                <button onClick={() => { setAlumno(null); setCarrito([]); setConfirmados([]) }} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                 <div style={{ background: parseFloat(alumno.saldo) < 200 ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8, padding: '6px 10px' }}>
@@ -439,7 +439,7 @@ export default function Venta() {
             </div>
           ) : (
             <div>
-              <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
+              <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
                 💳 Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
                 {lectorEscritorio.disponible && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
@@ -454,7 +454,7 @@ export default function Venta() {
                       if (m.id === 'qr') { detenerNFC(); iniciarQR(); setModoEscaneo('qr') }
                       else if (m.id === 'nfc') { detenerQR(); iniciarNFC() }
                       else { detenerQR(); detenerNFC(); setModoEscaneo('manual') }
-                    }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}>{m.label}</button>
+                    }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}>{m.label}</button>
                   ))}
                 </div>
                 <input placeholder="Buscá por nombre o pasá la credencial..." value={busqAlumno}
@@ -471,13 +471,13 @@ export default function Venta() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.nombre}</p>
-                          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{a.curso}</p>
+                          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{a.curso}</p>
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 600, color: parseFloat(a.saldo) < 200 ? 'var(--red)' : 'var(--green)' }}>{fmt(a.saldo)}</span>
                       </button>
                     ))}
                     {alumnos.filter(a => a.activo && a.nombre.toLowerCase().includes(busqAlumno.toLowerCase())).length === 0 && (
-                      <p style={{ padding: '12px 14px', color: 'var(--text-tertiary)', fontSize: 13, margin: 0 }}>Sin resultados</p>
+                      <p style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Sin resultados</p>
                     )}
                   </div>
                 )}
@@ -530,7 +530,7 @@ export default function Venta() {
             <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{fmt(totalDesc)}</span>
           </div>
           <button onClick={() => cobrar({ confirmarAlergias: carrito.some(i => confirmados.includes(i.id)) })} disabled={!alumno || carrito.length === 0 || procesando}
-            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: !alumno || carrito.length === 0 ? 'var(--bg)' : 'var(--brand)', color: !alumno || carrito.length === 0 ? 'var(--text-tertiary)' : 'white', fontSize: 15, fontWeight: 700, cursor: !alumno || carrito.length === 0 ? 'not-allowed' : 'pointer' }}>
+            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 'var(--radius)', background: !alumno || carrito.length === 0 ? 'var(--bg)' : 'var(--brand)', color: !alumno || carrito.length === 0 ? 'var(--text-secondary)' : 'var(--on-brand)', fontSize: 15, fontWeight: 700, cursor: !alumno || carrito.length === 0 ? 'not-allowed' : 'pointer' }}>
             {procesando ? 'Procesando...' : 'Cobrar'}
           </button>
         </div>

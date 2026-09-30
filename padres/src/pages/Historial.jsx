@@ -46,7 +46,7 @@ export default function Historial() {
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
   if (cargando) return <SkeletonTable rows={6} cols={3} />
-  if (alumnos.length === 0) return <div style={{ color: 'var(--text-tertiary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
+  if (alumnos.length === 0) return <div style={{ color: 'var(--text-secondary)', padding: '1rem', fontSize: 14 }}>No tenés alumnos vinculados</div>
 
   return (
     <div>
@@ -55,7 +55,7 @@ export default function Historial() {
       {alumnos.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
           {alumnos.map(a => (
-            <button key={a.id} onClick={() => cambiarAlumno(a.id)} style={{ padding: '6px 14px', border: `1.5px solid ${alumnoId === a.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: alumnoId === a.id ? 'var(--brand)' : 'var(--bg-card)', color: alumnoId === a.id ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: alumnoId === a.id ? 500 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={a.id} onClick={() => cambiarAlumno(a.id)} style={{ padding: '6px 14px', border: `1.5px solid ${alumnoId === a.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: alumnoId === a.id ? 'var(--brand)' : 'var(--bg-card)', color: alumnoId === a.id ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, fontWeight: alumnoId === a.id ? 500 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {a.nombre.split(' ')[0]}
             </button>
           ))}
@@ -69,7 +69,7 @@ export default function Historial() {
           { label: 'Total recargado', value: fmt(totalRecargado), color: 'var(--green)' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '10px 12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-            <p style={{ margin: '0 0 2px', fontSize: 10, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
+            <p style={{ margin: '0 0 2px', fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: s.color }}>{s.value}</p>
           </div>
         ))}
@@ -77,7 +77,7 @@ export default function Historial() {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {[['todos', 'Todos'], ['compra', 'Compras'], ['recarga', 'Recargas']].map(([val, label]) => (
-          <button key={val} onClick={() => setFiltro(val)} style={{ padding: '6px 14px', border: `1.5px solid ${filtro === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: filtro === val ? 'var(--brand)' : 'var(--bg-card)', color: filtro === val ? 'white' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontWeight: filtro === val ? 500 : 400 }}>
+          <button key={val} onClick={() => setFiltro(val)} style={{ padding: '6px 14px', border: `1.5px solid ${filtro === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: filtro === val ? 'var(--brand)' : 'var(--bg-card)', color: filtro === val ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontWeight: filtro === val ? 500 : 400 }}>
             {label}
           </button>
         ))}
@@ -85,7 +85,7 @@ export default function Historial() {
 
       <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         {filtradas.length === 0 ? (
-          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 14 }}>Sin movimientos</p>
+          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>Sin movimientos</p>
         ) : filtradas.map((t, i) => (
           <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < filtradas.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -96,7 +96,7 @@ export default function Historial() {
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.descripcion}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
               </div>
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>

@@ -65,7 +65,7 @@ export default function Credenciales() {
         <div>
           <Link to="/alumnos" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>← Alumnos</Link>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '4px 0 4px', color: 'var(--text)' }}>{alumnoId ? `Credencial de ${datos?.credenciales[0]?.nombre || '...'}` : 'Imprimir credenciales'}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0, maxWidth: 560 }}>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0, maxWidth: 560 }}>
             Tamaño tarjeta de crédito, 10 por hoja A4. Se usan con lector de QR USB o con la cámara del celular. También se pueden imprimir sobre tarjetas NFC.
           </p>
         </div>
@@ -84,16 +84,16 @@ export default function Credenciales() {
         </div>
       </div>
 
-      <p className="no-imprimir" style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 16px' }}>
+      <p className="no-imprimir" style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
         Al imprimir, elegí tamaño <b>A4</b>, escala <b>100 %</b> (sin "ajustar a la página") y activá <b>gráficos de fondo</b>. Si una credencial se pierde o la copian, generá un QR nuevo desde el botón QR del alumno: la anterior deja de funcionar.
       </p>
 
       {error && <div className="no-imprimir" style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: 'var(--red-bg)', color: 'var(--red)' }}>{error}</div>}
 
       {cargando && !datos ? (
-        <p className="no-imprimir" style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Cargando credenciales...</p>
+        <p className="no-imprimir" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Cargando credenciales...</p>
       ) : cantidad === 0 ? (
-        <p className="no-imprimir" style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>No hay alumnos activos{curso ? ` en ${curso}` : ''}.</p>
+        <p className="no-imprimir" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No hay alumnos activos{curso ? ` en ${curso}` : ''}.</p>
       ) : (
         <div className="cred-hoja" style={{ opacity: cargando ? 0.5 : 1 }}>
           {datos.credenciales.map(c => (

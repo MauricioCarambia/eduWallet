@@ -27,7 +27,7 @@ export default function AlergiasAlumno({ alumno, alergenos, onGuardado, showMsg 
       <input id={`alergia-${valor}`} type="radio" name="modo-alergia" checked={bloquear === valor} onChange={() => setBloquear(valor)} style={{ marginTop: 3, accentColor: 'var(--brand)' }} />
       <span>
         <span style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{titulo}</span>
-        <span style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)' }}>{detalle}</span>
+        <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)' }}>{detalle}</span>
       </span>
     </label>
   )

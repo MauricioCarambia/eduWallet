@@ -44,7 +44,7 @@ export default function Mensajes() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Mensajes</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Enviá mensajes a los padres del colegio</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Enviá mensajes a los padres del colegio</p>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -61,9 +61,9 @@ export default function Mensajes() {
               style={{ padding: '10px 14px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', background: 'var(--bg-input)', color: 'var(--text)', width: '100%', boxSizing: 'border-box' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>{todos ? `${padres.length} destinatarios` : `${seleccionados.length} seleccionados`}</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{todos ? `${padres.length} destinatarios` : `${seleccionados.length} seleccionados`}</p>
             <button onClick={enviar} disabled={enviando || !asunto || !mensaje}
-              style={{ padding: '10px 24px', border: 'none', borderRadius: 'var(--radius)', background: !asunto || !mensaje ? 'var(--bg)' : '#1E3A5F', color: !asunto || !mensaje ? 'var(--text-tertiary)' : 'white', fontSize: 13, fontWeight: 600, cursor: !asunto || !mensaje ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+              style={{ padding: '10px 24px', border: 'none', borderRadius: 'var(--radius)', background: !asunto || !mensaje ? 'var(--bg)' : '#1E3A5F', color: !asunto || !mensaje ? 'var(--text-secondary)' : 'white', fontSize: 13, fontWeight: 600, cursor: !asunto || !mensaje ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               {enviando ? 'Enviando...' : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Enviar</>}
             </button>
           </div>
@@ -88,14 +88,14 @@ export default function Mensajes() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.email}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.email}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
           {!todos && seleccionados.length > 0 && (
-            <button onClick={() => setSeleccionados([])} style={{ marginTop: 10, width: '100%', padding: '6px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer' }}>Limpiar selección</button>
+            <button onClick={() => setSeleccionados([])} style={{ marginTop: 10, width: '100%', padding: '6px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>Limpiar selección</button>
           )}
         </div>
       </div>

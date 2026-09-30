@@ -11,7 +11,7 @@ function Modal({ title, onClose, children }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -65,7 +65,7 @@ export default function Cajas() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Cajas</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Historial de turnos</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Historial de turnos</p>
       </div>
 
 
@@ -114,10 +114,10 @@ export default function Cajas() {
             <div style={{ flex: 1, minWidth: 150 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.local}</p>
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-tertiary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
               </div>
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{c.empleado_nombre} · {new Date(c.apertura).toLocaleString('es-AR')}{c.cierre ? ` → ${new Date(c.cierre).toLocaleString('es-AR')}` : ''}</p>
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Fondo: {fmt(c.fondo)} · {c.tx_count} transacciones</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{c.empleado_nombre} · {new Date(c.apertura).toLocaleString('es-AR')}{c.cierre ? ` → ${new Date(c.cierre).toLocaleString('es-AR')}` : ''}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Fondo: {fmt(c.fondo)} · {c.tx_count} transacciones</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
@@ -127,7 +127,7 @@ export default function Cajas() {
             </div>
           </div>
         ))}
-        {cajasFiltradas.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13, padding: '2rem' }}>Sin cajas registradas</p>}
+        {cajasFiltradas.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, padding: '2rem' }}>Sin cajas registradas</p>}
       </div>
 
       {seleccionada && (
@@ -141,11 +141,11 @@ export default function Cajas() {
             ))}
           </div>
           <h3 style={{ fontSize: 12, fontWeight: 700, margin: '0 0 10px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Transacciones del turno</h3>
-          {txsCaja.length === 0 ? <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Sin transacciones</p> : txsCaja.map(t => (
+          {txsCaja.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin transacciones</p> : txsCaja.map(t => (
             <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
               </div>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{fmt(t.monto)}</span>
             </div>

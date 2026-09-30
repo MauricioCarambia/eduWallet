@@ -14,7 +14,7 @@ function Modal({ title, onClose, children }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', lineHeight: 1, cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -291,7 +291,7 @@ export default function Alumnos() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Alumnos</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{alumnos.length} alumnos registrados</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{alumnos.length} alumnos registrados</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => { setCsvFilas([]); setCsvErrores([]); setImportResult(null); setModal('importar') }} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -333,7 +333,7 @@ export default function Alumnos() {
                       </div>
                       <div>
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
-                        <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                        <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
                           {contactos(a)}{a.alergias !== 'Ninguna' && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>⚠ {a.alergias}</span>}
                         </p>
                       </div>
@@ -368,7 +368,7 @@ export default function Alumnos() {
             </tbody>
           </table>
         </div>
-        {filtrados.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin resultados</p>}
+        {filtrados.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin resultados</p>}
       </div>
 
       {(modal === 'nuevo' || modal === 'editar') && (
@@ -390,7 +390,7 @@ export default function Alumnos() {
                 )
               })}
             </div>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>La familia también los puede cambiar desde su app, y elegir si la venta se bloquea.</p>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>La familia también los puede cambiar desde su app, y elegir si la venta se bloquea.</p>
           </Campo>
           {modal === 'editar' && seleccionado && (
             <Campo label="Código de vinculación">
@@ -398,7 +398,7 @@ export default function Alumnos() {
                 <input type="text" readOnly value={seleccionado.codigo_vinculacion || ''} style={{ fontFamily: 'monospace', letterSpacing: 1, fontWeight: 600 }} />
                 <button onClick={regenerarCodigo} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Regenerar</button>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Compartí este código con la familia para vincular su cuenta a este alumno.</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>Compartí este código con la familia para vincular su cuenta a este alumno.</p>
             </Campo>
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
@@ -420,12 +420,12 @@ export default function Alumnos() {
               </div>
             ))}
           </div>
-          {historialAlumno.length === 0 ? <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Sin movimientos</p> :
+          {historialAlumno.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin movimientos</p> :
             historialAlumno.map(t => (
               <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>
                   {SUMAN_SALDO.includes(t.tipo) ? '+' : '-'}{fmt(t.monto)}
@@ -450,7 +450,7 @@ export default function Alumnos() {
           {!link ? (
             <>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 6px' }}>Saldo actual: <b style={{ color: 'var(--text)' }}>{fmt(seleccionado.saldo)}</b></p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 14px' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 14px' }}>
                 Generá un link de Mercado Pago para mandarle a la familia. Pueden pagar con cualquier tarjeta de débito o crédito (también las de Ualá, Naranja X, Brubank y otras billeteras) o en efectivo en Rapipago / Pago Fácil, sin cuenta de Mercado Pago. El saldo se acredita solo cuando se paga. El link vence en 72 h.
               </p>
               <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -476,7 +476,7 @@ export default function Alumnos() {
               <Campo label="Link de pago">
                 <input type="text" readOnly value={link.url} onFocus={e => e.target.select()} style={{ fontSize: 12 }} />
               </Campo>
-              <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '-4px 0 14px' }}>Vence el {new Date(link.expira).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}. Lo vas a ver en Recargas como pendiente hasta que se pague.</p>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '-4px 0 14px' }}>Vence el {new Date(link.expira).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}. Lo vas a ver en Recargas como pendiente hasta que se pague.</p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 <button onClick={copiarLink} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>{copiado ? '¡Copiado!' : 'Copiar link'}</button>
                 <a href={`https://wa.me/?text=${encodeURIComponent(textoLink(link))}`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 16px', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Enviar por WhatsApp</a>
@@ -500,7 +500,7 @@ export default function Alumnos() {
               <button onClick={enviarWhatsApp} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Enviar por WhatsApp</button>
               <button onClick={regenerarQR} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Generar QR nuevo</button>
             </div>
-            <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>Si la credencial se pierde o la copian, generá un QR nuevo: la anterior deja de funcionar.</p>
+            <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>Si la credencial se pierde o la copian, generá un QR nuevo: la anterior deja de funcionar.</p>
           </div>
         </Modal>
       )}
@@ -543,7 +543,7 @@ export default function Alumnos() {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{csvFilas.length} alumnos listos para importar</p>
-                {csvFilas.length > 5 && <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>Mostrando primeros 5</p>}
+                {csvFilas.length > 5 && <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Mostrando primeros 5</p>}
               </div>
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>

@@ -12,7 +12,7 @@ function Ventana({ title, onClose, children }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 460, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -55,7 +55,7 @@ function Lector({ onLeer, ocupado }) {
       <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ocupado ? 'Guardando...' : 'Pasá la tarjeta por el lector'}</p>
       {lectorEscritorio.disponible
         ? <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>{lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}</p>
-        : <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Lector USB: no hace falta hacer clic en ningún lado.</p>}
+        : <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Lector USB: no hace falta hacer clic en ningún lado.</p>}
       {nfcDisponible() && (
         nfcActivo
           ? <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>NFC activo — acercá la tarjeta al dispositivo</p>
@@ -156,7 +156,7 @@ export function ModalAsignarTarjetas({ alumnos, onClose, onActualizado }) {
             Sólo alumnos sin tarjeta
           </label>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginRight: 'auto' }}>{candidatos.length} alumnos</span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginRight: 'auto' }}>{candidatos.length} alumnos</span>
             <button onClick={onClose} style={btn(false)}>Cancelar</button>
             <button onClick={empezar} disabled={candidatos.length === 0} style={{ ...btn(true), opacity: candidatos.length ? 1 : 0.5 }}>Empezar</button>
           </div>
@@ -169,7 +169,7 @@ export function ModalAsignarTarjetas({ alumnos, onClose, onActualizado }) {
         </>
       ) : (
         <>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 6px' }}>Alumno {indice + 1} de {cola.length}</p>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>Alumno {indice + 1} de {cola.length}</p>
           <div style={{ padding: '12px 14px', borderRadius: 'var(--radius)', background: 'var(--brand-light)', marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{actual?.nombre}</p>
             <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{actual?.curso}{actual?.nfc_uid ? ' · ya tiene tarjeta (se reemplaza)' : ''}</p>

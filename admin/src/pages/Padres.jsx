@@ -10,7 +10,7 @@ function Modal({ title, onClose, children }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
         </div>
         {children}
       </div>
@@ -80,7 +80,7 @@ export default function Padres() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Padres y tutores</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{padres.length} registrados</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{padres.length} registrados</p>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -96,7 +96,7 @@ export default function Padres() {
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.nombre}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>{p.email} · {p.alumnos?.length || 0} alumno{p.alumnos?.length !== 1 ? 's' : ''}</p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{p.email} · {p.alumnos?.length || 0} alumno{p.alumnos?.length !== 1 ? 's' : ''}</p>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: p.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: p.activo ? 'var(--green)' : 'var(--red)' }}>
@@ -113,7 +113,7 @@ export default function Padres() {
             </div>
 
             {p.alumnos?.length === 0 && (
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>Sin alumnos vinculados — usá "+ Alumno" para vincularle uno.</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Sin alumnos vinculados — usá "+ Alumno" para vincularle uno.</p>
             )}
             {p.alumnos?.length > 0 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -121,7 +121,7 @@ export default function Padres() {
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
-                      <p style={{ margin: 0, fontSize: 10, color: 'var(--text-tertiary)' }}>{a.curso} · {fmt(a.saldo)}</p>
+                      <p style={{ margin: 0, fontSize: 10, color: 'var(--text-secondary)' }}>{a.curso} · {fmt(a.saldo)}</p>
                     </div>
                     <button onClick={() => desvincular(p.id, a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--red)', padding: '0 2px' }}>×</button>
                   </div>
@@ -130,7 +130,7 @@ export default function Padres() {
             )}
           </div>
         ))}
-        {filtrados.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13, padding: '2rem' }}>Sin padres registrados</p>}
+        {filtrados.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, padding: '2rem' }}>Sin padres registrados</p>}
       </div>
 
       {modal === 'vincular' && seleccionado && (

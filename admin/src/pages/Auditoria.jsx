@@ -64,7 +64,7 @@ export default function Auditoria() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Auditoría</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{total} eventos registrados en total</p>
+        <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{total} eventos registrados en total</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
@@ -94,7 +94,7 @@ export default function Auditoria() {
         {cargando ? (
           <SkeletonTable rows={8} cols={4} />
         ) : filtrados.length === 0 ? (
-          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Sin registros</p>
+          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin registros</p>
         ) : filtrados.map((l, i) => {
           const c = colorAccion(l.accion)
           return (
@@ -107,7 +107,7 @@ export default function Auditoria() {
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{l.accion}</span>
                   {l.detalle && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>— {l.detalle}</span>}
                 </div>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{l.empleado_nombre} · {new Date(l.fecha).toLocaleString('es-AR')}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{l.empleado_nombre} · {new Date(l.fecha).toLocaleString('es-AR')}</p>
               </div>
               <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: c.bg, color: c.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{l.accion}</span>
             </div>
@@ -121,12 +121,12 @@ export default function Auditoria() {
           <button
             onClick={() => irPagina(1)}
             disabled={page === 1}
-            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-secondary)' : 'var(--text-secondary)' }}
           >«</button>
           <button
             onClick={() => irPagina(page - 1)}
             disabled={page === 1}
-            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? 'var(--text-secondary)' : 'var(--text-secondary)' }}
           >‹</button>
 
           {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -144,7 +144,7 @@ export default function Auditoria() {
               <button
                 key={p}
                 onClick={() => irPagina(p)}
-                style={{ padding: '6px 11px', border: `1.5px solid ${p === page ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: p === page ? 'var(--brand)' : 'var(--bg-card)', color: p === page ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: p === page ? 700 : 400, cursor: 'pointer' }}
+                style={{ padding: '6px 11px', border: `1.5px solid ${p === page ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: p === page ? 'var(--brand)' : 'var(--bg-card)', color: p === page ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: p === page ? 700 : 400, cursor: 'pointer' }}
               >{p}</button>
             )
           })}
@@ -152,15 +152,15 @@ export default function Auditoria() {
           <button
             onClick={() => irPagina(page + 1)}
             disabled={page === totalPages}
-            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-secondary)' : 'var(--text-secondary)' }}
           >›</button>
           <button
             onClick={() => irPagina(totalPages)}
             disabled={page === totalPages}
-            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}
+            style={{ padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? 'var(--text-secondary)' : 'var(--text-secondary)' }}
           >»</button>
 
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 4 }}>
             Página {page} de {totalPages} · {total} eventos
           </span>
         </div>

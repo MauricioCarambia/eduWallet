@@ -60,7 +60,7 @@ function ActivarCuenta({ colegioInicial, usuarioInicial, onListo, onVolver }) {
       </div>
       {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14 }}>{error}</div>}
       <button onClick={activar} disabled={enviando || !listo}
-        style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: enviando || !listo ? 0.5 : 1, cursor: 'pointer', marginBottom: 10 }}>
+        style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, opacity: enviando || !listo ? 0.5 : 1, cursor: 'pointer', marginBottom: 10 }}>
         {enviando ? 'Activando...' : 'Activar y elegir PIN'}
       </button>
       <button onClick={onVolver} style={{ width: '100%', padding: '8px', border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Volver a iniciar sesión</button>
@@ -153,10 +153,10 @@ export default function Login() {
           </div>
 
           {aviso && <div style={{ padding: '10px 14px', background: 'var(--green-bg)', color: 'var(--green)', borderRadius: 8, fontSize: 13, marginBottom: 14 }}>{aviso}</div>}
-          {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 14, borderLeft: '3px solid var(--red)' }}>{error}</div>}
 
           <button onClick={handleLogin} disabled={cargando || !colegio || !usuario || !pin}
-            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 600, opacity: cargando || !colegio || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
+            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 15, fontWeight: 600, opacity: cargando || !colegio || !usuario || !pin ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
             {cargando ? t('login.ingresando') : t('login.ingresar')}
           </button>
         </div>

@@ -321,7 +321,7 @@ export default function Reportes() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Reportes</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>{labelRango} · {txsFiltradas.length} transacciones</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{labelRango} · {txsFiltradas.length} transacciones</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={exportPDF} disabled={generandoPDF} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500, opacity: generandoPDF ? 0.7 : 1 }}>
@@ -342,15 +342,15 @@ export default function Reportes() {
         <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Período</span>
           {/* toggle rápido / rango */}
-          <button onClick={() => setModo('rapido')} style={{ padding: '5px 12px', border: `1.5px solid ${modo === 'rapido' ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: modo === 'rapido' ? 'var(--brand)' : 'var(--bg-card)', color: modo === 'rapido' ? 'white' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Rápido</button>
-          <button onClick={() => setModo('rango')} style={{ padding: '5px 12px', border: `1.5px solid ${modo === 'rango' ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: modo === 'rango' ? 'var(--brand)' : 'var(--bg-card)', color: modo === 'rango' ? 'white' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Rango</button>
+          <button onClick={() => setModo('rapido')} style={{ padding: '5px 12px', border: `1.5px solid ${modo === 'rapido' ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: modo === 'rapido' ? 'var(--brand)' : 'var(--bg-card)', color: modo === 'rapido' ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Rápido</button>
+          <button onClick={() => setModo('rango')} style={{ padding: '5px 12px', border: `1.5px solid ${modo === 'rango' ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: modo === 'rango' ? 'var(--brand)' : 'var(--bg-card)', color: modo === 'rango' ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Rango</button>
         </div>
 
         {modo === 'rapido' ? (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[['semana', '7 días'], ['mes', '30 días'], ['trimestre', '90 días'], ['anio', '1 año']].map(([val, label]) => (
               <button key={val} onClick={() => setPeriodoRapido(val)}
-                style={{ padding: '7px 16px', border: `1.5px solid ${periodoRapido === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: periodoRapido === val ? 'var(--brand)' : 'var(--bg-card)', color: periodoRapido === val ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: periodoRapido === val ? 600 : 400, cursor: 'pointer' }}>
+                style={{ padding: '7px 16px', border: `1.5px solid ${periodoRapido === val ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: periodoRapido === val ? 'var(--brand)' : 'var(--bg-card)', color: periodoRapido === val ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, fontWeight: periodoRapido === val ? 600 : 400, cursor: 'pointer' }}>
                 {label}
               </button>
             ))}
@@ -387,7 +387,7 @@ export default function Reportes() {
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button onClick={() => { setModo('rapido'); setPeriodoRapido('semana'); setFiltroLocal('Todos'); setFiltroCurso('Todos'); setFechaDesde(haceN(6)); setFechaHasta(hoy()) }}
-              style={{ padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
+              style={{ padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>
               Limpiar filtros
             </button>
           </div>
@@ -405,7 +405,7 @@ export default function Reportes() {
           <div key={s.label} style={cardStyle}>
             <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
             <p style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</p>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{s.sub}</p>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{s.sub}</p>
           </div>
         ))}
       </div>
@@ -446,7 +446,7 @@ export default function Reportes() {
                   <Area type="monotone" dataKey="recargas" name="Recargas" stroke="#059669" strokeWidth={2} fill="url(#gR)"/>
                 </AreaChart>
               </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
+            ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -463,14 +463,14 @@ export default function Reportes() {
                     <Bar dataKey="total" fill="#1E3A5F" radius={[6, 6, 0, 0]}/>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
+              ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
             </div>
 
             {/* top alumnos */}
             <div style={cardStyle}>
               <h2 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 14px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Top alumnos</h2>
               {topAlumnos.length === 0
-                ? <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>Sin datos</p>
+                ? <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>Sin datos</p>
                 : topAlumnos.map(([nombre, total], i) => (
                   <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < topAlumnos.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -502,7 +502,7 @@ export default function Reportes() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
+            ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
           </div>
           <div style={cardStyle}>
             <h2 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 14px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Detalle</h2>
@@ -511,7 +511,7 @@ export default function Reportes() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['#', 'Producto', 'Unidades', 'Participación'].map(h => (
-                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
+                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -520,7 +520,7 @@ export default function Reportes() {
                     const totalUnid = porProducto.reduce((s, x) => s + x.cantidad, 0)
                     return (
                       <tr key={p.nombre} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)', fontWeight: 700 }}>{i + 1}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 700 }}>{i + 1}</td>
                         <td style={{ padding: '10px 12px', color: 'var(--text)', fontWeight: 500 }}>{p.nombre}</td>
                         <td style={{ padding: '10px 12px', color: 'var(--text)', fontWeight: 600 }}>{p.cantidad}</td>
                         <td style={{ padding: '10px 12px' }}>
@@ -559,7 +559,7 @@ export default function Reportes() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
+              ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
             </div>
 
             <div style={cardStyle}>
@@ -586,7 +586,7 @@ export default function Reportes() {
                     ))}
                   </div>
                 </>
-              ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
+              ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
             </div>
           </div>
 
@@ -612,7 +612,7 @@ export default function Reportes() {
                   ))}
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
+            ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
           </div>
         </div>
       )}
@@ -634,7 +634,7 @@ export default function Reportes() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
+            ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
           </div>
 
           <div style={cardStyle}>
@@ -643,7 +643,7 @@ export default function Reportes() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   {['Curso', 'Total consumido', 'Transacciones', 'Ticket promedio'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -691,7 +691,7 @@ export default function Reportes() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   {['Alumno', 'Descripción', 'Local', 'Monto', 'Fecha'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -702,18 +702,18 @@ export default function Reportes() {
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.descripcion}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{t.lugar}</td>
                     <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.monto)}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', fontSize: 12 }}>{new Date(t.fecha).toLocaleString('es-AR')}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: 12 }}>{new Date(t.fecha).toLocaleString('es-AR')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {txsTabla.length > 100 && (
-              <p style={{ padding: '12px 16px', color: 'var(--text-tertiary)', fontSize: 12, textAlign: 'center', borderTop: '1px solid var(--border-light)' }}>
+              <p style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: 12, textAlign: 'center', borderTop: '1px solid var(--border-light)' }}>
                 Mostrando 100 de {txsTabla.length}. Exportá el CSV para ver todos.
               </p>
             )}
             {txsTabla.length === 0 && (
-              <p style={{ padding: '2rem', color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center' }}>Sin transacciones para este filtro</p>
+              <p style={{ padding: '2rem', color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center' }}>Sin transacciones para este filtro</p>
             )}
           </div>
         </div>

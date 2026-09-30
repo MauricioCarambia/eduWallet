@@ -108,9 +108,9 @@ export default function Layout({ children }) {
           <NavLink key={item.path} to={item.path} style={({ isActive }) => ({
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
             padding: '10px 0 8px', textDecoration: 'none',
-            color: isActive ? '#1E3A5F' : 'var(--text-tertiary)',
+            color: isActive ? 'var(--brand)' : 'var(--text-secondary)',
             fontSize: 10, fontWeight: isActive ? 600 : 400,
-            borderTop: isActive ? '2px solid #1E3A5F' : '2px solid transparent',
+            borderTop: isActive ? '2px solid var(--brand)' : '2px solid transparent',
             transition: 'color .15s'
           })}>
             {item.icon}

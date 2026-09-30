@@ -16,7 +16,7 @@ const ESTILOS_IMPRESION = `
 
 const boton = primario => ({
   width: '100%', padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-  border: primario ? 'none' : '1.5px solid var(--border)', background: primario ? 'var(--brand)' : 'var(--bg-card)', color: primario ? 'white' : 'var(--text)',
+  border: primario ? 'none' : '1.5px solid var(--border)', background: primario ? 'var(--brand)' : 'var(--bg-card)', color: primario ? 'var(--on-brand)' : 'var(--text)',
 })
 
 export default function CredencialPagina() {
@@ -61,13 +61,13 @@ export default function CredencialPagina() {
       <style>{ESTILOS_CREDENCIAL + ESTILOS_IMPRESION}</style>
       <button onClick={() => navigate('/inicio')} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--brand)', fontSize: 14, cursor: 'pointer', marginBottom: 8 }}>← Volver</button>
       <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Credencial</h1>
-      <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
+      <p style={{ fontSize: 13, color: 'var(--text)', margin: '0 0 16px' }}>
         Se muestra donde corresponda para pagar con el saldo. Podés usarla desde el celular, guardarla como imagen o imprimirla.
       </p>
 
       {error && <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, background: 'var(--red-bg)', color: 'var(--red)' }}>{error}</div>}
 
-      {!datos && !error && <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Cargando...</p>}
+      {!datos && !error && <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Cargando...</p>}
 
       {datos && (
         <>
@@ -82,7 +82,7 @@ export default function CredencialPagina() {
             <button onClick={() => window.print()} style={boton(false)}>🖨 Imprimir</button>
           </div>
 
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '16px 0 0' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '16px 0 0' }}>
             Para imprimirla en tamaño real elegí escala 100 % y activá los gráficos de fondo. Si se pierde o alguien la copia, pedile al colegio que genere una nueva: la anterior deja de funcionar.
           </p>
         </>

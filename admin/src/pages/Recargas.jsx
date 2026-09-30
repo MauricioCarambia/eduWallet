@@ -10,7 +10,7 @@ const ESTADOS = {
   acreditado: { label: 'Acreditada', filtro: 'Acreditadas', color: 'var(--green)', bg: 'var(--green-bg)' },
   pendiente:  { label: 'Pendiente',  filtro: 'Pendientes',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
   rechazado:  { label: 'Rechazada',  filtro: 'Rechazadas',  color: 'var(--red)',   bg: 'var(--red-bg)' },
-  vencido:    { label: 'Vencida',    filtro: 'Vencidas',    color: 'var(--text-tertiary)', bg: 'var(--bg)' },
+  vencido:    { label: 'Vencida',    filtro: 'Vencidas',    color: 'var(--text-secondary)', bg: 'var(--bg)' },
   devuelto:   { label: 'Devuelta',   filtro: 'Devueltas',   color: 'var(--red)',   bg: 'var(--red-bg)' },
   devuelto_parcial: { label: 'Devuelta en parte', filtro: 'Devueltas en parte', color: 'var(--red)', bg: 'var(--red-bg)' },
   contracargo: { label: 'Contracargo', filtro: 'Contracargos', color: 'var(--red)', bg: 'var(--red-bg)' },
@@ -19,7 +19,7 @@ const ESTADOS = {
 
 const btnPagina = (deshabilitado) => ({
   padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12,
-  cursor: deshabilitado ? 'not-allowed' : 'pointer', color: deshabilitado ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+  cursor: deshabilitado ? 'not-allowed' : 'pointer', color: deshabilitado ? 'var(--text-secondary)' : 'var(--text-secondary)',
 })
 
 // Excel guarda las fechas sin zona horaria: se corre la fecha para que la
@@ -182,7 +182,7 @@ export default function Recargas() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Recargas</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Recargas de saldo que hicieron los padres con Mercado Pago</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Recargas de saldo que hicieron los padres con Mercado Pago</p>
         </div>
         <button onClick={exportarExcel} disabled={exportando || total === 0} title="Exporta todas las recargas que cumplen los filtros actuales" style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: exportando || total === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500, opacity: exportando || total === 0 ? 0.6 : 1 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -199,14 +199,14 @@ export default function Recargas() {
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
             <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
             <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{s.value}</p>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{s.sub}</p>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{s.sub}</p>
           </div>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
         {[['', 'Todas', totalResumen], ...Object.entries(ESTADOS).map(([k, e]) => [k, e.filtro, resumen?.[k].cantidad || 0])].map(([valor, label, cantidad]) => (
-          <button key={valor} onClick={() => cambiarFiltro(setEstado)(valor)} style={{ padding: '6px 14px', border: `1.5px solid ${estado === valor ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: estado === valor ? 'var(--brand)' : 'var(--bg-card)', color: estado === valor ? 'white' : 'var(--text-secondary)', fontSize: 12, fontWeight: estado === valor ? 600 : 400, cursor: 'pointer' }}>
+          <button key={valor} onClick={() => cambiarFiltro(setEstado)(valor)} style={{ padding: '6px 14px', border: `1.5px solid ${estado === valor ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 20, background: estado === valor ? 'var(--brand)' : 'var(--bg-card)', color: estado === valor ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: estado === valor ? 600 : 400, cursor: 'pointer' }}>
             {label} <span style={{ opacity: 0.75 }}>({cantidad})</span>
           </button>
         ))}
@@ -232,7 +232,7 @@ export default function Recargas() {
         {cargando ? (
           <SkeletonTable rows={8} cols={6} />
         ) : recargas.length === 0 ? (
-          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>No hay recargas con estos filtros</p>
+          <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>No hay recargas con estos filtros</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
             <thead>
@@ -255,7 +255,7 @@ export default function Recargas() {
                       ) : (
                         <>
                           <div style={{ color: 'var(--text)' }}>{r.padre_nombre}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{r.padre_email}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{r.padre_email}</div>
                         </>
                       )}
                     </td>
@@ -276,7 +276,7 @@ export default function Recargas() {
       {pages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 }}>
           <button onClick={() => setPage(p => p - 1)} disabled={page === 1} style={btnPagina(page === 1)}>‹ Anterior</button>
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Página {page} de {pages} · {total} recargas</span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Página {page} de {pages} · {total} recargas</span>
           <button onClick={() => setPage(p => p + 1)} disabled={page === pages} style={btnPagina(page === pages)}>Siguiente ›</button>
         </div>
       )}

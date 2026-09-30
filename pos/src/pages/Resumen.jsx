@@ -21,15 +21,15 @@ const horaAR = iso => new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit
 
 const tarjeta = { background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '14px 16px' }
 const titulo = { fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 12px' }
-const boton = activo => ({ padding: '7px 14px', border: `1px solid ${activo ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: activo ? 'var(--brand)' : 'var(--bg-card)', color: activo ? 'white' : 'var(--text-secondary)', fontSize: 13, fontWeight: activo ? 500 : 400, cursor: 'pointer' })
+const boton = activo => ({ padding: '7px 14px', border: `1px solid ${activo ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, background: activo ? 'var(--brand)' : 'var(--bg-card)', color: activo ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, fontWeight: activo ? 500 : 400, cursor: 'pointer' })
 
 function Comparacion({ actual, anterior }) {
-  if (!anterior) return <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Sin ventas el mismo día de la semana pasada</span>
+  if (!anterior) return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Sin ventas el mismo día de la semana pasada</span>
   const pct = Math.round(((actual - anterior) / anterior) * 100)
   const sube = pct >= 0
   return (
     <span style={{ fontSize: 11, fontWeight: 600, color: sube ? 'var(--green)' : 'var(--red)' }}>
-      {sube ? '▲' : '▼'} {Math.abs(pct)}% <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>vs. semana pasada ({fmt(anterior)})</span>
+      {sube ? '▲' : '▼'} {Math.abs(pct)}% <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>vs. semana pasada ({fmt(anterior)})</span>
     </span>
   )
 }
@@ -37,7 +37,7 @@ function Comparacion({ actual, anterior }) {
 // Ventas por hora con barras simples; muestra el rango de horas con actividad
 function VentasPorHora({ porHora }) {
   const conVentas = porHora.filter(h => h.cantidad > 0)
-  if (conVentas.length === 0) return <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Sin ventas este día</p>
+  if (conVentas.length === 0) return <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Sin ventas este día</p>
   const desde = Math.min(7, conVentas[0].hora)
   const hasta = Math.max(18, conVentas[conVentas.length - 1].hora)
   const horas = porHora.filter(h => h.hora >= desde && h.hora <= hasta)
@@ -47,9 +47,9 @@ function VentasPorHora({ porHora }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 140, minWidth: horas.length * 28 }}>
         {horas.map(h => (
           <div key={h.hora} title={`${h.hora}:00 — ${fmt(h.total)} (${h.cantidad} ventas)`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}>
-            {h.total > 0 && <span style={{ fontSize: 9, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{h.cantidad}</span>}
+            {h.total > 0 && <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{h.cantidad}</span>}
             <div style={{ width: '100%', maxWidth: 26, height: `${max ? Math.max((h.total / max) * 100, h.total ? 4 : 0) : 0}%`, background: h.total ? 'var(--accent)' : 'var(--border-light)', borderRadius: '4px 4px 0 0', minHeight: 2 }} />
-            <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{h.hora}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{h.hora}</span>
           </div>
         ))}
       </div>
@@ -89,7 +89,7 @@ export default function Resumen() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Resumen del día</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>
             {fechaLarga(fecha)} · {zonaFija || local || 'Todas las zonas'}
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function Resumen() {
             {/* productos */}
             <div style={tarjeta}>
               <p style={titulo}>Más vendidos</p>
-              {datos.productos.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Sin ventas</p> : (
+              {datos.productos.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Sin ventas</p> : (
                 <div style={{ display: 'grid', gap: 8 }}>
                   {datos.productos.map(p => (
                     <div key={p.nombre} style={{ display: 'grid', gap: 3 }}>
@@ -165,11 +165,11 @@ export default function Resumen() {
             <div style={{ display: 'grid', gap: 14 }}>
               <div style={tarjeta}>
                 <p style={titulo}>Cajas del día</p>
-                {datos.cajas.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>No se abrieron cajas</p> : datos.cajas.map(c => (
+                {datos.cajas.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>No se abrieron cajas</p> : datos.cajas.map(c => (
                   <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '8px 0', borderTop: '1px solid var(--border-light)', fontSize: 13 }}>
                     <div>
                       <p style={{ margin: 0, fontWeight: 500, color: 'var(--text)' }}>{c.empleado_nombre} · {c.local}</p>
-                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
                         {horaAR(c.apertura)} – {c.abierta ? 'abierta' : c.cierre ? horaAR(c.cierre) : '—'} · fondo {fmt(c.fondo)} · {c.tx_count} ventas
                       </p>
                     </div>
@@ -183,7 +183,7 @@ export default function Resumen() {
                   <p style={titulo}>{!datos.local && datos.por_zona.length > 1 ? 'Por zona' : 'Por empleado'}</p>
                   {(!datos.local && datos.por_zona.length > 1 ? datos.por_zona.map(z => ({ nombre: z.local, ...z })) : datos.por_empleado).map(x => (
                     <div key={x.nombre} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid var(--border-light)', fontSize: 13 }}>
-                      <span style={{ color: 'var(--text)' }}>{x.nombre} <span style={{ color: 'var(--text-tertiary)' }}>· {x.cantidad} ventas</span></span>
+                      <span style={{ color: 'var(--text)' }}>{x.nombre} <span style={{ color: 'var(--text-secondary)' }}>· {x.cantidad} ventas</span></span>
                       <span style={{ fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(x.total)}</span>
                     </div>
                   ))}
@@ -203,18 +203,18 @@ export default function Resumen() {
                 </label>
               )}
             </div>
-            {ventasVisibles.length === 0 ? <p style={{ padding: '0 16px 16px', fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Sin ventas</p> : ventasVisibles.map(v => (
+            {ventasVisibles.length === 0 ? <p style={{ padding: '0 16px 16px', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Sin ventas</p> : ventasVisibles.map(v => (
               <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid var(--border-light)', opacity: v.anulada ? 0.6 : 1 }}>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
-                    {v.alumno_nombre}{v.alumno_curso ? <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}> · {v.alumno_curso}</span> : null}
+                    {v.alumno_nombre}{v.alumno_curso ? <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}> · {v.alumno_curso}</span> : null}
                     {v.anulada && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: 'var(--red-bg)', color: 'var(--red)' }}>Anulada</span>}
                   </p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)', overflowWrap: 'anywhere' }}>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)', overflowWrap: 'anywhere' }}>
                     {horaAR(v.fecha)} · {v.descripcion.replace(/^\[ANULADA\] /, '')}{!zonaFija && !local ? ` · ${v.lugar}` : ''}{datos.por_empleado.length > 1 ? ` · ${v.empleado_nombre}` : ''}
                   </p>
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 600, color: v.anulada ? 'var(--text-tertiary)' : 'var(--text)', textDecoration: v.anulada ? 'line-through' : 'none', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmt(v.monto)}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: v.anulada ? 'var(--text-secondary)' : 'var(--text)', textDecoration: v.anulada ? 'line-through' : 'none', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmt(v.monto)}</span>
               </div>
             ))}
           </div>

@@ -5,6 +5,7 @@ import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
+import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
 
 // Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
 const esCodigo = texto => {
@@ -48,12 +49,24 @@ export default function Venta() {
   const [errorQR, setErrorQR] = useState(null)
   const videoRef = useRef(null)
   const scannerRef = useRef(null)
+  const [controlDe, setControlDe] = useState({ id: null, datos: null })
+  const [confirmados, setConfirmados] = useState([]) // productos con alérgeno que el cajero confirmó
+  const [avisoAlergia, setAvisoAlergia] = useState(null) // { titulo, detalle, alConfirmar }
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
 
   const zonaFija = sesion?.local || null
 
   useEffect(() => { cargarDatos() }, [])
+
+  // Reglas de la familia y alergias del alumno identificado
+  const ctrl = alumno && controlDe.id === alumno.id ? controlDe.datos : null
+  useEffect(() => {
+    if (!alumno?.id) return
+    let vigente = true
+    api.get(`/alumnos/${alumno.id}/control`).then(r => { if (vigente) setControlDe({ id: alumno.id, datos: r.data }) }).catch(() => {})
+    return () => { vigente = false }
+  }, [alumno?.id])
   useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
   useEffect(() => {
     const handleClick = e => { if (!e.target.closest('#alumno-search')) setShowSugerencias(false) }
@@ -92,8 +105,23 @@ export default function Venta() {
     catch (err) { showMsg('error', 'Error al cerrar caja') }
   }
 
-  const addProd = p => {
+  const addProd = (p, confirmado = false) => {
     if (p.stock <= 0) { showMsg('warn', `Sin stock: ${p.nombre}`); return }
+    const motivo = motivoBloqueo(p, ctrl, carrito)
+    if (motivo) { showMsg('error', `🚫 ${motivo}`); return }
+    const alergias = alergiasDe(p, ctrl)
+    if (alergias.length > 0) {
+      const nombre = alumno.nombre.split(' ')[0]
+      if (ctrl.bloquear_alergenos) { showMsg('error', `⚠ ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}: la familia de ${nombre} no permite venderle ${p.nombre}`); return }
+      if (!confirmado && !confirmados.includes(p.id)) {
+        setAvisoAlergia({
+          titulo: `⚠ ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}`,
+          detalle: `${nombre} es alérgico/a a ${nombresAlergenos(alergias).toLowerCase()} y ${p.nombre} lo contiene.`,
+          alConfirmar: () => { setConfirmados(c => [...c, p.id]); addProd(p, true) },
+        })
+        return
+      }
+    }
     setCarrito(prev => {
       const ex = prev.find(i => i.id === p.id)
       if (ex && ex.qty >= p.stock) { showMsg('warn', 'Stock máximo'); return prev }
@@ -103,24 +131,33 @@ export default function Venta() {
 
   const remProd = id => setCarrito(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty - 1 } : i).filter(i => i.qty > 0))
 
-  const cobrar = async () => {
+  const cobrar = async (opciones = {}) => {
     if (!alumno || !caja || procesando) return
     setProcesando(true)
     try {
       const res = await api.post('/transacciones/cobrar', {
         alumno_id: alumno.id, empleado_id: sesion.id, caja_id: caja.id,
         items: carrito.map(i => ({ id: i.id, nombre: i.nombre, precio: i.precio, qty: i.qty })),
-        lugar: local, descuento: descPct
+        lugar: local, descuento: descPct, confirmar_alergias: opciones.confirmarAlergias === true
       })
       setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
       setProductos(prev => prev.map(p => { const item = carrito.find(i => i.id === p.id); return item ? { ...p, stock: p.stock - item.qty } : p }))
       actualizarVentas(totalDesc)
       setUltimaVenta({ id: res.data.transaccion.id, desc: carrito.map(i => i.nombre).join(', '), monto: totalDesc, items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty })) })
       showMsg('ok', `✓ Cobrado ${fmt(totalDesc)} a ${alumno.nombre}`)
-      setCarrito([]); setAlumno(null); setDescPct(0)
+      setCarrito([]); setAlumno(null); setDescPct(0); setConfirmados([])
       setTimeout(() => busqRef.current?.focus(), 100)
     } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Error al cobrar')
+      const d = err.response?.data
+      if (err.response?.status === 409 && d?.requiere_confirmacion) {
+        // productos con alérgenos agregados antes de identificar al alumno
+        setAvisoAlergia({
+          titulo: `⚠ ALERGIA A ${nombresAlergenos([...new Set(d.alergias.flatMap(a => a.alergenos))]).toUpperCase()}`,
+          detalle: d.error,
+          textoConfirmar: 'Cobrar igual',
+          alConfirmar: () => cobrar({ confirmarAlergias: true }),
+        })
+      } else showMsg('error', d?.error || 'Error al cobrar')
     } finally { setProcesando(false) }
   }
 
@@ -282,6 +319,23 @@ export default function Venta() {
   // pantalla principal de venta
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 0, height: 'calc(100vh - 120px)', overflow: 'hidden', margin: '-24px', borderRadius: 0 }}>
+      {avisoAlergia && (
+        <div role="alertdialog" aria-modal="true" aria-labelledby="alergia-titulo" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: 'var(--shadow-md)', border: '3px solid var(--red)' }}>
+            <div style={{ background: 'var(--red)', color: 'white', padding: '18px 20px' }}>
+              <p id="alergia-titulo" style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: '.3px' }}>{avisoAlergia.titulo}</p>
+            </div>
+            <div style={{ padding: '18px 20px' }}>
+              <p style={{ margin: '0 0 18px', fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>{avisoAlergia.detalle}</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button autoFocus onClick={() => setAvisoAlergia(null)} style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>No vender</button>
+                <button onClick={() => { const a = avisoAlergia; setAvisoAlergia(null); a.alConfirmar() }} style={{ flex: 1, padding: '13px', border: '1.5px solid var(--red)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--red)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>{avisoAlergia.textoConfirmar || 'Vender igual'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* toast */}
       {msg && (
         <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 500, background: msg.tipo === 'ok' ? 'var(--brand)' : msg.tipo === 'warn' ? 'var(--amber)' : 'var(--red)', color: 'white', boxShadow: 'var(--shadow-md)', whiteSpace: 'nowrap' }}>
@@ -316,14 +370,21 @@ export default function Venta() {
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
-            {prods.map(p => (
-              <button key={p.id} onClick={() => addProd(p)} disabled={p.stock === 0}
-                style={{ padding: '14px 12px', border: `1.5px solid ${p.stock === 0 ? 'var(--red-bg)' : 'var(--border)'}`, borderRadius: 14, background: p.stock === 0 ? 'var(--red-bg)' : 'var(--bg-card)', textAlign: 'left', opacity: p.stock === 0 ? 0.6 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
-                <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>{p.nombre}</p>
-                <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</p>
-                <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-tertiary)' }}>Stock: {p.stock}</p>
-              </button>
-            ))}
+            {prods.map(p => {
+              const bloqueo = motivoBloqueo(p, ctrl, carrito)
+              const alergias = alergiasDe(p, ctrl)
+              const apagado = p.stock === 0 || !!bloqueo || (alergias.length > 0 && ctrl?.bloquear_alergenos)
+              return (
+                <button key={p.id} onClick={() => addProd(p)} disabled={p.stock === 0} title={bloqueo || (alergias.length ? `Alergia: ${nombresAlergenos(alergias)}` : undefined)}
+                  style={{ padding: '14px 12px', border: `1.5px solid ${alergias.length ? 'var(--red)' : p.stock === 0 ? 'var(--red-bg)' : 'var(--border)'}`, borderRadius: 14, background: p.stock === 0 ? 'var(--red-bg)' : 'var(--bg-card)', textAlign: 'left', opacity: apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>{p.nombre}</p>
+                  <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-tertiary)' }}>Stock: {p.stock}</p>
+                  {alergias.length > 0 && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 700, color: 'var(--red)' }}>⚠ {nombresAlergenos(alergias)}</p>}
+                  {bloqueo && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>🚫 No permitido</p>}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -348,7 +409,7 @@ export default function Venta() {
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{alumno.nombre}</p>
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>{alumno.curso}</p>
                 </div>
-                <button onClick={() => { setAlumno(null); setCarrito([]) }} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
+                <button onClick={() => { setAlumno(null); setCarrito([]); setConfirmados([]) }} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--text-tertiary)', cursor: 'pointer' }}>×</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                 <div style={{ background: parseFloat(alumno.saldo) < 200 ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8, padding: '6px 10px' }}>
@@ -360,8 +421,20 @@ export default function Venta() {
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{fmt(alumno.gasto_hoy)}</p>
                 </div>
               </div>
-              {alumno.alergias !== 'Ninguna' && (
+              {ctrl?.alergenos?.length > 0 ? (
+                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--red-bg)', borderRadius: 7, fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>
+                  ⚠ Alergia: {nombresAlergenos(ctrl.alergenos)}{ctrl.bloquear_alergenos ? ' · no se puede vender' : ' · confirmar antes de vender'}
+                </div>
+              ) : alumno.alergias !== 'Ninguna' && (
                 <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--amber-bg)', borderRadius: 7, fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}>⚠ Alergia: {alumno.alergias}</div>
+              )}
+              {ctrl?.resumen?.length > 0 && (
+                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--bg)', borderRadius: 7, fontSize: 12, color: 'var(--text-secondary)' }}>
+                  👪 Reglas de la familia: {ctrl.resumen.join(' · ')}
+                </div>
+              )}
+              {parseFloat(alumno.saldo) < 0 && (
+                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--red-bg)', borderRadius: 7, fontSize: 12, color: 'var(--red)', fontWeight: 500 }}>Saldo negativo por una recarga devuelta: no puede comprar hasta que la familia recargue</div>
               )}
             </div>
           ) : (
@@ -456,7 +529,7 @@ export default function Venta() {
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Total</span>
             <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{fmt(totalDesc)}</span>
           </div>
-          <button onClick={cobrar} disabled={!alumno || carrito.length === 0 || procesando}
+          <button onClick={() => cobrar({ confirmarAlergias: carrito.some(i => confirmados.includes(i.id)) })} disabled={!alumno || carrito.length === 0 || procesando}
             style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: !alumno || carrito.length === 0 ? 'var(--bg)' : 'var(--brand)', color: !alumno || carrito.length === 0 ? 'var(--text-tertiary)' : 'white', fontSize: 15, fontWeight: 700, cursor: !alumno || carrito.length === 0 ? 'not-allowed' : 'pointer' }}>
             {procesando ? 'Procesando...' : 'Cobrar'}
           </button>

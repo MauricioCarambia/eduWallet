@@ -1,6 +1,10 @@
 const pool = require('../db/conexion');
-const { enviarEmailSaldoBajo, enviarEmailCompra } = require('../services/emailService');
-const { enviarPush } = require('../services/pushService');
+const { notificarCompra, notificarRechazo } = require('../services/notificacionesService');
+const { evaluarReglas, conflictosAlergia, listaAlergenos } = require('../services/reglasCompra');
+const { registrar } = require('./auditoriaController');
+
+const { compradoHoyPorCategoria, gastoDeLaSemana } = require('../services/consumoAlumno');
+const tieneMaximos = a => Object.keys(a.restricciones?.maximos || {}).length > 0;
 
 const getTransacciones = async (req, res) => {
   try {
@@ -120,7 +124,7 @@ const cobrar = async (req, res) => {
     // Precios y nombres salen de la base, no de lo que manda el POS
     const ids = [...new Set(items.map(i => Number(i.id)))];
     const prods = await client.query(
-      'SELECT id, nombre, precio, local FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2 AND activo = true',
+      'SELECT id, nombre, precio, local, categoria, alergenos FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2 AND activo = true',
       [ids, req.empleado.colegio_id]
     );
     const porId = new Map(prods.rows.map(p => [p.id, p]));
@@ -141,9 +145,39 @@ const cobrar = async (req, res) => {
       return res.status(400).json({ error: 'El total tiene que ser mayor a 0' });
     }
 
+    // Reglas de la familia: categorías, productos y zonas bloqueadas,
+    // máximos por día y límite semanal
+    const motivos = evaluarReglas({
+      alumno: a, lineas, lugar, total,
+      hoyPorCategoria: tieneMaximos(a) ? await compradoHoyPorCategoria(client, a.id) : {},
+      gastoSemana: a.limite_semanal != null ? await gastoDeLaSemana(client, a.id) : 0,
+    });
+    if (motivos.length > 0) {
+      await client.query('ROLLBACK');
+      notificarRechazo({ colegioId: req.empleado.colegio_id, alumno: a, motivos, lugar });
+      return res.status(403).json({ error: motivos[0], motivos, tipo: 'regla' });
+    }
+
+    // Alergias: la familia elige si se bloquea o si el cajero confirma
+    const alergias = conflictosAlergia(a.alergenos || [], lineas);
+    if (alergias.length > 0) {
+      const nombre = a.nombre.split(' ')[0];
+      const texto = alergias.map(p => `${p.nombre} (${listaAlergenos(p.alergenos)})`).join(', ');
+      if (a.bloquear_alergenos) {
+        await client.query('ROLLBACK');
+        const motivo = `${nombre} es alérgico/a: no se puede vender ${texto}`;
+        notificarRechazo({ colegioId: req.empleado.colegio_id, alumno: a, motivos: [motivo], lugar });
+        return res.status(403).json({ error: motivo, alergias, tipo: 'alergia_bloqueada' });
+      }
+      if (req.body.confirmar_alergias !== true) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: `${nombre} es alérgico/a a: ${texto}`, alergias, requiere_confirmacion: true });
+      }
+    }
+
     if (parseFloat(a.saldo) < total) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: `Saldo insuficiente (disponible: $${a.saldo})` });
+      return res.status(400).json({ error: `Saldo insuficiente (disponible: ${a.saldo})` });
     }
 
     if (parseFloat(a.gasto_hoy) + total > parseFloat(a.limite_diario)) {
@@ -173,6 +207,15 @@ const cobrar = async (req, res) => {
       [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id]
     );
 
+    // detalle de la compra (para contar unidades por categoría)
+    for (const l of lineas) {
+      await client.query(
+        `INSERT INTO transaccion_items (transaccion_id, producto_id, nombre, categoria, cantidad, precio)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio]
+      );
+    }
+
     // actualizar la caja abierta del propio empleado
     if (caja_id) {
       await client.query(
@@ -186,49 +229,16 @@ const cobrar = async (req, res) => {
     const alumnoActualizadoRes = await pool.query('SELECT * FROM alumnos WHERE id = $1', [alumno_id]);
     const alumnoActualizado = alumnoActualizadoRes.rows[0];
 
-    // notificar al padre por email
-    try {
-      const padresRes = await pool.query(
-        `SELECT p.id, p.nombre, p.email FROM padres p
-         JOIN padres_alumnos pa ON pa.padre_id = p.id
-         WHERE pa.alumno_id = $1`,
-        [alumno_id]
-      );
-      for (const padre of padresRes.rows) {
-        await enviarEmailCompra({
-          colegioId: req.empleado.colegio_id,
-          nombrePadre: padre.nombre,
-          emailPadre: padre.email,
-          nombreAlumno: a.nombre,
-          descripcion: desc,
-          monto: total,
-          saldo: alumnoActualizado.saldo,
-          lugar
-        });
-        await enviarPush(padre.id, {
-          title: `Compra de ${a.nombre}`,
-          body: `${desc} — $${Number(total).toLocaleString('es-AR')} en ${lugar}. Saldo: $${Number(alumnoActualizado.saldo).toLocaleString('es-AR')}`,
-          url: '/historial'
-        });
-        if (parseFloat(alumnoActualizado.saldo) < 200) {
-          await enviarEmailSaldoBajo({
-            colegioId: req.empleado.colegio_id,
-            nombrePadre: padre.nombre,
-            emailPadre: padre.email,
-            nombreAlumno: a.nombre,
-            saldo: alumnoActualizado.saldo,
-            curso: a.curso
-          });
-          await enviarPush(padre.id, {
-            title: `⚠ Saldo bajo de ${a.nombre}`,
-            body: `El saldo es de $${Number(alumnoActualizado.saldo).toLocaleString('es-AR')}. Recargá para evitar inconvenientes.`,
-            url: '/recargar'
-          });
-        }
-      }
-    } catch (emailErr) {
-      console.error('Error enviando email:', emailErr.message);
+    if (alergias.length > 0) {
+      await registrar(empleado_id, req.empleado.colegio_id, 'Venta con alérgeno confirmada',
+        `${a.nombre}: ${alergias.map(p => `${p.nombre} (${listaAlergenos(p.alergenos)})`).join(', ')}`);
     }
+
+    // avisos a la familia (cada padre elige cuáles y por qué medio)
+    notificarCompra({
+      colegioId: req.empleado.colegio_id, alumno: a, lugar, total, descripcion: desc,
+      saldoAnterior: a.saldo, saldoNuevo: alumnoActualizado.saldo,
+    });
 
     res.json({ transaccion: tx.rows[0], alumno: alumnoActualizado });
 

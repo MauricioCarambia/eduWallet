@@ -21,6 +21,7 @@ const localesRoutes = require('./routes/locales');
 const superadminRoutes = require('./routes/superadmin');
 const mpRoutes = require('./routes/mp');
 const contactoRoutes = require('./routes/contacto');
+const conciliacionRoutes = require('./routes/conciliacion');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./docs/swagger');
 
@@ -65,6 +66,10 @@ if (process.env.NODE_ENV === 'test') {
 app.use(cors());
 app.use(express.json({ limit: '1mb' })); // la importación de productos manda hasta 1000 filas
 
+// El primer pedido de cada día cierra las cajas del día anterior y pone el
+// gasto diario en 0 (no depende de que el servidor esté despierto a la medianoche)
+app.use('/api', require('./services/tareasDiarias').alDia);
+
 app.use('/api/empleados', empleadosRoutes);
 app.use('/api/alumnos', alumnosRoutes);
 app.use('/api/productos', productosRoutes);
@@ -81,6 +86,7 @@ app.use('/api/locales', localesRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/mp', mpRoutes);
 app.use('/api/contacto', contactoRoutes);
+app.use('/api/conciliacion', conciliacionRoutes);
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'EduWallet API Docs',

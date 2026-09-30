@@ -11,6 +11,10 @@ const ESTADOS = {
   pendiente:  { label: 'Pendiente',  filtro: 'Pendientes',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
   rechazado:  { label: 'Rechazada',  filtro: 'Rechazadas',  color: 'var(--red)',   bg: 'var(--red-bg)' },
   vencido:    { label: 'Vencida',    filtro: 'Vencidas',    color: 'var(--text-tertiary)', bg: 'var(--bg)' },
+  devuelto:   { label: 'Devuelta',   filtro: 'Devueltas',   color: 'var(--red)',   bg: 'var(--red-bg)' },
+  devuelto_parcial: { label: 'Devuelta en parte', filtro: 'Devueltas en parte', color: 'var(--red)', bg: 'var(--red-bg)' },
+  contracargo: { label: 'Contracargo', filtro: 'Contracargos', color: 'var(--red)', bg: 'var(--red-bg)' },
+  en_disputa: { label: 'En disputa', filtro: 'En disputa',  color: 'var(--amber)', bg: 'var(--amber-bg)' },
 }
 
 const btnPagina = (deshabilitado) => ({

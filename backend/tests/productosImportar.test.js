@@ -31,7 +31,7 @@ const query = async (sql, params = []) => {
   }
   if (sql.includes('SELECT * FROM productos WHERE id = $1')) return { rows: db.productos.filter(p => p.id === Number(params[0])) };
   if (sql.startsWith('UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4')) {
-    const p = db.productos.find(x => x.id === Number(params[4]));
+    const p = db.productos.find(x => x.id === Number(params.at(-1)));
     if (chocaCodigo(params[3], p.local, p.id)) throw repetido();
     Object.assign(p, { nombre: params[0], precio: params[1], categoria: params[2], codigo_barras: params[3] });
     return { rows: [p] };

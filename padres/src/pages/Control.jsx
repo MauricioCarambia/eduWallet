@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
+import ReglasCompra from '../components/ReglasCompra'
+import AlergiasAlumno from '../components/AlergiasAlumno'
+import AvisosFamilia from '../components/AvisosFamilia'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const pct2 = (a, b) => b ? Math.min(Math.round(a / b * 100), 100) : 0
@@ -11,10 +14,22 @@ export default function Control() {
   const [nuevoLimite, setNuevoLimite] = useState('')
   const [cargando, setCargando] = useState(true)
   const [msg, setMsg] = useState(null)
+  const [catalogoDe, setCatalogoDe] = useState({ id: null, datos: null })
+  const catalogo = catalogoDe.id === alumnoId ? catalogoDe.datos : null
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
+
+  // Productos, zonas y alérgenos del colegio del hijo elegido
+  useEffect(() => {
+    if (!alumnoId) return
+    let vigente = true
+    api.get(`/padres/alumnos/${alumnoId}/catalogo`).then(r => { if (vigente) setCatalogoDe({ id: alumnoId, datos: r.data }) }).catch(() => {})
+    return () => { vigente = false }
+  }, [alumnoId])
+
+  const actualizarAlumno = datos => setAlumnos(prev => prev.map(a => a.id === datos.id ? { ...a, ...datos } : a))
 
   const cargar = async () => {
     try {
@@ -142,13 +157,18 @@ export default function Control() {
             </div>
           </div>
 
+          {catalogo && <ReglasCompra key={`reglas-${alumnoActual.id}`} alumno={alumnoActual} catalogo={catalogo} onGuardado={actualizarAlumno} showMsg={showMsg} />}
+          {catalogo && <AlergiasAlumno key={`alergias-${alumnoActual.id}`} alumno={alumnoActual} alergenos={catalogo.alergenos} onGuardado={actualizarAlumno} showMsg={showMsg} />}
+
           {/* datos del alumno */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 14px', color: 'var(--text)' }}>Datos del alumno</h2>
             {[
               ['Nombre', alumnoActual.nombre],
               ['Curso', alumnoActual.curso],
-              ['Alergias', alumnoActual.alergias],
+              ['Alergias', (alumnoActual.alergenos || []).length && catalogo
+                ? alumnoActual.alergenos.map(a => catalogo.alergenos[a] || a).join(', ')
+                : alumnoActual.alergias],
               ['Saldo', fmt(alumnoActual.saldo)],
               ['Límite diario', fmt(alumnoActual.limite_diario) + '/día']
             ].map(([k, v]) => (
@@ -158,6 +178,8 @@ export default function Control() {
               </div>
             ))}
           </div>
+
+          <AvisosFamilia showMsg={showMsg} />
 
         </div>
       )}

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { enviarEmailRecuperacion } = require('../services/emailService');
+const { notificarBloqueo } = require('../services/notificacionesService');
 require('dotenv').config();
 
 const registro = async (req, res) => {
@@ -132,7 +133,10 @@ const toggleBloqueo = async (req, res) => {
       'UPDATE alumnos SET activo = NOT activo WHERE id = $1 RETURNING *',
       [alumno_id]
     );
-    res.json(resultado.rows[0]);
+    const a = resultado.rows[0];
+    notificarBloqueo({ colegioId: a.colegio_id, alumno: a, padreId,
+      texto: a.activo ? `Se habilitaron de nuevo las compras de ${a.nombre}.` : `Se bloquearon todas las compras de ${a.nombre}.` });
+    res.json(a);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -270,6 +274,8 @@ const bloquearMedio = async (req, res) => {
       'INSERT INTO auditoria (empleado_id, colegio_id, accion, detalle) VALUES (NULL, $1, $2, $3)',
       [r.rows[0].colegio_id, bloqueado ? 'Medio bloqueado por la familia' : 'Medio desbloqueado por la familia', `${r.rows[0].nombre}: ${m.nombre} (${padre.rows[0]?.nombre || 'padre'})`]
     ).catch(() => {});
+    notificarBloqueo({ colegioId: r.rows[0].colegio_id, alumno: r.rows[0], padreId: req.padre.id,
+      texto: `Se ${bloqueado ? 'bloqueó' : 'desbloqueó'} ${medio === 'qr' ? 'el QR de la credencial' : 'la tarjeta / llavero'} de ${r.rows[0].nombre}.` });
     res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });

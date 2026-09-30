@@ -41,11 +41,11 @@ const baseHTML = (contenido, nombreColegio, logo) => `
   </div>
 `;
 
-const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, saldo, curso }) => {
+const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, saldo, curso, umbral = 200 }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${nombreAlumno}</b> (${curso}) está por debajo de $200.</p>
+    <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${nombreAlumno}</b> (${curso}) está por debajo de $${Number(umbral).toLocaleString('es-AR')}.</p>
     <div style="background: #FEF2F2; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 20px;">
       <p style="margin: 0 0 4px; font-size: 13px; color: #666;">Saldo actual</p>
       <p style="margin: 0; font-size: 32px; font-weight: 700; color: #DC2626;">$${Number(saldo).toLocaleString('es-AR')}</p>
@@ -90,7 +90,6 @@ const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlu
       <p style="margin: 8px 0 0; font-size: 22px; font-weight: 700; color: #111;">-$${Number(monto).toLocaleString('es-AR')}</p>
       <p style="margin: 6px 0 0; font-size: 13px; color: #666;">Saldo restante: <b>$${Number(saldo).toLocaleString('es-AR')}</b></p>
     </div>
-    ${parseFloat(saldo) < 200 ? `<div style="background: #FEF2F2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #DC2626;">⚠ Saldo bajo — por favor recargá.</div>` : ''}
   `, nombreColegio, logo);
 
   await enviarEmail({
@@ -212,7 +211,19 @@ const enviarEmailContacto = async ({ nombre, colegio, cargo, email, telefono, al
   });
 };
 
+// Aviso genérico a una familia (reglas, bloqueos, devoluciones de recargas)
+const enviarEmailAviso = async ({ colegioId, nombrePadre, emailPadre, asunto, titulo, detalle }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
+  const html = baseHTML(`
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
+    <p style="color: #111; margin: 0 0 12px; font-size: 15px;"><b>${titulo}</b></p>
+    <p style="color: #444; margin: 0; font-size: 14px;">${detalle}</p>
+  `, nombreColegio, logo);
+  await enviarEmail({ to: emailPadre, subject: `${asunto} — ${nombreColegio}`, html });
+};
+
 module.exports = {
+  enviarEmailAviso,
   enviarEmailContacto,
   enviarEmailSaldoBajo,
   enviarEmailRecarga,

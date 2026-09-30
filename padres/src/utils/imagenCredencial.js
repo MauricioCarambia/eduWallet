@@ -61,24 +61,24 @@ export async function imagenCredencial({ credencial, colegio, logo }) {
       x += l + mm(2)
     } catch { /* sin logo */ }
   }
-  ctx.fillStyle = '#1E3A5F'
+  ctx.fillStyle = '#1D5C47'
   ctx.font = `700 ${mm(2.6)}px ${fuente}`
   ctx.textBaseline = 'alphabetic'
   ctx.fillText((colegio || 'KoleTap').toUpperCase(), x, yColegio, anchoTexto - (x - margen))
 
   // nombre y curso, abajo del medio
-  ctx.fillStyle = '#13233A'
+  ctx.fillStyle = '#16211D'
   ctx.font = `800 ${mm(4.6)}px ${fuente}`
   const lineas = renglones(ctx, credencial.nombre, anchoTexto)
   const alto = mm(4.6) * 1.15
   let y = ALTO / 2 + mm(1) - ((lineas.length - 1) * alto) / 2
   for (const l of lineas) { ctx.fillText(l, margen, y, anchoTexto); y += alto }
-  ctx.fillStyle = '#4A5A70'
+  ctx.fillStyle = '#5B6660'
   ctx.font = `400 ${mm(3.2)}px ${fuente}`
   ctx.fillText(credencial.curso || '', margen, y + mm(1))
 
   // pie
-  ctx.fillStyle = '#7A8799'
+  ctx.fillStyle = '#6B7670'
   ctx.font = `400 ${mm(2.2)}px ${fuente}`
   ctx.fillText('Credencial KoleTap · personal e intransferible', margen, ALTO - margen, anchoTexto)
 

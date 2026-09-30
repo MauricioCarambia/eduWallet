@@ -7,7 +7,7 @@ const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -108,13 +108,13 @@ export default function Cajas() {
       <div style={{ display: 'grid', gap: 8 }}>
         {cajasFiltradas.map(c => (
           <div key={c.id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', boxShadow: 'var(--shadow)' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: c.abierta ? 'var(--green-bg)' : 'var(--bg-subtle)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c.abierta ? 'var(--green)' : 'var(--text-tertiary)'} strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             </div>
             <div style={{ flex: 1, minWidth: 150 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.local}</p>
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg-subtle)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
               </div>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{c.empleado_nombre} · {new Date(c.apertura).toLocaleString('es-AR')}{c.cierre ? ` → ${new Date(c.cierre).toLocaleString('es-AR')}` : ''}</p>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Fondo: {fmt(c.fondo)} · {c.tx_count} transacciones</p>
@@ -134,7 +134,7 @@ export default function Cajas() {
         <Modal title={`Detalle — ${seleccionada.local}`} onClose={() => setSeleccionada(null)}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
             {[['Total vendido', fmt(seleccionada.ventas)], ['Fondo inicial', fmt(seleccionada.fondo)], ['Transacciones', seleccionada.tx_count], ['Empleado', seleccionada.empleado_nombre]].map(([label, value]) => (
-              <div key={label} style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
+              <div key={label} style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
                 <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>{label}</p>
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{value}</p>
               </div>

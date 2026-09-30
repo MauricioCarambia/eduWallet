@@ -50,21 +50,21 @@ export default function Layout({ children }) {
     i18n.changeLanguage(nuevo)
   }
 
-  const sidebarText = 'rgba(255,255,255,0.7)'
-  const sidebarBorder = 'rgba(255,255,255,0.08)'
-  const sidebarActive = 'rgba(255,255,255,0.15)'
+  const sidebarText = 'var(--sidebar-text)'
+  const sidebarBorder = 'var(--sidebar-border)'
+  const sidebarActive = 'var(--sidebar-active)'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      <aside className="sidebar" style={{ width: collapsed ? 64 : 220, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: '2px 0 8px rgba(0,0,0,0.15)' }}>
+      <aside className="sidebar" style={{ width: collapsed ? 64 : 220, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: 'var(--shadow-md)' }}>
 
         <div style={{ padding: collapsed ? '20px 0' : '20px 16px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'white' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {branding.logo
                   ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ color: 'var(--on-accent)' }} strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                 }
               </div>
               <div>
@@ -80,10 +80,10 @@ export default function Layout({ children }) {
 
         {/* estado caja */}
         {!collapsed && (
-          <div style={{ padding: '10px 16px', background: caja ? 'rgba(5,150,105,0.15)' : 'rgba(220,38,38,0.1)', borderBottom: `1px solid ${sidebarBorder}` }}>
+          <div style={{ padding: '10px 16px', background: caja ? 'var(--sidebar-ok-bg)' : 'var(--sidebar-error-bg)', borderBottom: `1px solid ${sidebarBorder}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: caja ? '#34D399' : '#F87171' }} />
-              <span style={{ fontSize: 11, fontWeight: 500, color: caja ? '#34D399' : '#F87171' }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: caja ? 'var(--sidebar-ok)' : 'var(--sidebar-error)' }} />
+              <span style={{ fontSize: 11, fontWeight: 500, color: caja ? 'var(--sidebar-ok)' : 'var(--sidebar-error)' }}>
                 {caja ? `${caja.local} · ${fmt(caja.ventas || 0)}` : t('common.sin_caja_abierta')}
               </span>
             </div>
@@ -95,7 +95,7 @@ export default function Layout({ children }) {
             <NavLink key={item.path} to={item.path} style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10,
               padding: collapsed ? '10px 0' : '9px 12px',
-              borderRadius: 'var(--radius)', textDecoration: 'none', marginBottom: 2,
+              borderRadius: 8, textDecoration: 'none', marginBottom: 2,
               justifyContent: collapsed ? 'center' : 'flex-start',
               background: isActive ? sidebarActive : 'transparent',
               color: isActive ? 'white' : sidebarText,

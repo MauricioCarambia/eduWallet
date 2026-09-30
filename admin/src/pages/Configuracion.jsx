@@ -181,12 +181,12 @@ export default function Configuracion() {
         <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Parámetros generales del sistema</p>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <Section title="Logo del colegio">
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           {/* preview */}
-          <div style={{ width: 96, height: 96, borderRadius: 16, border: '2px dashed var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+          <div style={{ width: 96, height: 96, borderRadius: 16, border: '2px dashed var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
             {config.logo
               ? <img src={config.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               : <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -256,7 +256,7 @@ export default function Configuracion() {
           Conectá la cuenta de Mercado Pago del colegio para recibir las recargas de los padres.
         </p>
         {!estadoMP?.disponible ? (
-          <div style={{ padding: '10px 14px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 'var(--radius)', fontSize: 13, borderLeft: '3px solid var(--amber)' }}>
+          <div style={{ padding: '10px 14px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 8, fontSize: 13, borderLeft: '3px solid var(--amber)' }}>
             Todavía no está habilitada la conexión con Mercado Pago (falta configurar la aplicación).
           </div>
         ) : estadoMP?.colegio_conectado ? (
@@ -298,7 +298,7 @@ export default function Configuracion() {
           <Campo label="Servidor SMTP"><input value={config.email_smtp_host} onChange={e => set('email_smtp_host', e.target.value)} placeholder="smtp.gmail.com" /></Campo>
           <Campo label="Puerto SMTP"><input type="number" value={config.email_smtp_port} onChange={e => set('email_smtp_port', e.target.value)} /></Campo>
         </div>
-        <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
+        <div style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
           <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Configuraciones rápidas</p>
           <div style={{ display: 'flex', gap: 6 }}>
             {[{ label: 'Gmail', host: 'smtp.gmail.com', port: 587 }, { label: 'Outlook', host: 'smtp.office365.com', port: 587 }, { label: 'Mailtrap', host: 'sandbox.smtp.mailtrap.io', port: 587 }].map(p => (
@@ -355,7 +355,7 @@ export default function Configuracion() {
       </Section>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={guardar} style={{ padding: '10px 28px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(30,58,95,0.3)' }}>
+        <button onClick={guardar} style={{ padding: '10px 28px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-brand)' }}>
           Guardar configuración
         </button>
       </div>

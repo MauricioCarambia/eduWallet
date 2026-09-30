@@ -57,7 +57,7 @@ export default function Cuenta() {
       <p style={{ color: 'var(--text)', fontSize: 13, margin: '0 0 20px' }}>{sesion?.nombre} · @{sesion?.usuario}</p>
 
       {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
           {msg.texto}
         </div>
       )}
@@ -69,7 +69,7 @@ export default function Cuenta() {
         </p>
 
         {!estado?.disponible ? (
-          <div style={{ padding: '10px 14px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 'var(--radius)', fontSize: 13, borderLeft: '3px solid var(--amber)' }}>
+          <div style={{ padding: '10px 14px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 8, fontSize: 13, borderLeft: '3px solid var(--amber)' }}>
             Todavía no está habilitada la conexión con Mercado Pago en este colegio.
           </div>
         ) : estado?.empleado_conectado ? (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import api from '../api/axios'
 import { tarjeta, tituloTarjeta, ayuda, etiqueta, botonGuardar } from './controlEstilos'
 import { Chip } from './ControlUI'
+import Icono from './Icono'
 
 // Alergias del hijo: el punto de venta avisa (y el cajero tiene que
 // confirmar) o directamente no deja vender productos con esos alérgenos
@@ -45,7 +46,7 @@ export default function AlergiasAlumno({ alumno, alergenos, onGuardado, showMsg 
           const activo = elegidos.includes(clave)
           return (
             <Chip key={clave} activo={activo} tono="red" onClick={() => setElegidos(p => activo ? p.filter(x => x !== clave) : [...p, clave])}>
-              {activo ? '⚠ ' : ''}{texto}
+              {activo && <Icono nombre="alerta" />}{texto}
             </Chip>
           )
         })}

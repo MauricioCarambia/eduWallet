@@ -166,7 +166,7 @@ export default function Recargar() {
           const { comision, total } = cotizar(n, alumnoActual.comision_pct)
           const fila = { display: 'flex', justifyContent: 'space-between', marginBottom: 4 }
           return (
-            <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               <div style={fila}><span>Saldo a cargar</span><span>{fmt(n)}</span></div>
               {comision > 0 && <div style={fila}><span>Cargo por servicio</span><span>{fmt(comision)}</span></div>}
               <div style={{ ...fila, fontWeight: 600, color: 'var(--text)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 6 }}><span>Total a pagar</span><span style={{ fontSize: 15 }}>{fmt(total)}</span></div>
@@ -176,7 +176,7 @@ export default function Recargar() {
         })()}
 
         <button onClick={iniciarPago} disabled={!monto || parseInt(monto) <= 0 || procesando}
-          style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 14, background: !monto || parseInt(monto) <= 0 ? 'var(--bg)' : '#009EE3', color: !monto || parseInt(monto) <= 0 ? 'var(--text-secondary)' : 'white', fontSize: 16, fontWeight: 700, cursor: !monto || parseInt(monto) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity .15s' }}>
+          style={{ width: '100%', padding: '16px', border: 'none', borderRadius: 14, background: !monto || parseInt(monto) <= 0 ? 'var(--bg-subtle)' : '#009EE3', color: !monto || parseInt(monto) <= 0 ? 'var(--text-secondary)' : 'white', fontSize: 16, fontWeight: 700, cursor: !monto || parseInt(monto) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity .15s' }}>
           {procesando ? 'Redirigiendo a Mercado Pago...' : (
             <>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>

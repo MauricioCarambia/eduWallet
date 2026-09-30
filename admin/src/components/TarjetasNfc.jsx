@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
+import Icono from './Icono'
 
 // Asignación de tarjetas NFC a alumnos. Se puede leer la tarjeta con un
 // lector USB (en cualquier computadora) o con el NFC del celular/tablet
@@ -8,7 +9,7 @@ import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } fro
 
 function Ventana({ title, onClose, children }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 460, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -50,8 +51,8 @@ function Lector({ onLeer, ocupado }) {
   }
 
   return (
-    <div style={{ padding: '18px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', textAlign: 'center', marginBottom: 12 }}>
-      <div style={{ fontSize: 28, marginBottom: 6 }}>💳</div>
+    <div style={{ padding: '18px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg-subtle)', textAlign: 'center', marginBottom: 12 }}>
+      <div style={{ marginBottom: 6, color: 'var(--text-secondary)' }}><Icono nombre="tarjeta" tamaño={28} style={{ marginRight: 0 }} /></div>
       <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ocupado ? 'Guardando...' : 'Pasá la tarjeta por el lector'}</p>
       {lectorEscritorio.disponible
         ? <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>{lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}</p>
@@ -59,7 +60,7 @@ function Lector({ onLeer, ocupado }) {
       {nfcDisponible() && (
         nfcActivo
           ? <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>NFC activo — acercá la tarjeta al dispositivo</p>
-          : <button onClick={activarNfc} style={{ ...btn(false), marginTop: 10 }}>📶 Leer con el NFC de este dispositivo</button>
+          : <button onClick={activarNfc} style={{ ...btn(false), marginTop: 10 }}><Icono nombre="nfc" />Leer con el NFC de este dispositivo</button>
       )}
       {errorNfc && <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red)' }}>{errorNfc}</p>}
     </div>

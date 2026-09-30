@@ -6,12 +6,13 @@ import { useAuth } from '../context/AuthContext'
 import useLectorTarjeta from '../hooks/useLectorTarjeta'
 import { leerArchivo, descargarModelo } from '../utils/importarProductos'
 import { ALERGENOS, nombresAlergenos } from '../utils/alergenos'
+import Icono from '../components/Icono'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 function Modal({ title, onClose, children, ancho = 440 }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: ancho, maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{title}</h2>
@@ -42,7 +43,7 @@ function ElegirAlergenos({ value = [], onChange }) {
         return (
           <button key={clave} type="button" aria-pressed={activo} onClick={() => onChange(activo ? value.filter(a => a !== clave) : [...value, clave])}
             style={{ padding: '5px 10px', borderRadius: 16, border: `1.5px solid ${activo ? 'var(--red)' : 'var(--border)'}`, background: activo ? 'var(--red-bg)' : 'var(--bg-card)', color: activo ? 'var(--red)' : 'var(--text-secondary)', fontSize: 12, fontWeight: activo ? 600 : 400, cursor: 'pointer' }}>
-            {activo ? '⚠ ' : ''}{texto}
+            {activo && <Icono nombre="alerta" />}{texto}
           </button>
         )
       })}
@@ -194,17 +195,17 @@ export default function Productos() {
         </div>
         {local && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setImportacion({}); setModal('importar') }} style={btnSec}>⬆ Importar Excel</button>
+            <button onClick={() => { setImportacion({}); setModal('importar') }} style={btnSec}><Icono nombre="subir" />Importar Excel</button>
             <button onClick={() => setModal('nuevo')} style={btnPri}>+ Nuevo producto</button>
           </div>
         )}
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       {stockBajo.length > 0 && (
         <div style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--amber-bg)', border: '1px solid var(--amber)', marginBottom: 16, fontSize: 13, color: 'var(--amber)', borderLeft: '3px solid var(--amber)' }}>
-          ⚠ {stockBajo.length} producto{stockBajo.length > 1 ? 's' : ''} con stock bajo: {stockBajo.map(p => p.nombre).join(', ')}
+          <Icono nombre="alerta" />{stockBajo.length} producto{stockBajo.length > 1 ? 's' : ''} con stock bajo: {stockBajo.map(p => p.nombre).join(', ')}
         </div>
       )}
 
@@ -233,7 +234,7 @@ export default function Productos() {
                 <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
                   {p.nombre}
                   {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
-                  {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>⚠ {nombresAlergenos(p.alergenos)}</div>}
+                  {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="alerta" />{nombresAlergenos(p.alergenos)}</div>}
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
                 <td style={{ padding: '12px 16px' }}>
@@ -346,7 +347,7 @@ export default function Productos() {
                   <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'auto', maxHeight: 260, marginBottom: 14 }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: 'var(--bg)', position: 'sticky', top: 0 }}>
+                        <tr style={{ background: 'var(--bg-subtle)', position: 'sticky', top: 0 }}>
                           {['Fila', 'Nombre', 'Precio', 'Stock', 'Categoría', 'Código'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600 }}>{h}</th>)}
                         </tr>
                       </thead>
@@ -358,14 +359,14 @@ export default function Productos() {
                             <td style={{ padding: '5px 8px' }}>{typeof f.precio === 'number' ? fmt(f.precio) : <i style={{ color: 'var(--red)' }}>{f.precio || 'falta'}</i>}</td>
                             <td style={{ padding: '5px 8px' }}>{f.stock === '' ? '—' : f.stock}</td>
                             <td style={{ padding: '5px 8px' }}>{f.categoria || '—'}</td>
-                            <td style={{ padding: '5px 8px', fontFamily: 'monospace' }}>{f.aviso ? '⚠' : f.codigo_barras || '—'}</td>
+                            <td style={{ padding: '5px 8px', fontFamily: 'monospace' }}>{f.aviso ? <Icono nombre="alerta" /> : f.codigo_barras || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                   {importacion.filas.length > 100 && <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '-6px 0 12px' }}>Se muestran los primeros 100.</p>}
-                  {importacion.filas.some(f => f.aviso) && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 12px' }}>⚠ {importacion.filas.find(f => f.aviso).aviso}</p>}
+                  {importacion.filas.some(f => f.aviso) && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 12px' }}><Icono nombre="alerta" />{importacion.filas.find(f => f.aviso).aviso}</p>}
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
                     <button onClick={confirmarImportacion} disabled={importando} style={{ ...btnPri, opacity: importando ? 0.6 : 1 }}>{importando ? 'Importando...' : `Importar ${importacion.filas.filter(f => !f.aviso).length} productos`}</button>

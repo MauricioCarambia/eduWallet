@@ -15,7 +15,7 @@ function StatCard({ label, value, sub, color, icon }) {
           {sub && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{sub}</p>}
         </div>
         {icon && (
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius)', background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius)', background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
             {icon}
           </div>
         )}
@@ -117,7 +117,7 @@ export default function Dashboard() {
               Actualizado {ultimaActualizacion.toLocaleTimeString('es-AR')}
             </span>
           )}
-          <button onClick={() => setAutoActualizar(v => !v)} style={{ fontSize: 12, padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 8, background: autoActualizar ? 'var(--brand-light)' : 'var(--bg-card)', color: autoActualizar ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={() => setAutoActualizar(v => !v)} style={{ fontSize: 12, padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 8, background: autoActualizar ? 'var(--brand-light)' : 'var(--bg-card)', color: autoActualizar ? 'var(--brand)' : 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>
             {autoActualizar ? 'En vivo' : 'Pausado'}
           </button>
         </div>
@@ -143,15 +143,15 @@ export default function Dashboard() {
             <AreaChart data={ultimos7}>
               <defs>
                 <linearGradient id="gVentas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1E3A5F" stopOpacity={0.15}/>
-                  <stop offset="95%" stopColor="#1E3A5F" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)"/>
               <XAxis dataKey="dia" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false}/>
               <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`}/>
               <Tooltip formatter={v => fmt(v)} contentStyle={tooltipStyle}/>
-              <Area type="monotone" dataKey="ventas" stroke="#1E3A5F" strokeWidth={2} fill="url(#gVentas)"/>
+              <Area type="monotone" dataKey="ventas" stroke="var(--brand)" strokeWidth={2} fill="url(#gVentas)"/>
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -164,7 +164,7 @@ export default function Dashboard() {
               <XAxis dataKey="local" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false}/>
               <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`}/>
               <Tooltip formatter={v => fmt(v)} contentStyle={tooltipStyle}/>
-              <Bar dataKey="total" fill="#1E3A5F" radius={[6, 6, 0, 0]}/>
+              <Bar dataKey="total" fill="var(--brand)" radius={[6, 6, 0, 0]}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -177,10 +177,10 @@ export default function Dashboard() {
           {topProds.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin datos</p> : topProds.map(([nombre, cnt], i) => (
             <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: i < topProds.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</span>
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</span>
                 <span style={{ fontSize: 13, color: 'var(--text)' }}>{nombre}</span>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--brand-light)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 6 }}>{cnt} ventas</span>
+              <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--brand-light)', color: 'var(--brand)', padding: '2px 8px', borderRadius: 6 }}>{cnt} ventas</span>
             </div>
           ))}
         </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
         {transacciones.slice(0, 8).map((t, i) => (
           <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 7 ? '1px solid var(--border-light)' : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: SUMAN_SALDO.includes(t.tipo) ? 'var(--green-bg)' : 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: SUMAN_SALDO.includes(t.tipo) ? 'var(--green-bg)' : 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {SUMAN_SALDO.includes(t.tipo)
                   ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
                   : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 import Credencial, { ESTILOS_CREDENCIAL } from '../components/Credencial'
+import Icono from '../components/Icono'
 
 // Hoja para imprimir las credenciales de los alumnos: tamaño tarjeta de
 // crédito (85,6 × 54 mm), 10 por hoja A4. Sirven con lector de QR USB, con la
@@ -63,7 +64,7 @@ export default function Credenciales() {
 
       <div className="no-imprimir" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <Link to="/alumnos" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>← Alumnos</Link>
+          <Link to="/alumnos" style={{ fontSize: 13, color: 'var(--brand)', textDecoration: 'none' }}>← Alumnos</Link>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '4px 0 4px', color: 'var(--text)' }}>{alumnoId ? `Credencial de ${datos?.credenciales[0]?.nombre || '...'}` : 'Imprimir credenciales'}</h1>
           <p style={{ color: 'var(--text)', fontSize: 13, margin: 0, maxWidth: 560 }}>
             Tamaño tarjeta de crédito, 10 por hoja A4. Se usan con lector de QR USB o con la cámara del celular. También se pueden imprimir sobre tarjetas NFC.
@@ -71,7 +72,7 @@ export default function Credenciales() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {alumnoId
-            ? <Link to="/credenciales" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>Ver todas</Link>
+            ? <Link to="/credenciales" style={{ fontSize: 13, color: 'var(--brand)', textDecoration: 'none' }}>Ver todas</Link>
             : (
               <select value={curso} onChange={e => setCurso(e.target.value)} style={{ minWidth: 160 }} aria-label="Curso">
                 <option value="">Todos los cursos</option>
@@ -79,7 +80,7 @@ export default function Credenciales() {
               </select>
             )}
           <button onClick={() => window.print()} disabled={cargando || !cantidad} style={{ padding: '9px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: cargando || !cantidad ? 'not-allowed' : 'pointer', opacity: cargando || !cantidad ? 0.5 : 1 }}>
-            🖨 Imprimir {cantidad ? `(${cantidad})` : ''}
+            <Icono nombre="imprimir" />Imprimir {cantidad ? `(${cantidad})` : ''}
           </button>
         </div>
       </div>

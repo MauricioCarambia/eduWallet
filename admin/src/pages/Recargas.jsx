@@ -191,7 +191,7 @@ export default function Recargas() {
       </div>
 
       {errorExport && (
-        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: 'var(--red-bg)', color: 'var(--red)', borderLeft: '3px solid var(--red)' }}>{errorExport}</div>
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: 'var(--red-bg)', color: 'var(--red)', borderLeft: '3px solid var(--red)' }}>{errorExport}</div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
@@ -251,7 +251,7 @@ export default function Recargas() {
                     <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text)' }}>{r.alumno_nombre}</td>
                     <td style={{ padding: '10px 14px' }}>
                       {r.origen === 'link' ? (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Link de pago</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Link de pago</span>
                       ) : (
                         <>
                           <div style={{ color: 'var(--text)' }}>{r.padre_nombre}</div>

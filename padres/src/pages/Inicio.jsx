@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import api from '../api/axios'
 import { pushSoportado, obtenerSuscripcionActual, activarPush } from '../utils/push'
+import Icono from '../components/Icono'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -91,7 +92,7 @@ export default function Inicio() {
       </div>
 
       {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
           {msg.texto}
         </div>
       )}
@@ -118,7 +119,7 @@ export default function Inicio() {
 
       {alumnos.length === 0 ? (
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '2rem', textAlign: 'center', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text)' }}>Sin alumnos vinculados</p>
@@ -150,25 +151,25 @@ export default function Inicio() {
                     <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>Saldo disponible</p>
                     <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: parseFloat(a.saldo) < 200 ? 'var(--red)' : 'var(--green)' }}>{fmt(a.saldo)}</p>
                   </div>
-                  <div style={{ background: 'var(--bg)', borderRadius: 10, padding: '10px 12px' }}>
+                  <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '10px 12px' }}>
                     <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>Gastado hoy</p>
                     <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{fmt(a.gasto_hoy)}</p>
                   </div>
                 </div>
 
                 {parseFloat(a.saldo) < 0 ? (
-                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
-                    ⚠ Saldo negativo por una recarga devuelta en Mercado Pago. Hasta que recargues, {a.nombre.split(' ')[0]} no puede comprar.
+                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
+                    <Icono nombre="alerta" />Saldo negativo por una recarga devuelta en Mercado Pago. Hasta que recargues, {a.nombre.split(' ')[0]} no puede comprar.
                   </div>
                 ) : parseFloat(a.saldo) < 200 && (
-                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
-                    ⚠ Saldo bajo — recargá para evitar inconvenientes
+                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
+                    <Icono nombre="alerta" />Saldo bajo — recargá para evitar inconvenientes
                   </div>
                 )}
 
                 {a.alergias !== 'Ninguna' && (
-                  <div style={{ padding: '8px 12px', background: 'var(--amber-bg)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--amber)', marginBottom: 12, borderLeft: '3px solid var(--amber)' }}>
-                    ⚠ Alergia registrada: {a.alergias}
+                  <div style={{ padding: '8px 12px', background: 'var(--amber-bg)', borderRadius: 8, fontSize: 13, color: 'var(--amber)', marginBottom: 12, borderLeft: '3px solid var(--amber)' }}>
+                    <Icono nombre="alerta" />Alergia registrada: {a.alergias}
                   </div>
                 )}
 
@@ -187,7 +188,7 @@ export default function Inicio() {
       )}
 
       {modalVincular && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Vincular alumno</h2>

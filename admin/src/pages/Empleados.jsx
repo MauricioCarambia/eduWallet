@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
+import Icono from '../components/Icono'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -126,7 +127,7 @@ export default function Empleados() {
         <button onClick={() => setModal('nuevo')} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Nuevo empleado</button>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <div style={{ display: 'grid', gap: 10 }}>
         {empleados.map(e => {
@@ -134,13 +135,13 @@ export default function Empleados() {
           const totalE = cajasE.reduce((s, c) => s + parseFloat(c.ventas || 0), 0)
           return (
             <div key={e.id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', boxShadow: 'var(--shadow)' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--bg)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                 {e.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
               </div>
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{e.nombre}</p>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? '#EDE9FE' : 'var(--brand-light)', color: e.rol === 'admin' ? '#7C3AED' : 'var(--accent)' }}>{nombreRol(e.rol)}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: e.rol === 'admin' ? 'var(--brand)' : 'var(--brand-light)', color: e.rol === 'admin' ? 'var(--on-brand)' : 'var(--brand)' }}>{nombreRol(e.rol)}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: e.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: e.activo ? 'var(--green)' : 'var(--red)' }}>{e.activo ? 'Activo' : 'Inactivo'}</span>
                   {e.pendiente_activacion && (
                     <span title={e.codigo_activacion_expira ? `El código vence el ${vence(e.codigo_activacion_expira)}` : ''} style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>
@@ -148,7 +149,7 @@ export default function Empleados() {
                     </span>
                   )}
                   {e.local_nombre
-                    ? <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>📍 {e.local_nombre}</span>
+                    ? <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}><Icono nombre="ubicacion" />{e.local_nombre}</span>
                     : e.rol === 'staff' && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin zona</span>}
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>@{e.usuario} · {cajasE.length} turnos · Total: <b style={{ color: 'var(--text)' }}>{fmt(totalE)}</b></p>
@@ -156,7 +157,7 @@ export default function Empleados() {
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {[
                   { label: 'Ver turnos', onClick: () => { setSeleccionado(e); setModal('cajas') }, bg: 'var(--bg)', color: 'var(--text-secondary)' },
-                  ...(e.rol === 'staff' ? [{ label: 'Zona', onClick: () => { setSeleccionado(e); setZonaSel(e.local_id || ''); setModal('zona') }, bg: 'var(--brand-light)', color: 'var(--accent)' }] : []),
+                  ...(e.rol === 'staff' ? [{ label: 'Zona', onClick: () => { setSeleccionado(e); setZonaSel(e.local_id || ''); setModal('zona') }, bg: 'var(--brand-light)', color: 'var(--brand)' }] : []),
                   { label: e.pendiente_activacion ? 'Nuevo código' : 'Olvidó el PIN', onClick: () => nuevoCodigo(e), bg: 'var(--amber-bg)', color: 'var(--amber)' },
                   { label: e.activo ? 'Deshabilitar' : 'Habilitar', onClick: () => toggleEmpleado(e.id), bg: e.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: e.activo ? 'var(--red)' : 'var(--green)' },
                 ].map(b => (
@@ -213,7 +214,7 @@ export default function Empleados() {
       {modal === 'codigo' && activacion && (
         <Modal title={`Código de activación — ${activacion.nombre}`} onClose={cerrarModal}>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Pasale este código al empleado. Se usa una sola vez y vence el <b>{vence(activacion.expira)}</b>. No se vuelve a mostrar: si se pierde, generá uno nuevo.</p>
-          <div style={{ textAlign: 'center', padding: '16px', borderRadius: 'var(--radius)', background: 'var(--bg)', border: '1.5px dashed var(--border)', marginBottom: 12 }}>
+          <div style={{ textAlign: 'center', padding: '16px', borderRadius: 'var(--radius)', background: 'var(--bg-subtle)', border: '1.5px dashed var(--border)', marginBottom: 12 }}>
             <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Código</p>
             <p style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', color: 'var(--text)' }}>{activacion.codigo_activacion}</p>
           </div>
@@ -234,7 +235,7 @@ export default function Empleados() {
         <Modal title={`Turnos — ${seleccionado.nombre}`} onClose={cerrarModal}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
             {[['Total turnos', cajasEmpleado.length], ['Total vendido', fmt(totalVentas)]].map(([label, value]) => (
-              <div key={label} style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
+              <div key={label} style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
                 <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>{label}</p>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{value}</p>
               </div>
@@ -250,7 +251,7 @@ export default function Empleados() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
-                  <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
+                  <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: c.abierta ? 'var(--green-bg)' : 'var(--bg-subtle)', color: c.abierta ? 'var(--green)' : 'var(--text-secondary)' }}>{c.abierta ? 'Abierta' : 'Cerrada'}</span>
                 </div>
               </div>
             </div>

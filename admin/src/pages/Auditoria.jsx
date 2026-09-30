@@ -51,7 +51,7 @@ export default function Auditoria() {
   )
 
   const colorAccion = accion => {
-    if (accion?.includes('sesión') || accion?.includes('login')) return { bg: '#EFF6FF', color: '#2563EB' }
+    if (accion?.includes('sesión') || accion?.includes('login')) return { bg: 'var(--brand-light)', color: 'var(--brand)' }
     if (accion?.includes('Nuevo') || accion?.includes('nuevo')) return { bg: 'var(--green-bg)', color: 'var(--green)' }
     if (accion?.includes('eliminar') || accion?.includes('Eliminar')) return { bg: 'var(--red-bg)', color: 'var(--red)' }
     if (accion?.includes('PIN') || accion?.includes('Recarga')) return { bg: 'var(--amber-bg)', color: 'var(--amber)' }
@@ -99,7 +99,7 @@ export default function Auditoria() {
           const c = colorAccion(l.accion)
           return (
             <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: i < filtrados.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                 {l.empleado_nombre?.split(' ').slice(0, 2).map(n => n[0]).join('') || '?'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>

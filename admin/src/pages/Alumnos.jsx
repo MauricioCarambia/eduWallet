@@ -39,7 +39,10 @@ function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
   )
 }
 
-const FORM_VACIO = { nombre: '', curso: '', limite_diario: '500', tutor: '', tutor_tel: '', contacto2: '', contacto2_tel: '', alergias: 'Ninguna' }
+const FORM_VACIO = { nombre: '', curso: '', limite_diario: '500', tutor: '', tutor_tel: '', contacto2: '', contacto2_tel: '', alergias: 'Ninguna', alergenos: [] }
+
+// Los mismos alérgenos que se marcan en los productos del POS
+const ALERGENOS = { mani: 'Maní', frutos_secos: 'Frutos secos', gluten: 'Gluten (TACC)', leche: 'Leche / lactosa', huevo: 'Huevo', soja: 'Soja', pescado: 'Pescado y mariscos', sesamo: 'Sésamo' }
 // En el CSV los contactos se llaman tutor/tutor_tel y tutor2/tutor2_tel (se leen por encabezado)
 const CSV_COLUMNAS = ['nombre', 'curso', 'limite_diario', 'tutor', 'tutor_tel', 'tutor2', 'tutor2_tel', 'alergias', 'padre_email', 'padre2_email']
 const CSV_PLANTILLA = 'nombre,curso,limite_diario,tutor,tutor_tel,tutor2,tutor2_tel,alergias,padre_email,padre2_email\nJuan Pérez,1A,1000,María Pérez,11-1234-5678,Jorge Pérez,11-8765-4321,Ninguna,maria@mail.com,jorge@mail.com\nAna García,2B,500,Carlos García,,,,Maní,carlos@mail.com,'
@@ -353,7 +356,7 @@ export default function Alumnos() {
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       <button onClick={() => { setSeleccionado(a); setModal('historial') }} style={btnStyle('var(--bg)', 'var(--text)')}>Historial</button>
                       <button onClick={() => { setSeleccionado(a); setMontoLink(''); setLink(null); setModal('link') }} disabled={!a.activo} title={a.activo ? 'Generar un link de pago de Mercado Pago para la familia' : 'El alumno está bloqueado'} style={{ ...btnStyle('var(--green-bg)', 'var(--green)'), opacity: a.activo ? 1 : 0.5, cursor: a.activo ? 'pointer' : 'not-allowed' }}>Link de pago</button>
-                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', contacto2: a.contacto2 || '', contacto2_tel: a.contacto2_tel || '', alergias: a.alergias || 'Ninguna' }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
+                      <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', contacto2: a.contacto2 || '', contacto2_tel: a.contacto2_tel || '', alergias: a.alergias || 'Ninguna', alergenos: a.alergenos || [] }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
                       <button onClick={() => { setSeleccionado(a); setModal('tarjeta') }} title={a.nfc_uid ? `Tarjeta ${a.nfc_uid}` : 'Sin tarjeta asignada'} style={btnStyle(a.nfc_uid ? 'var(--green-bg)' : 'var(--bg)', a.nfc_uid ? 'var(--green)' : 'var(--text-tertiary)')}>{a.nfc_uid ? '💳 Tarjeta' : '💳 Sin tarjeta'}</button>
                       <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--accent)')}>QR</button>
                       <button onClick={() => toggleBloqueo(a)} style={btnStyle(a.activo ? 'var(--red-bg)' : 'var(--green-bg)', a.activo ? 'var(--red)' : 'var(--green)')}>{a.activo ? 'Bloquear' : 'Activar'}</button>
@@ -370,11 +373,25 @@ export default function Alumnos() {
 
       {(modal === 'nuevo' || modal === 'editar') && (
         <Modal title={modal === 'nuevo' ? 'Nuevo alumno' : 'Editar alumno'} onClose={cerrarModal}>
-          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Límite diario', 'limite_diario', 'number'], ['Padre / madre', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Otro padre / madre (opcional)', 'contacto2', 'text'], ['Teléfono', 'contacto2_tel', 'text'], ['Alergias', 'alergias', 'text']].map(([label, key, type]) => (
+          {[['Nombre completo', 'nombre', 'text'], ['Curso', 'curso', 'text'], ['Límite diario', 'limite_diario', 'number'], ['Padre / madre', 'tutor', 'text'], ['Teléfono', 'tutor_tel', 'text'], ['Otro padre / madre (opcional)', 'contacto2', 'text'], ['Teléfono', 'contacto2_tel', 'text'], ['Alergias (nota)', 'alergias', 'text']].map(([label, key, type]) => (
             <Campo key={key} label={label}>
               <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
             </Campo>
           ))}
+          <Campo label="Alérgenos (el punto de venta avisa si le quieren vender algo con estos)">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {Object.entries(ALERGENOS).map(([clave, texto]) => {
+                const activo = (form.alergenos || []).includes(clave)
+                return (
+                  <button key={clave} type="button" aria-pressed={activo} onClick={() => setForm(p => ({ ...p, alergenos: activo ? p.alergenos.filter(a => a !== clave) : [...(p.alergenos || []), clave] }))}
+                    style={{ padding: '5px 10px', borderRadius: 16, border: `1.5px solid ${activo ? 'var(--red)' : 'var(--border)'}`, background: activo ? 'var(--red-bg)' : 'var(--bg-card)', color: activo ? 'var(--red)' : 'var(--text-secondary)', fontSize: 12, fontWeight: activo ? 600 : 400, cursor: 'pointer' }}>
+                    {activo ? '⚠ ' : ''}{texto}
+                  </button>
+                )
+              })}
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>La familia también los puede cambiar desde su app, y elegir si la venta se bloquea.</p>
+          </Campo>
           {modal === 'editar' && seleccionado && (
             <Campo label="Código de vinculación">
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

@@ -5,6 +5,7 @@ import { useLocales } from '../hooks/useLocales'
 import { useAuth } from '../context/AuthContext'
 import useLectorTarjeta from '../hooks/useLectorTarjeta'
 import { leerArchivo, descargarModelo } from '../utils/importarProductos'
+import { ALERGENOS, nombresAlergenos } from '../utils/alergenos'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -32,6 +33,23 @@ function Campo({ label, children, ayuda }) {
   )
 }
 
+// Alérgenos que contiene el producto: el POS avisa (o bloquea) si el alumno es alérgico
+function ElegirAlergenos({ value = [], onChange }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {Object.entries(ALERGENOS).map(([clave, texto]) => {
+        const activo = value.includes(clave)
+        return (
+          <button key={clave} type="button" aria-pressed={activo} onClick={() => onChange(activo ? value.filter(a => a !== clave) : [...value, clave])}
+            style={{ padding: '5px 10px', borderRadius: 16, border: `1.5px solid ${activo ? 'var(--red)' : 'var(--border)'}`, background: activo ? 'var(--red-bg)' : 'var(--bg-card)', color: activo ? 'var(--red)' : 'var(--text-secondary)', fontSize: 12, fontWeight: activo ? 600 : 400, cursor: 'pointer' }}>
+            {activo ? '⚠ ' : ''}{texto}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function SelectCategoria({ value, onChange }) {
   return (
     <select value={value} onChange={onChange}>
@@ -47,7 +65,7 @@ function SelectCategoria({ value, onChange }) {
 const btnSec = { padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }
 const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
 
-const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '' }
+const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [] }
 const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
 
 export default function Productos() {
@@ -109,7 +127,7 @@ export default function Productos() {
   const guardarEdicion = async () => {
     if (!form.nombre) return
     try {
-      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras })
+      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras, alergenos: form.alergenos || [] })
       setProductos(prev => prev.map(p => p.id === res.data.id ? res.data : p))
       showMsg('ok', `Producto ${res.data.nombre} actualizado`); cerrarModal()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar el producto') }
@@ -215,6 +233,7 @@ export default function Productos() {
                 <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
                   {p.nombre}
                   {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
+                  {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>⚠ {nombresAlergenos(p.alergenos)}</div>}
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
                 <td style={{ padding: '12px 16px' }}>
@@ -228,7 +247,7 @@ export default function Productos() {
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
                 <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
-                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '', alergenos: p.alergenos || [] }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
                   <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
                 </td>
               </tr>
@@ -247,6 +266,9 @@ export default function Productos() {
           <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
             <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
           </Campo>
+          <Campo label="Contiene alérgenos" ayuda="Si un alumno es alérgico, el punto de venta avisa o no deja venderlo">
+            <ElegirAlergenos value={form.alergenos} onChange={v => setForm(p => ({ ...p, alergenos: v }))} />
+          </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
             <button onClick={guardarNuevo} style={btnPri}>Agregar</button>
@@ -261,6 +283,9 @@ export default function Productos() {
           <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
           <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
             <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
+          </Campo>
+          <Campo label="Contiene alérgenos" ayuda="Si un alumno es alérgico, el punto de venta avisa o no deja venderlo">
+            <ElegirAlergenos value={form.alergenos} onChange={v => setForm(p => ({ ...p, alergenos: v }))} />
           </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={btnSec}>Cancelar</button>
@@ -302,7 +327,7 @@ export default function Productos() {
           ) : (
             <div>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b> y <b>codigo_barras</b>.
+                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b>, <b>codigo_barras</b> y <b>alergenos</b> (ej.: "maní, gluten").
                 Los productos que ya existen en {local} (mismo código o mismo nombre) se actualizan; el resto se crea.
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>

@@ -12,6 +12,7 @@ const COLUMNAS = {
   stock: ['stock', 'cantidad', 'existencia', 'unidades'],
   categoria: ['categoria', 'rubro', 'tipo'],
   codigo_barras: ['codigo barras', 'codigo de barras', 'cod barras', 'codigo', 'ean', 'barcode', 'upc'],
+  alergenos: ['alergenos', 'alergeno', 'alergias', 'contiene'],
 }
 
 // "$ 1.500,50" → 1500.5 · "1500.5" → 1500.5 · "1.500" → 1500 (punto de miles)
@@ -88,6 +89,7 @@ export function filasAProductos(filas) {
       stock: leerNumero(celda('stock')),
       categoria: String(celda('categoria')).trim(),
       codigo_barras: typeof codigo === 'string' ? codigo : '',
+      alergenos: String(celda('alergenos')).trim(),
       aviso: typeof codigo === 'string' ? null : codigo.error,
     })
   })
@@ -110,10 +112,10 @@ export async function leerArchivo(archivo) {
 // Planilla modelo para descargar (CSV que Excel abre directo). El código va
 // como ="..." para que Excel no lo pase a notación científica.
 export function descargarModelo() {
-  const csv = '\uFEFFnombre;precio;stock;categoria;codigo_barras\r\n' +
-    'Alfajor de chocolate;800;24;golosina;="7790580000011"\r\n' +
-    'Agua mineral 500 ml;1000;12;bebida;\r\n' +
-    'Lápiz negro;350;50;útil;\r\n'
+  const csv = '\uFEFFnombre;precio;stock;categoria;codigo_barras;alergenos\r\n' +
+    'Alfajor de chocolate;800;24;golosina;="7790580000011";gluten, leche\r\n' +
+    'Agua mineral 500 ml;1000;12;bebida;;\r\n' +
+    'Lápiz negro;350;50;útil;;\r\n'
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const a = document.createElement('a')
   a.href = url; a.download = 'productos-modelo.csv'; a.click()

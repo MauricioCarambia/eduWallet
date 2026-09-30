@@ -156,7 +156,11 @@ export default function Inicio() {
                   </div>
                 </div>
 
-                {parseFloat(a.saldo) < 200 && (
+                {parseFloat(a.saldo) < 0 ? (
+                  <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
+                    ⚠ Saldo negativo por una recarga devuelta en Mercado Pago. Hasta que recargues, {a.nombre.split(' ')[0]} no puede comprar.
+                  </div>
+                ) : parseFloat(a.saldo) < 200 && (
                   <div style={{ padding: '8px 12px', background: 'var(--red-bg)', borderRadius: 8, fontSize: 13, color: 'var(--red)', marginBottom: 12, borderLeft: '3px solid var(--red)' }}>
                     ⚠ Saldo bajo — recargá para evitar inconvenientes
                   </div>

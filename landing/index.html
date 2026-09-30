@@ -1017,7 +1017,7 @@ footer { padding-block: 2rem 3rem; border-top: 1px solid var(--linea); color: va
       form.reset();
       mostrar('ok', '¡Gracias! Recibimos tu consulta y te respondemos a la brevedad.');
     } catch (err) {
-      const motivo = err.name === 'AbortError' ? 'El envío tardó demasiado.' : err.message;
+      const motivo = err.name === 'AbortError' ? 'El envío tardó demasiado.' : err instanceof TypeError ? 'No pudimos conectarnos para enviar la consulta.' : err.message;
       mostrar('mal', motivo + ' Podés mandarnos lo mismo por <a href="' + linkWa(resumen) + '" target="_blank" rel="noopener">WhatsApp</a>.');
     } finally {
       clearTimeout(tope);

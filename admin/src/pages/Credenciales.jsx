@@ -78,7 +78,7 @@ export default function Credenciales() {
                 {cursos.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             )}
-          <button onClick={() => window.print()} disabled={cargando || !cantidad} style={{ padding: '9px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: cargando || !cantidad ? 'not-allowed' : 'pointer', opacity: cargando || !cantidad ? 0.5 : 1 }}>
+          <button onClick={() => window.print()} disabled={cargando || !cantidad} style={{ padding: '9px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: cargando || !cantidad ? 'not-allowed' : 'pointer', opacity: cargando || !cantidad ? 0.5 : 1 }}>
             🖨 Imprimir {cantidad ? `(${cantidad})` : ''}
           </button>
         </div>

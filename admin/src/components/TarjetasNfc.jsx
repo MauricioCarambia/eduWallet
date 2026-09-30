@@ -22,7 +22,7 @@ function Ventana({ title, onClose, children }) {
 
 const btn = (primario) => ({
   padding: '8px 16px', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: primario ? 600 : 500, cursor: 'pointer',
-  border: primario ? 'none' : '1.5px solid var(--border)', background: primario ? '#1E3A5F' : 'var(--bg-card)', color: primario ? 'white' : 'var(--text-secondary)',
+  border: primario ? 'none' : '1.5px solid var(--border)', background: primario ? 'var(--brand)' : 'var(--bg-card)', color: primario ? 'var(--on-brand)' : 'var(--text-secondary)',
 })
 
 const Aviso = ({ msg }) => msg && (

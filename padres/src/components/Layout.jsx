@@ -51,7 +51,7 @@ export default function Layout({ children }) {
 
       {/* banner instalar PWA */}
       {mostrarInstalar && (
-        <div style={{ background: '#1E3A5F', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ background: 'var(--brand)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'white' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               {branding.logo
@@ -60,12 +60,12 @@ export default function Layout({ children }) {
               }
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'white' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'KoleTap' })}</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--on-brand)' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'KoleTap' })}</p>
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{t('pwa.instalar_subtitulo')}</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'white', color: '#1E3A5F', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{t('pwa.instalar_boton')}</button>
+            <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'var(--on-brand)', color: 'var(--brand)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{t('pwa.instalar_boton')}</button>
             <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer' }}>×</button>
           </div>
         </div>

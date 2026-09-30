@@ -123,7 +123,7 @@ export default function Empleados() {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Empleados</h1>
           <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{empleados.length} empleados registrados</p>
         </div>
-        <button onClick={() => setModal('nuevo')} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Nuevo empleado</button>
+        <button onClick={() => setModal('nuevo')} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Nuevo empleado</button>
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
@@ -189,7 +189,7 @@ export default function Empleados() {
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 12px' }}>No hace falta cargar un PIN: al registrarlo se genera un código de activación y el empleado elige su propio PIN. Así nadie más lo conoce.</p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={guardarNuevo} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
+            <button onClick={guardarNuevo} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
           </div>
         </Modal>
       )}
@@ -205,7 +205,7 @@ export default function Empleados() {
           </Campo>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button onClick={cerrarModal} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Cancelar</button>
-            <button onClick={cambiarZona} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
+            <button onClick={cambiarZona} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
           </div>
         </Modal>
       )}
@@ -225,7 +225,7 @@ export default function Empleados() {
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             <button onClick={copiarCodigo} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>{copiado ? '¡Copiado!' : 'Copiar instrucciones'}</button>
             <a href={`https://wa.me/?text=${encodeURIComponent(textoActivacion(activacion))}`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 16px', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Enviar por WhatsApp</a>
-            <button onClick={cerrarModal} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Listo</button>
+            <button onClick={cerrarModal} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Listo</button>
           </div>
         </Modal>
       )}

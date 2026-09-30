@@ -245,7 +245,7 @@ export default function Configuracion() {
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input placeholder="Nombre del nuevo local (ej: Comedor)" value={nuevoLocal} onChange={e => setNuevoLocal(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarLocal()} style={{ flex: 1 }} />
-          <button onClick={agregarLocal} disabled={guardandoLocal || !nuevoLocal.trim()} style={{ padding: '0 16px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: guardandoLocal || !nuevoLocal.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+          <button onClick={agregarLocal} disabled={guardandoLocal || !nuevoLocal.trim()} style={{ padding: '0 16px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: guardandoLocal || !nuevoLocal.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}>
             Agregar
           </button>
         </div>
@@ -309,7 +309,7 @@ export default function Configuracion() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="email" placeholder="Email para probar" value={testEmail} onChange={e => setTestEmail(e.target.value)} style={{ flex: 1 }} />
-          <button onClick={enviarTest} disabled={enviandoTest || !testEmail} style={{ padding: '0 16px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: enviandoTest ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+          <button onClick={enviarTest} disabled={enviandoTest || !testEmail} style={{ padding: '0 16px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: enviandoTest ? 0.7 : 1, whiteSpace: 'nowrap' }}>
             {enviandoTest ? 'Enviando...' : 'Probar email'}
           </button>
         </div>
@@ -330,7 +330,7 @@ export default function Configuracion() {
       <Section title="Backup de base de datos">
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 14px' }}>El sistema hace un backup automático todos los días a las 3am y lo envía al email de administración.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={descargarBackup} disabled={haciendoBackup} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: haciendoBackup ? 0.7 : 1 }}>
+          <button onClick={descargarBackup} disabled={haciendoBackup} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: haciendoBackup ? 0.7 : 1 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Descargar backup
           </button>
@@ -355,7 +355,7 @@ export default function Configuracion() {
       </Section>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={guardar} style={{ padding: '10px 28px', border: 'none', borderRadius: 'var(--radius)', background: '#1E3A5F', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(30,58,95,0.3)' }}>
+        <button onClick={guardar} style={{ padding: '10px 28px', border: 'none', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(30,58,95,0.3)' }}>
           Guardar configuración
         </button>
       </div>

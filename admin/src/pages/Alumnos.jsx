@@ -31,9 +31,9 @@ function Campo({ label, children }) {
   )
 }
 
-function Btn({ onClick, color = '#1E3A5F', children, disabled }) {
+function Btn({ onClick, color = 'var(--brand)', children, disabled }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: color, color: 'white', fontSize: 13, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
+    <button onClick={onClick} disabled={disabled} style={{ padding: '8px 18px', border: 'none', borderRadius: 'var(--radius)', background: color, color: 'var(--on-brand)', fontSize: 13, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
       {children}
     </button>
   )
@@ -455,7 +455,7 @@ export default function Alumnos() {
               </p>
               <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                 {[1000, 2000, 5000, 10000].map(n => (
-                  <button key={n} onClick={() => setMontoLink(String(n))} style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${montoLink == n ? '#1E3A5F' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: montoLink == n ? '#1E3A5F' : 'var(--bg-card)', color: montoLink == n ? 'white' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', fontWeight: montoLink == n ? 600 : 400 }}>{fmt(n)}</button>
+                  <button key={n} onClick={() => setMontoLink(String(n))} style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${montoLink == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: montoLink == n ? 'var(--brand)' : 'var(--bg-card)', color: montoLink == n ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', fontWeight: montoLink == n ? 600 : 400 }}>{fmt(n)}</button>
                 ))}
               </div>
               <Campo label="Saldo a cargar">

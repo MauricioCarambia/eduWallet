@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import Credencial, { ESTILOS_CREDENCIAL } from '../components/Credencial'
 import { imagenCredencial } from '../utils/imagenCredencial'
+import Icono from '../components/Icono'
 
 // Al imprimir sale sólo la credencial, en tamaño real (85,6 × 54 mm)
 const ESTILOS_IMPRESION = `
@@ -78,8 +79,8 @@ export default function CredencialPagina() {
           {msg && <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 12, background: 'var(--green-bg)', color: 'var(--green)' }}>{msg}</div>}
 
           <div style={{ display: 'grid', gap: 10 }}>
-            <button onClick={guardarImagen} style={boton(true)}>⬇ Guardar imagen</button>
-            <button onClick={() => window.print()} style={boton(false)}>🖨 Imprimir</button>
+            <button onClick={guardarImagen} style={boton(true)}><Icono nombre="descargar" />Guardar imagen</button>
+            <button onClick={() => window.print()} style={boton(false)}><Icono nombre="imprimir" />Imprimir</button>
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '16px 0 0' }}>

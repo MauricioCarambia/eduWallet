@@ -91,20 +91,20 @@ export default function SuperAdminDashboard() {
   const totalComision = colegios.reduce((s, c) => s + parseFloat(c.comision_cobrada || 0), 0)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0B1220', color: 'white', padding: '2rem' }}>
+    <div data-theme="dark" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', padding: '2rem' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Panel de plataforma</h1>
-            <p style={{ color: '#8B95A8', fontSize: 13, margin: 0 }}>Todos los colegios en un solo lugar</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Todos los colegios en un solo lugar</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setModalNuevo(true)} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: '#F59E0B', color: '#0B1220', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Nuevo colegio</button>
-            <button onClick={logout} style={{ padding: '9px 16px', border: '1px solid #223049', borderRadius: 8, background: 'transparent', color: '#8B95A8', fontSize: 13, cursor: 'pointer' }}>Salir</button>
+            <button onClick={() => setModalNuevo(true)} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: 'var(--bg)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Nuevo colegio</button>
+            <button onClick={logout} style={{ padding: '9px 16px', border: '1px solid #26322D', borderRadius: 8, background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Salir</button>
           </div>
         </div>
 
-        {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'rgba(22,163,74,0.15)' : 'rgba(220,38,38,0.15)', color: msg.tipo === 'ok' ? '#4ADE80' : '#F87171' }}>{msg.texto}</div>}
+        {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)' }}>{msg.texto}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
           {[
@@ -112,56 +112,56 @@ export default function SuperAdminDashboard() {
             { label: 'Alumnos totales', valor: totalAlumnos },
             { label: 'Comisión cobrada acumulada', valor: fmt(totalComision) },
           ].map(k => (
-            <div key={k.label} style={{ background: '#131C2E', borderRadius: 12, padding: '1rem 1.25rem', border: '1px solid #223049' }}>
-              <p style={{ margin: '0 0 6px', fontSize: 11, color: '#8B95A8', textTransform: 'uppercase', letterSpacing: '.5px' }}>{k.label}</p>
+            <div key={k.label} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '1rem 1.25rem', border: '1px solid #26322D' }}>
+              <p style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{k.label}</p>
               <p style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{k.valor}</p>
             </div>
           ))}
         </div>
 
-        <div style={{ background: '#131C2E', borderRadius: 12, border: '1px solid #223049', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid #26322D', overflow: 'hidden' }}>
           {cargando ? (
-            <p style={{ padding: '2rem', textAlign: 'center', color: '#8B95A8' }}>Cargando...</p>
+            <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando...</p>
           ) : colegios.length === 0 ? (
-            <p style={{ padding: '2rem', textAlign: 'center', color: '#8B95A8' }}>Todavía no hay colegios cargados.</p>
+            <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Todavía no hay colegios cargados.</p>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #223049' }}>
+                <tr style={{ borderBottom: '1px solid #26322D' }}>
                   {['Colegio', 'Código', 'Plan', 'Alumnos', 'Volumen recargas', 'Comisión %', 'Comisión cobrada', 'Mercado Pago', 'Estado', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '10px 14px', color: '#8B95A8', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px' }}>{h}</th>
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {colegios.map(c => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #1A2436' }}>
+                  <tr key={c.id} style={{ borderBottom: '1px solid #18221E' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 600 }}>{c.nombre}</td>
-                    <td style={{ padding: '10px 14px', color: '#8B95A8', fontFamily: 'monospace' }}>{c.slug}</td>
-                    <td style={{ padding: '10px 14px', color: '#8B95A8' }}>{c.plan}</td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{c.slug}</td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{c.plan}</td>
                     <td style={{ padding: '10px 14px' }}>{c.alumnos_count}</td>
                     <td style={{ padding: '10px 14px' }}>{fmt(c.volumen_recargas)}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <input type="number" defaultValue={c.comision_pct} onBlur={e => e.target.value !== String(c.comision_pct) && cambiarComision(c, e.target.value)}
-                        style={{ width: 56, padding: '4px 6px', borderRadius: 6, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 13 }} />
+                        style={{ width: 56, padding: '4px 6px', borderRadius: 6, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 13 }} />
                     </td>
                     <td style={{ padding: '10px 14px', fontWeight: 600 }}>{fmt(c.comision_cobrada)}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: c.mp_conectado ? 'rgba(22,163,74,0.15)' : 'rgba(245,158,11,0.15)', color: c.mp_conectado ? '#4ADE80' : '#FBBF24' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: c.mp_conectado ? 'var(--green-bg)' : 'var(--amber-bg)', color: c.mp_conectado ? 'var(--green)' : 'var(--amber)' }}>
                         {c.mp_conectado ? 'Conectado' : 'Sin conectar'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: c.activo ? 'rgba(22,163,74,0.15)' : 'rgba(220,38,38,0.15)', color: c.activo ? '#4ADE80' : '#F87171' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: c.activo ? 'var(--green-bg)' : 'var(--red-bg)', color: c.activo ? 'var(--green)' : 'var(--red)' }}>
                         {c.activo ? 'Activo' : 'Suspendido'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => abrirAjuste(c)} style={{ padding: '5px 12px', border: '1px solid #223049', borderRadius: 6, background: 'transparent', color: '#8B95A8', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => abrirAjuste(c)} style={{ padding: '5px 12px', border: '1px solid #26322D', borderRadius: 6, background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                           Ajustar saldo
                         </button>
-                        <button onClick={() => toggleActivo(c)} style={{ padding: '5px 12px', border: '1px solid #223049', borderRadius: 6, background: 'transparent', color: '#8B95A8', fontSize: 12, cursor: 'pointer' }}>
+                        <button onClick={() => toggleActivo(c)} style={{ padding: '5px 12px', border: '1px solid #26322D', borderRadius: 6, background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
                           {c.activo ? 'Suspender' : 'Reactivar'}
                         </button>
                       </div>
@@ -175,43 +175,43 @@ export default function SuperAdminDashboard() {
       </div>
 
       {ajuste && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
-          <div style={{ background: '#131C2E', border: '1px solid #223049', borderRadius: 14, padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid #26322D', borderRadius: 14, padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Ajustar saldo — {ajuste.colegio.nombre}</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#8B95A8' }}>Sólo para correcciones puntuales (ej. devolver un cobro duplicado). Suma saldo sin pasar por Mercado Pago y queda registrado con el motivo en los movimientos del alumno y en la auditoría del colegio.</p>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-secondary)' }}>Sólo para correcciones puntuales (ej. devolver un cobro duplicado). Suma saldo sin pasar por Mercado Pago y queda registrado con el motivo en los movimientos del alumno y en la auditoría del colegio.</p>
 
             {!ajuste.alumno ? (
               <>
-                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Alumno</label>
-                <input autoFocus value={ajuste.q} onChange={e => { const q = e.target.value; setAjuste(a => ({ ...a, q })) }} placeholder="Buscar por nombre o curso..." style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
-                <div style={{ border: '1px solid #223049', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Alumno</label>
+                <input autoFocus value={ajuste.q} onChange={e => { const q = e.target.value; setAjuste(a => ({ ...a, q })) }} placeholder="Buscar por nombre o curso..." style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+                <div style={{ border: '1px solid #26322D', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
                   {ajuste.resultados.length === 0 ? (
-                    <p style={{ margin: 0, padding: 12, fontSize: 13, color: '#8B95A8' }}>Sin resultados</p>
+                    <p style={{ margin: 0, padding: 12, fontSize: 13, color: 'var(--text-secondary)' }}>Sin resultados</p>
                   ) : ajuste.resultados.map(a => (
-                    <button key={a.id} onClick={() => setAjuste(x => ({ ...x, alumno: a }))} style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '10px 12px', border: 'none', borderBottom: '1px solid #1A2436', background: 'transparent', color: 'white', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}>
-                      <span>{a.nombre} <span style={{ color: '#8B95A8' }}>· {a.curso}</span></span>
-                      <span style={{ color: '#8B95A8' }}>{fmt(a.saldo)}</span>
+                    <button key={a.id} onClick={() => setAjuste(x => ({ ...x, alumno: a }))} style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '10px 12px', border: 'none', borderBottom: '1px solid #18221E', background: 'transparent', color: 'var(--text)', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}>
+                      <span>{a.nombre} <span style={{ color: 'var(--text-secondary)' }}>· {a.curso}</span></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{fmt(a.saldo)}</span>
                     </button>
                   ))}
                 </div>
               </>
             ) : (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid #223049', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>
-                  <span>{ajuste.alumno.nombre} <span style={{ color: '#8B95A8' }}>· saldo {fmt(ajuste.alumno.saldo)}</span></span>
-                  <button onClick={() => setAjuste(a => ({ ...a, alumno: null }))} style={{ border: 'none', background: 'transparent', color: '#F59E0B', fontSize: 12, cursor: 'pointer' }}>Cambiar</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid #26322D', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>
+                  <span>{ajuste.alumno.nombre} <span style={{ color: 'var(--text-secondary)' }}>· saldo {fmt(ajuste.alumno.saldo)}</span></span>
+                  <button onClick={() => setAjuste(a => ({ ...a, alumno: null }))} style={{ border: 'none', background: 'transparent', color: 'var(--brand)', fontSize: 12, cursor: 'pointer' }}>Cambiar</button>
                 </div>
-                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Monto a sumar</label>
-                <input type="number" min="1" value={ajuste.monto} onChange={e => { const monto = e.target.value; setAjuste(a => ({ ...a, monto })) }} placeholder="500" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
-                <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Motivo (obligatorio)</label>
-                <input value={ajuste.motivo} maxLength={200} onChange={e => { const motivo = e.target.value; setAjuste(a => ({ ...a, motivo })) }} placeholder="Devolución por cobro duplicado del 27/09" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Monto a sumar</label>
+                <input type="number" min="1" value={ajuste.monto} onChange={e => { const monto = e.target.value; setAjuste(a => ({ ...a, monto })) }} placeholder="500" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Motivo (obligatorio)</label>
+                <input value={ajuste.motivo} maxLength={200} onChange={e => { const motivo = e.target.value; setAjuste(a => ({ ...a, motivo })) }} placeholder="Devolución por cobro duplicado del 27/09" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
               </>
             )}
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setAjuste(null)} style={{ padding: '9px 16px', border: '1px solid #223049', borderRadius: 8, background: 'transparent', color: '#8B95A8', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={() => setAjuste(null)} style={{ padding: '9px 16px', border: '1px solid #26322D', borderRadius: 8, background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
               {ajuste.alumno && (
-                <button onClick={guardarAjuste} disabled={ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim()} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: '#F59E0B', color: '#0B1220', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim() ? 0.5 : 1 }}>
+                <button onClick={guardarAjuste} disabled={ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim()} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: 'var(--bg)', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ajuste.guardando || !(parseFloat(ajuste.monto) > 0) || !ajuste.motivo.trim() ? 0.5 : 1 }}>
                   {ajuste.guardando ? 'Aplicando...' : 'Aplicar ajuste'}
                 </button>
               )}
@@ -221,18 +221,18 @@ export default function SuperAdminDashboard() {
       )}
 
       {modalNuevo && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#131C2E', border: '1px solid #223049', borderRadius: 14, padding: '1.5rem', width: '100%', maxWidth: 380 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid #26322D', borderRadius: 14, padding: '1.5rem', width: '100%', maxWidth: 380 }}>
             <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Nuevo colegio</h2>
-            <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Nombre</label>
+            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Nombre</label>
             <input value={nombreNuevo} onChange={e => setNombreNuevo(e.target.value)} placeholder="Colegio San Martín"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 14 }} />
-            <label style={{ display: 'block', fontSize: 11, color: '#8B95A8', marginBottom: 6, textTransform: 'uppercase' }}>Comisión %</label>
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, marginBottom: 14 }} />
+            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Comisión %</label>
             <input type="number" value={comisionNueva} onChange={e => setComisionNueva(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #223049', background: '#0B1220', color: 'white', fontSize: 14, marginBottom: 18 }} />
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #26322D', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, marginBottom: 18 }} />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setModalNuevo(false)} style={{ padding: '9px 16px', border: '1px solid #223049', borderRadius: 8, background: 'transparent', color: '#8B95A8', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={crearColegio} disabled={creando || !nombreNuevo.trim()} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: '#F59E0B', color: '#0B1220', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
+              <button onClick={() => setModalNuevo(false)} style={{ padding: '9px 16px', border: '1px solid #26322D', borderRadius: 8, background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={crearColegio} disabled={creando || !nombreNuevo.trim()} style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: 'var(--bg)', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
                 {creando ? 'Creando...' : 'Crear'}
               </button>
             </div>

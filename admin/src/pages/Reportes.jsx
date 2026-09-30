@@ -18,7 +18,7 @@ const cardStyle = {
   padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)'
 }
 
-const COLORES = ['#1E3A5F', '#059669', '#D97706', '#7C3AED', '#DC2626', '#0891B2', '#65A30D', '#DB2777']
+const COLORES = ['#1D5C47', '#B8871F', '#4E7D96', '#9A5B12', '#B3372F', '#6B7670', '#5E8C4A', '#8A5A83']
 
 // helpers de fecha
 const toISO = d => d.toISOString().slice(0, 10)
@@ -225,7 +225,7 @@ export default function Reportes() {
           String(compras.length)
         ]],
         theme: 'striped',
-        headStyles: { fillColor: [30, 58, 95] },
+        headStyles: { fillColor: [29, 92, 71] },
         styles: { fontSize: 9, halign: 'center' },
       })
       y = doc.lastAutoTable.finalY + 10
@@ -238,7 +238,7 @@ export default function Reportes() {
           startY: y,
           head: [['#', 'Producto', 'Unidades']],
           body: porProducto.map((p, i) => [i + 1, p.nombre, p.cantidad]),
-          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+          theme: 'grid', headStyles: { fillColor: [29, 92, 71] }, styles: { fontSize: 9 },
         })
         y = doc.lastAutoTable.finalY + 10
       } else if (tab === 'locales' && porLocal.length > 0) {
@@ -248,7 +248,7 @@ export default function Reportes() {
           startY: y,
           head: [['Local', 'Total']],
           body: porLocal.map(l => [l.local, fmt(l.total)]),
-          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+          theme: 'grid', headStyles: { fillColor: [29, 92, 71] }, styles: { fontSize: 9 },
         })
         y = doc.lastAutoTable.finalY + 10
       } else if (tab === 'cursos' && porCurso.length > 0) {
@@ -258,7 +258,7 @@ export default function Reportes() {
           startY: y,
           head: [['Curso', 'Total consumido']],
           body: porCurso.map(c => [c.curso, fmt(c.total)]),
-          theme: 'grid', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 9 },
+          theme: 'grid', headStyles: { fillColor: [29, 92, 71] }, styles: { fontSize: 9 },
         })
         y = doc.lastAutoTable.finalY + 10
       }
@@ -279,7 +279,7 @@ export default function Reportes() {
             fmt(t.monto),
             new Date(t.fecha).toLocaleString('es-AR')
           ]),
-          theme: 'striped', headStyles: { fillColor: [30, 58, 95] }, styles: { fontSize: 8 },
+          theme: 'striped', headStyles: { fillColor: [29, 92, 71] }, styles: { fontSize: 8 },
           margin: { bottom: 14 },
         })
         if (txsFiltradas.length > 200) {
@@ -335,7 +335,7 @@ export default function Reportes() {
         </div>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       {/* panel de filtros */}
       <div style={{ ...cardStyle, marginBottom: 20 }}>
@@ -365,7 +365,7 @@ export default function Reportes() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>Hasta</label>
               <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} min={fechaDesde} max={hoy()} style={{ width: 150 }} />
             </div>
-            <div style={{ padding: '7px 14px', background: 'var(--bg)', borderRadius: 8, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            <div style={{ padding: '7px 14px', background: 'var(--bg-subtle)', borderRadius: 8, fontSize: 13, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               {diasTotal} día{diasTotal !== 1 ? 's' : ''}
             </div>
           </div>
@@ -431,10 +431,10 @@ export default function Reportes() {
                 <AreaChart data={diasEnRango}>
                   <defs>
                     <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1E3A5F" stopOpacity={0.15}/><stop offset="95%" stopColor="#1E3A5F" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.15}/><stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#059669" stopOpacity={0.15}/><stop offset="95%" stopColor="#059669" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.15}/><stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)"/>
@@ -442,8 +442,8 @@ export default function Reportes() {
                   <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`}/>
                   <Tooltip formatter={v => fmt(v)} contentStyle={tooltipStyle}/>
                   <Legend wrapperStyle={{ fontSize: 12 }}/>
-                  <Area type="monotone" dataKey="ventas" name="Ventas" stroke="#1E3A5F" strokeWidth={2} fill="url(#gV)"/>
-                  <Area type="monotone" dataKey="recargas" name="Recargas" stroke="#059669" strokeWidth={2} fill="url(#gR)"/>
+                  <Area type="monotone" dataKey="ventas" name="Ventas" stroke="var(--brand)" strokeWidth={2} fill="url(#gV)"/>
+                  <Area type="monotone" dataKey="recargas" name="Recargas" stroke="var(--accent)" strokeWidth={2} fill="url(#gR)"/>
                 </AreaChart>
               </ResponsiveContainer>
             ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
@@ -460,7 +460,7 @@ export default function Reportes() {
                     <XAxis dataKey="local" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false}/>
                     <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`}/>
                     <Tooltip formatter={v => fmt(v)} contentStyle={tooltipStyle}/>
-                    <Bar dataKey="total" fill="#1E3A5F" radius={[6, 6, 0, 0]}/>
+                    <Bar dataKey="total" fill="var(--brand)" radius={[6, 6, 0, 0]}/>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos</p>}
@@ -474,7 +474,7 @@ export default function Reportes() {
                 : topAlumnos.map(([nombre, total], i) => (
                   <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < topAlumnos.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 20, height: 20, borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>{i + 1}</span>
+                      <span style={{ width: 20, height: 20, borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>{i + 1}</span>
                       <span style={{ fontSize: 13, color: 'var(--text)' }}>{nombre}</span>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{fmt(total)}</span>
@@ -497,7 +497,7 @@ export default function Reportes() {
                   <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false}/>
                   <YAxis type="category" dataKey="nombre" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} width={100}/>
                   <Tooltip contentStyle={tooltipStyle} formatter={v => [v, 'Unidades']}/>
-                  <Bar dataKey="cantidad" fill="#1E3A5F" radius={[0, 6, 6, 0]}>
+                  <Bar dataKey="cantidad" fill="var(--brand)" radius={[0, 6, 6, 0]}>
                     {porProducto.map((_, i) => <Cell key={i} fill={COLORES[i % COLORES.length]}/>)}
                   </Bar>
                 </BarChart>
@@ -525,7 +525,7 @@ export default function Reportes() {
                         <td style={{ padding: '10px 12px', color: 'var(--text)', fontWeight: 600 }}>{p.cantidad}</td>
                         <td style={{ padding: '10px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ flex: 1, height: 6, background: 'var(--bg)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ flex: 1, height: 6, background: 'var(--bg-subtle)', borderRadius: 3, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.round(p.cantidad / totalUnid * 100)}%`, background: COLORES[i % COLORES.length], borderRadius: 3 }}/>
                             </div>
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 34, textAlign: 'right' }}>{Math.round(p.cantidad / totalUnid * 100)}%</span>

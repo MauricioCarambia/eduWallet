@@ -23,7 +23,7 @@ export default function OlvidePassword() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', position: 'relative' }}>
       <button onClick={toggle} style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, border: '1.5px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
         {dark
           ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
@@ -33,8 +33,8 @@ export default function OlvidePassword() {
 
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 14px rgba(30,58,95,0.3)' }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--brand)', color: 'var(--on-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: 'var(--shadow-brand)' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Recuperar contraseña</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Te enviamos un enlace a tu email</p>
@@ -49,7 +49,7 @@ export default function OlvidePassword() {
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 8px' }}>Email enviado</p>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 20px' }}>{mensaje}</p>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Revisá tu bandeja de entrada y spam. El enlace expira en 1 hora.</p>
-              <Link to="/" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Volver al inicio de sesión</Link>
+              <Link to="/" style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, textDecoration: 'none' }}>Volver al inicio de sesión</Link>
             </div>
           ) : (
             <>
@@ -66,7 +66,7 @@ export default function OlvidePassword() {
               </div>
 
               {estado === 'error' && (
-                <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>
+                <div style={{ padding: '10px 14px', background: 'var(--red-bg)', color: 'var(--red)', borderRadius: 8, fontSize: 13, marginBottom: 16, borderLeft: '3px solid var(--red)' }}>
                   {mensaje}
                 </div>
               )}
@@ -80,7 +80,7 @@ export default function OlvidePassword() {
               </button>
 
               <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-                <Link to="/" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>← Volver al inicio de sesión</Link>
+                <Link to="/" style={{ color: 'var(--brand)', fontWeight: 600, textDecoration: 'none' }}>← Volver al inicio de sesión</Link>
               </p>
             </>
           )}

@@ -53,20 +53,20 @@ export default function Layout({ children }) {
       {mostrarInstalar && (
         <div style={{ background: 'var(--brand)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'white' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               {branding.logo
                 ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ color: 'var(--on-accent)' }} strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
               }
             </div>
             <div>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--on-brand)' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'KoleTap' })}</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{t('pwa.instalar_subtitulo')}</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--on-brand)', opacity: 0.8 }}>{t('pwa.instalar_subtitulo')}</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'var(--on-brand)', color: 'var(--brand)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{t('pwa.instalar_boton')}</button>
-            <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer' }}>×</button>
+            <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: 'var(--on-brand)', opacity: 0.8, fontSize: 18, cursor: 'pointer' }}>×</button>
           </div>
         </div>
       )}
@@ -74,10 +74,10 @@ export default function Layout({ children }) {
       {/* header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: branding.logo ? 'transparent' : '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: branding.logo ? 'transparent' : 'var(--brand)', color: 'var(--on-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
             {branding.logo
               ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             }
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{branding.nombre_colegio || 'KoleTap'}</span>
@@ -103,7 +103,7 @@ export default function Layout({ children }) {
       </main>
 
       {/* bottom nav */}
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: 'var(--bg-card)', borderTop: '1px solid var(--border)', display: 'flex', zIndex: 10, boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: 'var(--bg-card)', borderTop: '1px solid var(--border)', display: 'flex', zIndex: 10, boxShadow: 'var(--shadow)' }}>
         {NAV.map(item => (
           <NavLink key={item.path} to={item.path} style={({ isActive }) => ({
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,

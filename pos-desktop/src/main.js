@@ -33,7 +33,7 @@ function crearVentana(url, titulo) {
     minWidth: 900,
     minHeight: 600,
     title: titulo,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F6F7F5', // --bg de DESIGN.md (la ventana se pinta antes de cargar el CSS)
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

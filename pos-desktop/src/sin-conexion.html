@@ -5,12 +5,26 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
   <title>Sin conexión — KoleTap POS</title>
   <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #F0F4F8; color: #1E3A5F; font-family: "Segoe UI", system-ui, sans-serif; }
-    .caja { background: #fff; border: 1.5px solid #E2E8F0; border-radius: 16px; padding: 32px; max-width: 380px; text-align: center; box-shadow: 0 4px 12px rgba(30,58,95,.1); }
-    h1 { font-size: 20px; margin: 0 0 8px; }
-    p { color: #64748B; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
-    button { border: none; border-radius: 10px; background: #1E3A5F; color: #fff; font-size: 14px; font-weight: 600; padding: 12px 24px; cursor: pointer; }
-    small { display: block; margin-top: 14px; color: #94A3B8; font-size: 12px; }
+    /* Colores de DESIGN.md (esta página no carga el CSS del POS) */
+    :root {
+      --bg: #f6f7f5; --bg-card: #ffffff; --text: #16211d; --text-secondary: #5b6660; --text-tertiary: #6b7670;
+      --border: #dfe3df; --brand: #1d5c47; --on-brand: #ffffff; --accent: #b8871f;
+      --shadow-md: 0 4px 12px rgba(22,33,29,0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1412; --bg-card: #161e1b; --text: #e8ede9; --text-secondary: #9aa6a0; --text-tertiary: #7a8680;
+        --border: #2a3531; --brand: #6cc6a0; --on-brand: #0e1412; --accent: #e2b54a;
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      }
+    }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .caja { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 380px; text-align: center; box-shadow: var(--shadow-md); }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+    button { border: none; border-radius: 10px; background: var(--brand); color: var(--on-brand); font-size: 14px; font-weight: 600; padding: 10px 20px; cursor: pointer; }
+    button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    small { display: block; margin-top: 14px; color: var(--text-tertiary); font-size: 12px; }
   </style>
 </head>
 <body>

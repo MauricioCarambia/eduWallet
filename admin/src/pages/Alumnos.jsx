@@ -5,12 +5,13 @@ import { SkeletonTable } from '../components/Skeleton'
 import Credencial, { ESTILOS_CREDENCIAL } from '../components/Credencial'
 import { imagenCredencial } from '../utils/imagenCredencial'
 import { ModalTarjeta, ModalAsignarTarjetas } from '../components/TarjetasNfc'
+import Icono from '../components/Icono'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -298,13 +299,13 @@ export default function Alumnos() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Importar CSV
           </button>
-          <Link to="/credenciales" style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none' }}>🖨 Imprimir credenciales</Link>
-          <button onClick={() => setModal('asignarTarjetas')} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)' }}>💳 Asignar tarjetas</button>
+          <Link to="/credenciales" style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none' }}><Icono nombre="imprimir" />Imprimir credenciales</Link>
+          <button onClick={() => setModal('asignarTarjetas')} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-secondary)' }}><Icono nombre="tarjeta" />Asignar tarjetas</button>
           <Btn onClick={() => { setForm(FORM_VACIO); setModal('nuevo') }}>+ Nuevo alumno</Btn>
         </div>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <input placeholder="Buscar alumno..." value={busq} onChange={e => setBusq(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
@@ -317,7 +318,7 @@ export default function Alumnos() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1.5px solid var(--border)', background: 'var(--bg)' }}>
+              <tr style={{ borderBottom: '1.5px solid var(--border)', background: 'var(--bg-subtle)' }}>
                 {['Alumno', 'Curso', 'Saldo', 'Límite diario', 'Estado', 'Acciones'].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
@@ -328,13 +329,13 @@ export default function Alumnos() {
                 <tr key={a.id} style={{ borderBottom: idx < filtrados.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                         {a.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
                       </div>
                       <div>
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
                         <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {contactos(a)}{a.alergias !== 'Ninguna' && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>⚠ {a.alergias}</span>}
+                          {contactos(a)}{a.alergias !== 'Ninguna' && <span style={{ color: 'var(--amber)', marginLeft: 6 }}><Icono nombre="alerta" />{a.alergias}</span>}
                         </p>
                       </div>
                     </div>
@@ -357,8 +358,8 @@ export default function Alumnos() {
                       <button onClick={() => { setSeleccionado(a); setModal('historial') }} style={btnStyle('var(--bg)', 'var(--text)')}>Historial</button>
                       <button onClick={() => { setSeleccionado(a); setMontoLink(''); setLink(null); setModal('link') }} disabled={!a.activo} title={a.activo ? 'Generar un link de pago de Mercado Pago para la familia' : 'El alumno está bloqueado'} style={{ ...btnStyle('var(--green-bg)', 'var(--green)'), opacity: a.activo ? 1 : 0.5, cursor: a.activo ? 'pointer' : 'not-allowed' }}>Link de pago</button>
                       <button onClick={() => { setSeleccionado(a); setForm({ nombre: a.nombre, curso: a.curso, limite_diario: a.limite_diario, tutor: a.tutor || '', tutor_tel: a.tutor_tel || '', contacto2: a.contacto2 || '', contacto2_tel: a.contacto2_tel || '', alergias: a.alergias || 'Ninguna', alergenos: a.alergenos || [] }); setModal('editar') }} style={btnStyle('var(--bg)', 'var(--text)')}>Editar</button>
-                      <button onClick={() => { setSeleccionado(a); setModal('tarjeta') }} title={a.nfc_uid ? `Tarjeta ${a.nfc_uid}` : 'Sin tarjeta asignada'} style={btnStyle(a.nfc_uid ? 'var(--green-bg)' : 'var(--bg)', a.nfc_uid ? 'var(--green)' : 'var(--text-tertiary)')}>{a.nfc_uid ? '💳 Tarjeta' : '💳 Sin tarjeta'}</button>
-                      <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--accent)')}>QR</button>
+                      <button onClick={() => { setSeleccionado(a); setModal('tarjeta') }} title={a.nfc_uid ? `Tarjeta ${a.nfc_uid}` : 'Sin tarjeta asignada'} style={btnStyle(a.nfc_uid ? 'var(--green-bg)' : 'var(--bg)', a.nfc_uid ? 'var(--green)' : 'var(--text-tertiary)')}><Icono nombre="tarjeta" />{a.nfc_uid ? 'Tarjeta' : 'Sin tarjeta'}</button>
+                      <button onClick={() => verQR(a)} style={btnStyle('var(--brand-light)', 'var(--brand)')}>QR</button>
                       <button onClick={() => toggleBloqueo(a)} style={btnStyle(a.activo ? 'var(--red-bg)' : 'var(--green-bg)', a.activo ? 'var(--red)' : 'var(--green)')}>{a.activo ? 'Bloquear' : 'Activar'}</button>
                       <button onClick={() => eliminar(a.id)} style={btnStyle('var(--red-bg)', 'var(--red)')}>×</button>
                     </div>
@@ -385,7 +386,7 @@ export default function Alumnos() {
                 return (
                   <button key={clave} type="button" aria-pressed={activo} onClick={() => setForm(p => ({ ...p, alergenos: activo ? p.alergenos.filter(a => a !== clave) : [...(p.alergenos || []), clave] }))}
                     style={{ padding: '5px 10px', borderRadius: 16, border: `1.5px solid ${activo ? 'var(--red)' : 'var(--border)'}`, background: activo ? 'var(--red-bg)' : 'var(--bg-card)', color: activo ? 'var(--red)' : 'var(--text-secondary)', fontSize: 12, fontWeight: activo ? 600 : 400, cursor: 'pointer' }}>
-                    {activo ? '⚠ ' : ''}{texto}
+                    {activo && <Icono nombre="alerta" />}{texto}
                   </button>
                 )
               })}
@@ -414,7 +415,7 @@ export default function Alumnos() {
             {[['Saldo actual', fmt(seleccionado.saldo), parseFloat(seleccionado.saldo) < 200 ? 'var(--red)' : 'var(--green)'],
               ['Total gastado', fmt(historialAlumno.filter(t => t.tipo === 'compra').reduce((s, t) => s + parseFloat(t.monto), 0)), 'var(--text)']
             ].map(([label, value, color]) => (
-              <div key={label} style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
+              <div key={label} style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
                 <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>{label}</p>
                 <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color }}>{value}</p>
               </div>
@@ -468,7 +469,7 @@ export default function Alumnos() {
             </>
           ) : (
             <>
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '10px 14px', border: '1px solid var(--border)', marginBottom: 14, fontSize: 13, color: 'var(--text-secondary)' }}>
+              <div style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 14px', border: '1px solid var(--border)', marginBottom: 14, fontSize: 13, color: 'var(--text-secondary)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Saldo a cargar</span><span>{fmt(link.monto)}</span></div>
                 {Number(link.comision) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Cargo por servicio</span><span>{fmt(link.comision)}</span></div>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 6 }}><span>Total que paga la familia</span><span>{fmt(link.total)}</span></div>
@@ -495,8 +496,8 @@ export default function Alumnos() {
               <Credencial credencial={qrModal.credencial} colegio={qrModal.colegio} logo={qrModal.logo} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Btn onClick={() => window.open(`/credenciales?alumno=${qrModal.alumno.id}&imprimir=1`, '_blank')}>🖨 Imprimir credencial</Btn>
-              <button onClick={guardarImagen} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>⬇ Guardar imagen</button>
+              <Btn onClick={() => window.open(`/credenciales?alumno=${qrModal.alumno.id}&imprimir=1`, '_blank')}><Icono nombre="imprimir" />Imprimir credencial</Btn>
+              <button onClick={guardarImagen} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}><Icono nombre="descargar" />Guardar imagen</button>
               <button onClick={enviarWhatsApp} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius)', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Enviar por WhatsApp</button>
               <button onClick={regenerarQR} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }}>Generar QR nuevo</button>
             </div>
@@ -508,16 +509,16 @@ export default function Alumnos() {
       {modal === 'importar' && (
         <Modal title="Importar alumnos desde CSV" onClose={cerrarImportacion}>
           {/* Instrucciones y plantilla */}
-          <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: 16, border: '1px solid var(--border)' }}>
+          <div style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: 16, border: '1px solid var(--border)' }}>
             <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Formato requerido</p>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>El CSV debe tener estos encabezados en la primera fila:</p>
-            <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
+            <code style={{ fontSize: 11, color: 'var(--brand)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: 4, display: 'block', marginBottom: 10 }}>
               nombre, curso, limite_diario, tutor, tutor_tel, tutor2, tutor2_tel, alergias, padre_email, padre2_email
             </code>
             <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>
               Si cargás <code>padre_email</code> (y opcionalmente <code>padre2_email</code>), el sistema crea la cuenta del padre/madre automáticamente y les manda un email para activarla — no hace falta código de vinculación.
             </p>
-            <button onClick={descargarPlantilla} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+            <button onClick={descargarPlantilla} style={{ fontSize: 12, color: 'var(--brand)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
               Descargar plantilla de ejemplo
             </button>
           </div>
@@ -532,7 +533,7 @@ export default function Alumnos() {
 
           {/* Errores de parseo */}
           {csvErrores.length > 0 && (
-            <div style={{ background: 'var(--red-bg)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, borderLeft: '3px solid var(--red)' }}>
+            <div style={{ background: 'var(--red-bg)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, borderLeft: '3px solid var(--red)' }}>
               <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>Errores en el archivo ({csvErrores.length})</p>
               {csvErrores.map((e, i) => <p key={i} style={{ margin: '2px 0', fontSize: 12, color: 'var(--red)' }}>• {e}</p>)}
             </div>
@@ -545,7 +546,7 @@ export default function Alumnos() {
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{csvFilas.length} alumnos listos para importar</p>
                 {csvFilas.length > 5 && <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Mostrando primeros 5</p>}
               </div>
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
@@ -572,7 +573,7 @@ export default function Alumnos() {
           {/* Resultado */}
           {importResult && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ background: 'var(--green-bg)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: importResult.errores > 0 ? 10 : 0, borderLeft: '3px solid var(--green)' }}>
+              <div style={{ background: 'var(--green-bg)', borderRadius: 8, padding: '12px 14px', marginBottom: importResult.errores > 0 ? 10 : 0, borderLeft: '3px solid var(--green)' }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--green)' }}>✓ {importResult.creados} alumnos importados correctamente</p>
                 {(importResult.padres_invitados > 0 || importResult.padres_vinculados > 0) && (
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--green)' }}>
@@ -583,8 +584,8 @@ export default function Alumnos() {
                 )}
               </div>
               {importResult.errores > 0 && (
-                <div style={{ background: 'var(--red-bg)', borderRadius: 'var(--radius)', padding: '10px 14px', borderLeft: '3px solid var(--red)' }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>⚠ {importResult.errores} filas con errores</p>
+                <div style={{ background: 'var(--red-bg)', borderRadius: 8, padding: '10px 14px', borderLeft: '3px solid var(--red)' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="alerta" />{importResult.errores} filas con errores</p>
                   {importResult.detalle_errores.map((e, i) => (
                     <p key={i} style={{ margin: '2px 0', fontSize: 12, color: 'var(--red)' }}>• Fila {e.fila}: {e.error}</p>
                   ))}

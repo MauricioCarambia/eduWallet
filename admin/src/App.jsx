@@ -20,13 +20,13 @@ import Mensajes from './pages/Mensajes'
 
 function PrivateRoute({ children }) {
   const { sesion, cargando } = useAuth()
-  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#999' }}>Cargando...</div>
+  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-secondary)' }}>Cargando...</div>
   return sesion ? children : <Navigate to="/" replace />
 }
 
 function SuperAdminPrivateRoute({ children }) {
   const { autenticado, cargando } = useSuperAdmin()
-  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#8B95A8', background: '#0B1220' }}>Cargando...</div>
+  if (cargando) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-secondary)', background: 'var(--bg-subtle)' }}>Cargando...</div>
   return autenticado ? children : <Navigate to="/superadmin" replace />
 }
 

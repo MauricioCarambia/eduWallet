@@ -4,6 +4,7 @@ import { SkeletonTable } from '../components/Skeleton'
 import ReglasCompra from '../components/ReglasCompra'
 import AlergiasAlumno from '../components/AlergiasAlumno'
 import AvisosFamilia from '../components/AvisosFamilia'
+import Icono from '../components/Icono'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const pct2 = (a, b) => b ? Math.min(Math.round(a / b * 100), 100) : 0
@@ -93,7 +94,7 @@ export default function Control() {
       )}
 
       {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>
           {msg.texto}
         </div>
       )}
@@ -117,7 +118,7 @@ export default function Control() {
                 </div>
                 {m.disponible && (
                   <button onClick={() => toggleMedio(m.medio, !m.bloqueado)} style={{ flexShrink: 0, padding: '8px 12px', border: 'none', borderRadius: 10, background: m.bloqueado ? 'var(--green-bg)' : 'var(--red-bg)', color: m.bloqueado ? 'var(--green)' : 'var(--red)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    {m.bloqueado ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                    {m.bloqueado ? <><Icono nombre="candadoAbierto" />Desbloquear</> : <><Icono nombre="candado" />Bloquear</>}
                   </button>
                 )}
               </div>
@@ -125,7 +126,7 @@ export default function Control() {
 
             <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12, marginTop: 2 }}>
               <button onClick={toggleBloqueo} style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: alumnoActual.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: alumnoActual.activo ? 'var(--red)' : 'var(--green)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                {alumnoActual.activo ? '🔒 Bloquear todas las compras' : '🔓 Habilitar las compras'}
+                {alumnoActual.activo ? <><Icono nombre="candado" />Bloquear todas las compras</> : <><Icono nombre="candadoAbierto" />Habilitar las compras</>}
               </button>
               {!alumnoActual.activo && (
                 <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red)', textAlign: 'center' }}>Todas las compras están bloqueadas, con cualquier medio.</p>
@@ -140,7 +141,7 @@ export default function Control() {
               <span>Gastado hoy</span>
               <span style={{ fontWeight: 600, color: 'var(--text)' }}>{fmt(alumnoActual.gasto_hoy)} / {fmt(alumnoActual.limite_diario)}</span>
             </div>
-            <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, marginBottom: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <div style={{ height: 8, background: 'var(--bg-subtle)', borderRadius: 4, marginBottom: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
               <div style={{ height: '100%', width: `${pct2(alumnoActual.gasto_hoy, alumnoActual.limite_diario)}%`, background: pct2(alumnoActual.gasto_hoy, alumnoActual.limite_diario) > 80 ? 'var(--red)' : 'var(--brand)', borderRadius: 4, transition: 'width .3s' }} />
             </div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Nuevo límite diario</label>

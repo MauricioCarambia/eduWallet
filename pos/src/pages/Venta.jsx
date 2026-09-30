@@ -6,6 +6,7 @@ import api from '../api/axios'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
+import Icono from '../components/Icono'
 
 // Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
 const esCodigo = texto => {
@@ -108,14 +109,14 @@ export default function Venta() {
   const addProd = (p, confirmado = false) => {
     if (p.stock <= 0) { showMsg('warn', `Sin stock: ${p.nombre}`); return }
     const motivo = motivoBloqueo(p, ctrl, carrito)
-    if (motivo) { showMsg('error', `🚫 ${motivo}`); return }
+    if (motivo) { showMsg('error', motivo); return }
     const alergias = alergiasDe(p, ctrl)
     if (alergias.length > 0) {
       const nombre = alumno.nombre.split(' ')[0]
-      if (ctrl.bloquear_alergenos) { showMsg('error', `⚠ ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}: la familia de ${nombre} no permite venderle ${p.nombre}`); return }
+      if (ctrl.bloquear_alergenos) { showMsg('error', `ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}: la familia de ${nombre} no permite venderle ${p.nombre}`); return }
       if (!confirmado && !confirmados.includes(p.id)) {
         setAvisoAlergia({
-          titulo: `⚠ ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}`,
+          titulo: `ALERGIA A ${nombresAlergenos(alergias).toUpperCase()}`,
           detalle: `${nombre} es alérgico/a a ${nombresAlergenos(alergias).toLowerCase()} y ${p.nombre} lo contiene.`,
           alConfirmar: () => { setConfirmados(c => [...c, p.id]); addProd(p, true) },
         })
@@ -152,7 +153,7 @@ export default function Venta() {
       if (err.response?.status === 409 && d?.requiere_confirmacion) {
         // productos con alérgenos agregados antes de identificar al alumno
         setAvisoAlergia({
-          titulo: `⚠ ALERGIA A ${nombresAlergenos([...new Set(d.alergias.flatMap(a => a.alergenos))]).toUpperCase()}`,
+          titulo: `ALERGIA A ${nombresAlergenos([...new Set(d.alergias.flatMap(a => a.alergenos))]).toUpperCase()}`,
           detalle: d.error,
           textoConfirmar: 'Cobrar igual',
           alConfirmar: () => cobrar({ confirmarAlergias: true }),
@@ -320,7 +321,7 @@ export default function Venta() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 0, height: 'calc(100vh - 120px)', overflow: 'hidden', margin: '-24px', borderRadius: 0 }}>
       {avisoAlergia && (
-        <div role="alertdialog" aria-modal="true" aria-labelledby="alergia-titulo" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
+        <div role="alertdialog" aria-modal="true" aria-labelledby="alergia-titulo" style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
           <div style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: 'var(--shadow-md)', border: '3px solid var(--red)' }}>
             <div style={{ background: 'var(--red)', color: 'var(--on-brand)', padding: '18px 20px' }}>
               <p id="alergia-titulo" style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: '.3px' }}>{avisoAlergia.titulo}</p>
@@ -380,8 +381,8 @@ export default function Venta() {
                   <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>{p.nombre}</p>
                   <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</p>
                   <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-secondary)' }}>Stock: {p.stock}</p>
-                  {alergias.length > 0 && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 700, color: 'var(--red)' }}>⚠ {nombresAlergenos(alergias)}</p>}
-                  {bloqueo && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 600, color: 'var(--red)' }}>🚫 No permitido</p>}
+                  {alergias.length > 0 && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 700, color: 'var(--red)' }}><Icono nombre="alerta" />{nombresAlergenos(alergias)}</p>}
+                  {bloqueo && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="prohibido" />No permitido</p>}
                 </button>
               )
             })}
@@ -416,21 +417,21 @@ export default function Venta() {
                   <p style={{ margin: '0 0 1px', fontSize: 10, color: 'var(--text-secondary)' }}>Saldo</p>
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: parseFloat(alumno.saldo) < 200 ? 'var(--red)' : 'var(--green)' }}>{fmt(alumno.saldo)}</p>
                 </div>
-                <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '6px 10px' }}>
+                <div style={{ background: 'var(--bg-subtle)', borderRadius: 8, padding: '6px 10px' }}>
                   <p style={{ margin: '0 0 1px', fontSize: 10, color: 'var(--text-secondary)' }}>Gastado hoy</p>
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{fmt(alumno.gasto_hoy)}</p>
                 </div>
               </div>
               {ctrl?.alergenos?.length > 0 ? (
                 <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--red-bg)', borderRadius: 7, fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>
-                  ⚠ Alergia: {nombresAlergenos(ctrl.alergenos)}{ctrl.bloquear_alergenos ? ' · no se puede vender' : ' · confirmar antes de vender'}
+                  <Icono nombre="alerta" />Alergia: {nombresAlergenos(ctrl.alergenos)}{ctrl.bloquear_alergenos ? ' · no se puede vender' : ' · confirmar antes de vender'}
                 </div>
               ) : alumno.alergias !== 'Ninguna' && (
-                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--amber-bg)', borderRadius: 7, fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}>⚠ Alergia: {alumno.alergias}</div>
+                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--amber-bg)', borderRadius: 7, fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}><Icono nombre="alerta" />Alergia: {alumno.alergias}</div>
               )}
               {ctrl?.resumen?.length > 0 && (
-                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--bg)', borderRadius: 7, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  👪 Reglas de la familia: {ctrl.resumen.join(' · ')}
+                <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--bg-subtle)', borderRadius: 7, fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <Icono nombre="familia" />Reglas de la familia: {ctrl.resumen.join(' · ')}
                 </div>
               )}
               {parseFloat(alumno.saldo) < 0 && (
@@ -439,8 +440,8 @@ export default function Venta() {
             </div>
           ) : (
             <div>
-              <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg)', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
-                💳 Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
+              <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg-subtle)', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
+                <Icono nombre="tarjeta" />Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
                 {lectorEscritorio.disponible && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
                     {lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}
@@ -449,12 +450,12 @@ export default function Venta() {
               </div>
               <div id="alumno-search">
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                  {[{ id: 'manual', label: '🔍 Nombre' }, { id: 'qr', label: '📷 QR' }, ...(nfcDisponible() ? [{ id: 'nfc', label: '📶 NFC' }] : [])].map(m => (
+                  {[{ id: 'manual', label: 'Nombre', icono: 'buscar' }, { id: 'qr', label: 'QR', icono: 'camara' }, ...(nfcDisponible() ? [{ id: 'nfc', label: 'NFC', icono: 'nfc' }] : [])].map(m => (
                     <button key={m.id} onClick={() => {
                       if (m.id === 'qr') { detenerNFC(); iniciarQR(); setModoEscaneo('qr') }
                       else if (m.id === 'nfc') { detenerQR(); iniciarNFC() }
                       else { detenerQR(); detenerNFC(); setModoEscaneo('manual') }
-                    }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}>{m.label}</button>
+                    }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}><Icono nombre={m.icono} />{m.label}</button>
                   ))}
                 </div>
                 <input placeholder="Buscá por nombre o pasá la credencial..." value={busqAlumno}
@@ -466,7 +467,7 @@ export default function Venta() {
                     {alumnos.filter(a => a.activo && a.nombre.toLowerCase().includes(busqAlumno.toLowerCase())).map(a => (
                       <button key={a.id} onClick={() => { setAlumno(a); setBusqAlumno(''); setShowSugerencias(false) }}
                         style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-card)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                           {a.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
                         </div>
                         <div style={{ flex: 1 }}>
@@ -484,7 +485,7 @@ export default function Venta() {
                 {escaneandoQR && (
                   <div style={{ position: 'relative', marginBottom: 6 }}>
                     <video ref={videoRef} style={{ width: '100%', borderRadius: 10, maxHeight: 200, objectFit: 'cover' }} />
-                    <button onClick={detenerQR} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: 6, color: 'white', fontSize: 12, padding: '4px 10px', cursor: 'pointer' }}>Cancelar</button>
+                    <button onClick={detenerQR} style={{ position: 'absolute', top: 8, right: 8, background: 'var(--overlay)', border: 'none', borderRadius: 6, color: 'white', fontSize: 12, padding: '4px 10px', cursor: 'pointer' }}>Cancelar</button>
                   </div>
                 )}
                 {errorQR && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 6px' }}>{errorQR}</p>}
@@ -530,7 +531,7 @@ export default function Venta() {
             <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{fmt(totalDesc)}</span>
           </div>
           <button onClick={() => cobrar({ confirmarAlergias: carrito.some(i => confirmados.includes(i.id)) })} disabled={!alumno || carrito.length === 0 || procesando}
-            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 'var(--radius)', background: !alumno || carrito.length === 0 ? 'var(--bg)' : 'var(--brand)', color: !alumno || carrito.length === 0 ? 'var(--text-secondary)' : 'var(--on-brand)', fontSize: 15, fontWeight: 700, cursor: !alumno || carrito.length === 0 ? 'not-allowed' : 'pointer' }}>
+            style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 'var(--radius)', background: !alumno || carrito.length === 0 ? 'var(--bg-subtle)' : 'var(--brand)', color: !alumno || carrito.length === 0 ? 'var(--text-secondary)' : 'var(--on-brand)', fontSize: 15, fontWeight: 700, cursor: !alumno || carrito.length === 0 ? 'not-allowed' : 'pointer' }}>
             {procesando ? 'Procesando...' : 'Cobrar'}
           </button>
         </div>

@@ -6,7 +6,7 @@ const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -83,7 +83,7 @@ export default function Padres() {
         <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{padres.length} registrados</p>
       </div>
 
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius)', fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
 
       <input placeholder="Buscar por nombre o email..." value={busq} onChange={e => setBusq(e.target.value)} style={{ width: '100%', marginBottom: 16 }} />
 
@@ -91,7 +91,7 @@ export default function Padres() {
         {filtrados.map(p => (
           <div key={p.id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: p.alumnos?.length > 0 ? 12 : 0 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                 {p.nombre.split(' ').slice(0, 2).map(n => n[0]).join('')}
               </div>
               <div style={{ flex: 1 }}>
@@ -103,7 +103,7 @@ export default function Padres() {
                   {p.activo ? 'Activo' : 'Inactivo'}
                 </span>
                 {[
-                  { label: '+ Alumno', onClick: () => { setSeleccionado(p); setModal('vincular') }, bg: 'var(--brand-light)', color: 'var(--accent)' },
+                  { label: '+ Alumno', onClick: () => { setSeleccionado(p); setModal('vincular') }, bg: 'var(--brand-light)', color: 'var(--brand)' },
                   { label: p.activo ? 'Deshabilitar' : 'Habilitar', onClick: () => togglePadre(p.id), bg: p.activo ? 'var(--red-bg)' : 'var(--green-bg)', color: p.activo ? 'var(--red)' : 'var(--green)' },
                   { label: '×', onClick: () => eliminar(p.id), bg: 'var(--red-bg)', color: 'var(--red)' },
                 ].map(b => (
@@ -118,7 +118,7 @@ export default function Padres() {
             {p.alumnos?.length > 0 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {p.alumnos.map(a => (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</p>
                       <p style={{ margin: 0, fontSize: 10, color: 'var(--text-secondary)' }}>{a.curso} · {fmt(a.saldo)}</p>

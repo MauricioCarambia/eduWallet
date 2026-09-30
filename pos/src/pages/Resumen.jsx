@@ -48,7 +48,7 @@ function VentasPorHora({ porHora }) {
         {horas.map(h => (
           <div key={h.hora} title={`${h.hora}:00 — ${fmt(h.total)} (${h.cantidad} ventas)`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}>
             {h.total > 0 && <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{h.cantidad}</span>}
-            <div style={{ width: '100%', maxWidth: 26, height: `${max ? Math.max((h.total / max) * 100, h.total ? 4 : 0) : 0}%`, background: h.total ? 'var(--accent)' : 'var(--border-light)', borderRadius: '4px 4px 0 0', minHeight: 2 }} />
+            <div style={{ width: '100%', maxWidth: 26, height: `${max ? Math.max((h.total / max) * 100, h.total ? 4 : 0) : 0}%`, background: h.total ? 'var(--brand)' : 'var(--border-light)', borderRadius: '4px 4px 0 0', minHeight: 2 }} />
             <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{h.hora}</span>
           </div>
         ))}

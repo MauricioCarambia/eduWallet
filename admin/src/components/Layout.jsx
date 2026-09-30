@@ -29,7 +29,11 @@ export default function Layout({ children }) {
   const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
 
   useEffect(() => {
-    api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
+    const cargarBranding = () => api.get('/configuracion/mi-colegio').then(r => setBranding(r.data)).catch(() => {})
+    cargarBranding()
+    // Configuración avisa al guardar, así el logo y el nombre nuevos se ven sin recargar
+    window.addEventListener('koletap:branding', cargarBranding)
+    return () => window.removeEventListener('koletap:branding', cargarBranding)
   }, [])
 
   const handleLogout = () => { logout(); navigate('/') }

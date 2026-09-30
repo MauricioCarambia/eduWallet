@@ -93,7 +93,8 @@ export default function Configuracion() {
     try {
       await api.put('/configuracion', config)
       showMsg('ok', 'Configuración guardada correctamente')
-    } catch { showMsg('error', 'Error al guardar') }
+      window.dispatchEvent(new Event('koletap:branding'))
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar') }
   }
 
   const enviarTest = async () => {

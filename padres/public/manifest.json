@@ -1,6 +1,6 @@
 {
-  "name": "EduWallet — Portal de Padres",
-  "short_name": "EduWallet",
+  "name": "EduPass — Portal de Padres",
+  "short_name": "EduPass",
   "description": "Administrá el saldo escolar de tus hijos",
   "start_url": "/",
   "display": "standalone",

@@ -27,7 +27,7 @@ export default function Login({ onLogin }) {
         <div style={{ width: 52, height: 52, borderRadius: 14, background: '#185FA5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M7 15h2M13 15h4"/></svg>
         </div>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>EduWallet</h2>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>EduPass</h2>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#666' }}>Ingresá con tu usuario y PIN</p>
       </div>
 

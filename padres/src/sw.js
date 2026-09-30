@@ -24,7 +24,7 @@ self.addEventListener('activate', () => self.clients.claim())
 
 // ─── Notificaciones push ───────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
-  let data = { title: 'EduWallet', body: 'Tenés una nueva notificación', url: '/' }
+  let data = { title: 'EduPass', body: 'Tenés una nueva notificación', url: '/' }
   try {
     if (event.data) data = { ...data, ...event.data.json() }
   } catch {

@@ -1,4 +1,4 @@
-// Conciliación Mercado Pago ↔ saldo EduWallet.
+// Conciliación Mercado Pago ↔ saldo EduPass.
 //
 // Revisa los pagos de los últimos días contra lo que dice Mercado Pago y
 // corrige lo que se puede corregir sin intervención (MP es la fuente de verdad):

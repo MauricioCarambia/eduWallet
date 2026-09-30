@@ -103,7 +103,7 @@ export default function Recargas() {
 
       const { default: ExcelJS } = await import('exceljs')
       const libro = new ExcelJS.Workbook()
-      libro.creator = 'EduWallet'
+      libro.creator = 'EduPass'
       const moneda = '"$"#,##0.00'
 
       const hoja = libro.addWorksheet('Recargas', { views: [{ state: 'frozen', ySplit: 1 }] })

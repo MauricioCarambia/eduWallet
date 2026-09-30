@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@eduwallet.com';
+const SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@edupass.com';
 
 const habilitado = Boolean(PUBLIC_KEY && PRIVATE_KEY);
 

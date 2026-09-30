@@ -31,7 +31,7 @@ export default function SuperAdminLogin() {
           <div style={{ width: 52, height: 52, borderRadius: 14, background: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0B1220" strokeWidth="2.2"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'white', marginBottom: 4 }}>EduWallet</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'white', marginBottom: 4 }}>EduPass</h1>
           <p style={{ color: '#8B95A8', fontSize: 13 }}>Panel de plataforma (dueño)</p>
         </div>
 

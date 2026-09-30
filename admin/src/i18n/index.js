@@ -4,6 +4,12 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import es from './locales/es.json'
 import en from './locales/en.json'
 
+// Idioma elegido antes del cambio de nombre (EduWallet → EduPass)
+try {
+  const viejo = localStorage.getItem('eduwallet_idioma')
+  if (viejo && !localStorage.getItem('edupass_idioma')) localStorage.setItem('edupass_idioma', viejo)
+} catch { /* sin localStorage */ }
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -18,7 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'eduwallet_idioma',
+      lookupLocalStorage: 'edupass_idioma',
     },
   })
 

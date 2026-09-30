@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'EduWallet API',
+      title: 'EduPass API',
       version: '1.0.0',
       description: 'API REST para la gestión de billetera escolar (alumnos, padres, productos, transacciones, pagos y más).',
     },

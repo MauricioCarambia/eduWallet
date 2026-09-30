@@ -1,7 +1,7 @@
 const pool = require('../db/conexion');
 const { enviarEmailContacto } = require('../services/emailService');
 
-// Formulario de contacto de la página de EduWallet (pública, sin login).
+// Formulario de contacto de la página de EduPass (pública, sin login).
 // Se guarda la consulta y se avisa por email; el campo "sitio_web" está
 // oculto en la página: si viene completo es un robot y se descarta en silencio.
 const texto = (v, max) => String(v ?? '').trim().slice(0, max);

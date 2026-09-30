@@ -74,7 +74,7 @@ export default function SuperAdminDashboard() {
   const guardarAjuste = async () => {
     const monto = parseFloat(ajuste.monto)
     if (!ajuste.alumno || !(monto > 0) || !ajuste.motivo.trim()) return
-    if (!confirm(`¿Sumar ${fmt(monto)} al saldo de ${ajuste.alumno.nombre}? Queda registrado como ajuste de EduWallet.`)) return
+    if (!confirm(`¿Sumar ${fmt(monto)} al saldo de ${ajuste.alumno.nombre}? Queda registrado como ajuste de EduPass.`)) return
     setAjuste(a => ({ ...a, guardando: true }))
     try {
       const res = await superadminApi.post(`/superadmin/alumnos/${ajuste.alumno.id}/ajuste`, { monto, motivo: ajuste.motivo.trim() })

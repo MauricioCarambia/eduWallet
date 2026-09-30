@@ -6,7 +6,7 @@ const TABLAS_VIA_ALUMNO = ['padres', 'padres_alumnos'];
 
 const generarSQL = async (colegioId) => {
   const tablas = [...TABLAS_CON_COLEGIO, ...TABLAS_VIA_ALUMNO];
-  let sql = `-- EduWallet Backup\n-- Fecha: ${new Date().toLocaleString('es-AR')}\n\n`;
+  let sql = `-- EduPass Backup\n-- Fecha: ${new Date().toLocaleString('es-AR')}\n\n`;
 
   for (const tabla of tablas) {
     try {
@@ -45,7 +45,7 @@ const hacerBackup = async (colegioId, enviarEmail = false) => {
     console.log('Iniciando backup...');
     const sql = await generarSQL(colegioId);
     const fecha = new Date().toISOString().slice(0, 10);
-    const nombre = `eduwallet-backup-${fecha}.sql`;
+    const nombre = `edupass-backup-${fecha}.sql`;
 
     if (enviarEmail) {
       await enviarEmailBackup({ colegioId, sql, nombre });

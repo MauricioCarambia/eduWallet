@@ -64,7 +64,7 @@ export async function imagenCredencial({ credencial, colegio, logo }) {
   ctx.fillStyle = '#1E3A5F'
   ctx.font = `700 ${mm(2.6)}px ${fuente}`
   ctx.textBaseline = 'alphabetic'
-  ctx.fillText((colegio || 'EduWallet').toUpperCase(), x, yColegio, anchoTexto - (x - margen))
+  ctx.fillText((colegio || 'EduPass').toUpperCase(), x, yColegio, anchoTexto - (x - margen))
 
   // nombre y curso, abajo del medio
   ctx.fillStyle = '#13233A'
@@ -80,7 +80,7 @@ export async function imagenCredencial({ credencial, colegio, logo }) {
   // pie
   ctx.fillStyle = '#7A8799'
   ctx.font = `400 ${mm(2.2)}px ${fuente}`
-  ctx.fillText('Credencial EduWallet · personal e intransferible', margen, ALTO - margen, anchoTexto)
+  ctx.fillText('Credencial EduPass · personal e intransferible', margen, ALTO - margen, anchoTexto)
 
   return new Promise((ok, falla) => canvas.toBlob(b => (b ? ok(b) : falla(new Error('No se pudo generar la imagen'))), 'image/png'))
 }

@@ -6,10 +6,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
 const getBrandingDB = async (colegioId) => {
-  if (!colegioId) return { nombre: 'EduWallet', logo: null };
+  if (!colegioId) return { nombre: 'EduPass', logo: null };
   const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [colegioId]);
   return {
-    nombre: res.rows[0]?.nombre_colegio || 'EduWallet',
+    nombre: res.rows[0]?.nombre_colegio || 'EduPass',
     logo:   res.rows[0]?.logo || null
   };
 };
@@ -29,13 +29,13 @@ const baseHTML = (contenido, nombreColegio, logo) => `
       ${logo ? `<img src="${logo}" alt="${nombreColegio}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;flex-shrink:0;" />` : ''}
       <div>
         <h1 style="color: white; margin: 0; font-size: 20px;">${nombreColegio}</h1>
-        <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema EduWallet</p>
+        <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema EduPass</p>
       </div>
     </div>
     <div style="background: white; border: 1px solid #eee; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;">
       ${contenido}
       <p style="color: #bbb; font-size: 11px; margin: 24px 0 0; border-top: 1px solid #f0f0f0; padding-top: 12px;">
-        Este mensaje fue enviado automáticamente por EduWallet. No respondas este email.
+        Este mensaje fue enviado automáticamente por EduPass. No respondas este email.
       </p>
     </div>
   </div>
@@ -103,7 +103,7 @@ const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
   try {
     const config = await pool.query('SELECT * FROM configuracion WHERE colegio_id = $1', [colegioId]);
     const emailAdmin = config.rows[0]?.email_admin;
-    const nombreColegio = config.rows[0]?.nombre_colegio || 'EduWallet';
+    const nombreColegio = config.rows[0]?.nombre_colegio || 'EduPass';
 
     if (!emailAdmin) {
       console.log('No hay email de admin configurado para el backup');
@@ -136,7 +136,7 @@ const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, lin
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en EduWallet.</p>
+    <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en EduPass.</p>
     <a href="${linkReset}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
       Restablecer contraseña
     </a>
@@ -155,7 +155,7 @@ const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombr
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola${nombrePadre ? ` <b>${nombrePadre}</b>` : ''},</p>
-    <p style="color: #111; margin: 0 0 20px;"><b>${nombreColegio}</b> te dio de alta en EduWallet como padre/tutor de <b>${nombreAlumno}</b>, para que puedas ver su saldo y recargarlo desde el celular.</p>
+    <p style="color: #111; margin: 0 0 20px;"><b>${nombreColegio}</b> te dio de alta en EduPass como padre/tutor de <b>${nombreAlumno}</b>, para que puedas ver su saldo y recargarlo desde el celular.</p>
     <a href="${linkActivacion}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
       Activar mi cuenta
     </a>
@@ -164,7 +164,7 @@ const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombr
 
   await enviarEmail({
     to: emailPadre,
-    subject: `Te invitaron a EduWallet — ${nombreColegio}`,
+    subject: `Te invitaron a EduPass — ${nombreColegio}`,
     html
   });
 };
@@ -191,22 +191,22 @@ const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios })
   return { enviados, errores };
 };
 
-// Consulta del formulario de la página: le llega a quien vende EduWallet
+// Consulta del formulario de la página: le llega a quien vende EduPass
 const escapar = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const enviarEmailContacto = async ({ nombre, colegio, cargo, email, telefono, alumnos, mensaje }) => {
   const fila = (etiqueta, valor) => valor ? `<tr><td style="padding: 6px 12px 6px 0; color: #666; font-size: 13px; white-space: nowrap; vertical-align: top;">${etiqueta}</td><td style="padding: 6px 0; color: #111; font-size: 14px;">${escapar(valor)}</td></tr>` : '';
   const html = baseHTML(`
-    <p style="color: #111; margin: 0 0 16px; font-size: 15px;">Nueva consulta desde la página de EduWallet.</p>
+    <p style="color: #111; margin: 0 0 16px; font-size: 15px;">Nueva consulta desde la página de EduPass.</p>
     <table style="border-collapse: collapse; margin-bottom: 16px;">
       ${fila('Nombre', nombre)}${fila('Colegio', colegio)}${fila('Cargo', cargo)}${fila('Email', email)}${fila('Teléfono', telefono)}${fila('Alumnos', alumnos)}
     </table>
     ${mensaje ? `<div style="background: #F6F8F5; border-radius: 10px; padding: 14px; font-size: 14px; color: #111; white-space: pre-wrap;">${escapar(mensaje)}</div>` : ''}
-  `, 'EduWallet', null);
+  `, 'EduPass', null);
 
   await enviarEmail({
     to: process.env.CONTACTO_EMAIL || 'mcarambia@gmail.com',
-    subject: `Consulta de ${String(colegio).slice(0, 80)} — EduWallet`,
+    subject: `Consulta de ${String(colegio).slice(0, 80)} — EduPass`,
     html,
   });
 };

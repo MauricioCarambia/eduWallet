@@ -15,8 +15,8 @@ export default defineConfig({
       },
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'EduWallet — Portal de Padres',
-        short_name: 'EduWallet',
+        name: 'EduPass — Portal de Padres',
+        short_name: 'EduPass',
         description: 'Administrá el saldo escolar de tus hijos',
         theme_color: '#111111',
         background_color: '#F8F9FA',

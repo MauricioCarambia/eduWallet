@@ -40,7 +40,7 @@ const devFormat = ':method :url :status :response-time ms - :res[content-length]
 const fileFormat = ':remote-addr - :method :url HTTP/:http-version :status :res[content-length] ":referrer" ":user-agent" - :response-time ms';
 
 // Stream hacia archivo (rotación diaria por nombre de fecha)
-const logFileName = () => `eduwallet-${new Date().toISOString().slice(0, 10)}.log`;
+const logFileName = () => `edupass-${new Date().toISOString().slice(0, 10)}.log`;
 const logStream = {
   write: (msg) => {
     const filePath = path.join(logsDir, logFileName());
@@ -89,12 +89,12 @@ app.use('/api/contacto', contactoRoutes);
 app.use('/api/conciliacion', conciliacionRoutes);
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customSiteTitle: 'EduWallet API Docs',
+  customSiteTitle: 'EduPass API Docs',
 }));
 app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
 
 app.get('/', (req, res) => {
-  res.json({ mensaje: 'EduWallet API funcionando correctamente' });
+  res.json({ mensaje: 'EduPass API funcionando correctamente' });
 });
 
 module.exports = app;

@@ -54,23 +54,23 @@ export default function Layout({ children }) {
       <aside className="sidebar" style={{ width: collapsed ? 64 : 230, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: 'var(--shadow-md)' }}>
 
         {/* logo */}
-        <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: collapsed || !branding.logo ? 'center' : 'flex-start', justifyContent: collapsed ? 'center' : 'space-between' }}>
+        <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
             // Con logo del colegio va grande, arriba del nombre; sin logo, la K chica al lado
-            <div style={{ display: 'flex', flexDirection: branding.logo ? 'column' : 'row', alignItems: branding.logo ? 'flex-start' : 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: branding.logo ? 'column' : 'row', alignItems: 'center', flex: branding.logo ? 1 : 'initial', gap: 10, minWidth: 0 }}>
               {branding.logo
                 ? <div style={{ height: 72, padding: 8, borderRadius: 10, background: 'var(--logo-bg)', display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
                     <img src={branding.logo} alt="Logo" style={{ maxHeight: 56, maxWidth: 140, objectFit: 'contain', display: 'block' }} />
                   </div>
                 : <img src="/logo-k.svg" alt="KoleTap" width={32} height={32} style={{ display: 'block', flexShrink: 0 }} />
               }
-              <div>
+              <div style={{ textAlign: branding.logo ? 'center' : 'left' }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'white', lineHeight: 1.2 }}>{branding.nombre_colegio || 'KoleTap'}</p>
                 <p style={{ margin: 0, fontSize: 10, color: sidebarText }}>{t('common.administracion')}</p>
               </div>
             </div>
           )}
-          <button onClick={() => setCollapsed(!collapsed)} style={{ background: 'none', border: 'none', color: sidebarText, padding: 4, borderRadius: 6, display: 'flex', cursor: 'pointer' }}>
+          <button onClick={() => setCollapsed(!collapsed)} style={{ ...(branding.logo && !collapsed ? { position: 'absolute', top: 10, right: 8 } : {}), background: 'none', border: 'none', color: sidebarText, padding: 4, borderRadius: 6, display: 'flex', cursor: 'pointer' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
         </div>

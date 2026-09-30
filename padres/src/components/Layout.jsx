@@ -53,10 +53,10 @@ export default function Layout({ children }) {
       {mostrarInstalar && (
         <div style={{ background: 'var(--brand)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               {branding.logo
                 ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ color: 'var(--on-accent)' }} strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                : <img src="/favicon.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
               }
             </div>
             <div>
@@ -74,10 +74,10 @@ export default function Layout({ children }) {
       {/* header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: branding.logo ? 'transparent' : 'var(--brand)', color: 'var(--on-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
             {branding.logo
               ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              : <img src="/favicon.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
             }
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{branding.nombre_colegio || 'KoleTap'}</span>

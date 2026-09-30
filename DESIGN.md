@@ -51,7 +51,7 @@ https://claude.ai/code/artifact/dfcc9941-f153-4e9e-84a8-59d75323695a
 
 El menú lateral es verde profundo en los dos temas, por eso sus variables no cambian con el tema. La pantalla de SuperAdmin es siempre oscura: su elemento raíz lleva `data-theme="dark"` y usa las mismas variables.
 
-**Ícono de la app:** la marca de la landing (tarjeta en `accent` oscuro `#e2b54a` sobre `brand` `#1d5c47`) en `favicon.svg` de las tres apps, `padres/public/icon.svg` (app instalable) y `pos-desktop/build/icon.png`.
+**Ícono de la app:** el monograma K (ver [Logo](#logo)) en `favicon.svg` de las tres apps, `padres/public/icon.svg` (app instalable) y `pos-desktop/build/icon.png` (512×512, rasterizado del mismo SVG).
 
 La landing (`landing/index.html`) usa sus propios nombres con los mismos valores: `--papel`=`bg`, `--papel-2`=`bg-subtle`, `--tinta`=`text`, `--tinta-suave`=`text-secondary`, `--pizarron`=`brand`, `--pizarron-fondo`=`brand-deep`, `--lapiz`=`accent`, `--sobre-lapiz`=`on-accent`, `--linea`=`border`, `--tarjeta`=`bg-card`, `--bien`/`--ojo`/`--no`=`green`/`amber`/`red`.
 
@@ -84,3 +84,10 @@ Gráficos (Recharts): serie principal `var(--brand)`, segunda `var(--accent)`; p
 ## Tono
 
 Español rioplatense con voseo ("Recargá", "Vinculá", "Enterate"). Frases cortas y concretas. Mayúsculas de oración en títulos y botones. Sin emojis en la interfaz.
+
+## Logo
+
+- Monograma **K** sobre cuadrado verde `#1D5C47` (radio 14/64): trazo blanco y pierna dorada `#E2B54A`. Wordmark **KoleTap** en Anybody 900 al 80% de ancho, "Tap" en `--brand`.
+- Archivos en `brand/`: `koletap-icon.svg` (cuadrado solo), `koletap-icon-512.svg`, `koletap-logo-light.svg` / `koletap-logo-dark.svg` (logo completo), `koletap-k-on-green.svg` (K sin fondo, para usar sobre verde).
+- En las apps el ícono es `/favicon.svg` (login, sidebar sin logo del colegio, pestaña). En la PWA de padres es `/icon.svg`. En la landing va inline en `.marca`.
+- No recolorear la K ni ponerla sobre dorado. Debajo de 20px usá solo el ícono.

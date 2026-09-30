@@ -53,10 +53,10 @@ export default function Layout({ children }) {
         <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {branding.logo
                   ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ color: 'var(--on-accent)' }} strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                  : <img src="/favicon.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
                 }
               </div>
               <div>

@@ -56,7 +56,7 @@ export default function Layout({ children }) {
               <div style={{ width: 32, height: 32, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {branding.logo
                   ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  : <img src="/favicon.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
+                  : <img src="/logo-k.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
                 }
               </div>
               <div>

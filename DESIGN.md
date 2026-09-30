@@ -89,5 +89,5 @@ Español rioplatense con voseo ("Recargá", "Vinculá", "Enterate"). Frases cort
 
 - Monograma **K** sobre cuadrado verde `#1D5C47` (radio 14/64): trazo blanco y pierna dorada `#E2B54A`. Wordmark **KoleTap** en Anybody 900 al 80% de ancho, "Tap" en `--brand`.
 - Archivos en `brand/`: `koletap-icon.svg` (cuadrado solo), `koletap-icon-512.svg`, `koletap-logo-light.svg` / `koletap-logo-dark.svg` (logo completo), `koletap-k-on-green.svg` (K sin fondo, para usar sobre verde).
-- En las apps el ícono es `/favicon.svg` (login, sidebar sin logo del colegio, pestaña). En la PWA de padres es `/icon.svg`. En la landing va inline en `.marca`.
+- En las apps el ícono es `/favicon.svg` (login, encabezado de padres, pestaña). En la barra lateral verde de admin y POS, sin logo del colegio, va la K sin fondo `/logo-k.svg` (copia de `koletap-k-on-green.svg`). En la PWA de padres es `/icon.svg`. En la landing va inline en `.marca`.
 - No recolorear la K ni ponerla sobre dorado. Debajo de 20px usá solo el ícono.

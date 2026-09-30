@@ -26,7 +26,7 @@ export function motivoBloqueo(p, ctrl, carrito = []) {
   if (max != null) {
     const ya = Number(ctrl.hoy_por_categoria?.[p.categoria] || 0)
     const enCarrito = carrito.filter(i => i.categoria === p.categoria).reduce((s, i) => s + i.qty, 0)
-    if (ya + enCarrito + 1 > max) return `Máximo ${max} ${NOMBRE_CATEGORIA[p.categoria] || p.categoria} por día (ya lleva ${ya + enCarrito})`
+    if (ya + enCarrito + 1 > max) return `La familia permite hasta ${max} de ${NOMBRE_CATEGORIA[p.categoria] || p.categoria} por día (ya lleva ${ya + enCarrito})`
   }
   return null
 }

@@ -101,7 +101,7 @@ const evaluarReglas = ({ alumno, lineas, lugar, hoyPorCategoria = {}, gastoSeman
     if (ya + enCarrito[cat] > max) {
       motivos.push(max === 0
         ? `La familia de ${nombre} no permite comprar ${NOMBRE_CATEGORIA[cat] || cat}`
-        : `${nombre} puede comprar hasta ${max} ${NOMBRE_CATEGORIA[cat] || cat} por día (ya compró ${ya})`);
+        : `${nombre} ya compró ${ya} de ${NOMBRE_CATEGORIA[cat] || cat} hoy: la familia permite hasta ${max} por día`);
     }
   }
 
@@ -118,7 +118,7 @@ const resumenReglas = alumno => {
   const r = alumno.restricciones || {};
   const partes = [];
   if ((r.categorias_bloqueadas || []).length) partes.push('sin ' + r.categorias_bloqueadas.map(c => NOMBRE_CATEGORIA[c] || c).join(', '));
-  for (const [cat, max] of Object.entries(r.maximos || {})) partes.push(`máx. ${max} ${NOMBRE_CATEGORIA[cat] || cat}/día`);
+  for (const [cat, max] of Object.entries(r.maximos || {})) partes.push(`${NOMBRE_CATEGORIA[cat] || cat}: hasta ${max} por día`);
   if ((r.zonas_bloqueadas || []).length) partes.push('no compra en ' + r.zonas_bloqueadas.join(', '));
   if ((r.productos_bloqueados || []).length) partes.push(`${r.productos_bloqueados.length} producto(s) bloqueado(s)`);
   if (alumno.limite_semanal != null) partes.push(`hasta $${Number(alumno.limite_semanal).toLocaleString('es-AR')}/semana`);

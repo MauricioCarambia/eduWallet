@@ -23,7 +23,7 @@ export default function AlergiasAlumno({ alumno, alergenos, onGuardado, showMsg 
 
   const nombre = alumno.nombre.split(' ')[0]
   const opcion = (valor, titulo, detalle) => (
-    <label htmlFor={`alergia-${valor}`} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${bloquear === valor ? 'var(--brand)' : 'var(--border)'}`, cursor: 'pointer' }}>
+    <label htmlFor={`alergia-${valor}`} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${bloquear === valor ? 'var(--brand)' : 'var(--border)'}`, cursor: 'pointer' }}>
       <input id={`alergia-${valor}`} type="radio" name="modo-alergia" checked={bloquear === valor} onChange={() => setBloquear(valor)} style={{ marginTop: 3, accentColor: 'var(--brand)' }} />
       <span>
         <span style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{titulo}</span>

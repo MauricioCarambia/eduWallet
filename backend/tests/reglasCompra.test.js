@@ -30,7 +30,7 @@ describe('reglas de la familia', () => {
   test('máximo por día ("máximo 1 gaseosa por día") cuenta lo ya comprado y el carrito', () => {
     const a = alumno({ maximos: { bebida: 1 } });
     expect(evaluarReglas({ alumno: a, lineas: [coca], lugar: 'Kiosco', hoyPorCategoria: {} })).toEqual([]);
-    expect(evaluarReglas({ alumno: a, lineas: [coca], lugar: 'Kiosco', hoyPorCategoria: { bebida: 1 } })[0]).toMatch(/hasta 1 bebidas por día \(ya compró 1\)/);
+    expect(evaluarReglas({ alumno: a, lineas: [coca], lugar: 'Kiosco', hoyPorCategoria: { bebida: 1 } })[0]).toMatch(/ya compró 1 de bebidas hoy: la familia permite hasta 1 por día/);
     expect(evaluarReglas({ alumno: a, lineas: [{ ...coca, qty: 2 }], lugar: 'Kiosco' })).toHaveLength(1);
   });
 
@@ -50,7 +50,7 @@ describe('reglas de la familia', () => {
 
   test('resumen para el cajero', () => {
     expect(resumenReglas(alumno({ categorias_bloqueadas: ['golosina'], maximos: { bebida: 1 } }, { limite_semanal: 30000 })))
-      .toEqual(['sin golosinas', 'máx. 1 bebidas/día', 'hasta $30.000/semana']);
+      .toEqual(['sin golosinas', 'bebidas: hasta 1 por día', 'hasta $30.000/semana']);
   });
 });
 

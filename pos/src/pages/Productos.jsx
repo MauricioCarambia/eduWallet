@@ -223,7 +223,7 @@ export default function Productos() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Producto', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
+              {['Producto', 'Código de barras', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
               ))}
             </tr>
@@ -233,9 +233,9 @@ export default function Productos() {
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                 <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
                   {p.nombre}
-                  {p.codigo_barras && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>▮▯▮ {p.codigo_barras}</div>}
                   {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="alerta" />{nombresAlergenos(p.alergenos)}</div>}
                 </td>
+                <td style={{ padding: '12px 16px', fontSize: 13, fontFamily: 'monospace', color: p.codigo_barras ? 'var(--text)' : 'var(--text-tertiary)' }}>{p.codigo_barras || '—'}</td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

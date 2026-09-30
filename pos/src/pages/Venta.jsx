@@ -45,11 +45,12 @@ export default function Venta() {
   const [busqAlumno, setBusqAlumno] = useState('')
   const [showSugerencias, setShowSugerencias] = useState(false)
   const [ultimaVenta, setUltimaVenta] = useState(null)
-  const [modoEscaneo, setModoEscaneo] = useState('manual')
+  const [modoEscaneo, setModoEscaneo] = useState('qr')
   const [escaneandoQR, setEscaneandoQR] = useState(false)
   const [errorQR, setErrorQR] = useState(null)
   const videoRef = useRef(null)
   const scannerRef = useRef(null)
+  const identificarRef = useRef(null) // la cámara queda prendida: siempre usa la versión actual
   const [controlDe, setControlDe] = useState({ id: null, datos: null })
   const [confirmados, setConfirmados] = useState([]) // productos con alérgeno que el cajero confirmó
   const [avisoAlergia, setAvisoAlergia] = useState(null) // { titulo, detalle, alConfirmar }
@@ -174,22 +175,39 @@ export default function Venta() {
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al anular') }
   }
 
-  const iniciarQR = async () => {
+  // auto: arranque solo (modo QR por defecto). Si la PC no tiene cámara se pasa
+  // a Nombre sin mostrar error; el lector USB de QR funciona en cualquier modo.
+  const iniciarQR = async ({ auto = false } = {}) => {
     setEscaneandoQR(true); setErrorQR(null)
     try {
       const { BrowserQRCodeReader } = await import('@zxing/browser')
+      if (!videoRef.current) await new Promise(r => requestAnimationFrame(r)) // esperar a que se dibuje el <video>
+      if (!videoRef.current) { setEscaneandoQR(false); return }
       const reader = new BrowserQRCodeReader()
       // cámara trasera en celulares/tablets (también en iPhone); en una PC, la que haya
       scannerRef.current = await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } } }, videoRef.current, (result) => {
-        if (result) { identificar(result.getText()); detenerQR() }
+        if (result) { identificarRef.current(result.getText()); detenerQR() }
       })
-    } catch (err) { setErrorQR(err?.name === 'NotAllowedError' ? 'Permití el acceso a la cámara para escanear' : 'No se encontró una cámara'); setEscaneandoQR(false) }
+    } catch (err) {
+      setEscaneandoQR(false)
+      if (err?.name === 'NotAllowedError') setErrorQR('Permití el acceso a la cámara para escanear')
+      else if (auto) setModoEscaneo('manual')
+      else setErrorQR('No se encontró una cámara')
+    }
   }
 
   const detenerQR = () => {
     if (scannerRef.current) { scannerRef.current.stop(); scannerRef.current = null }
     setEscaneandoQR(false)
   }
+
+  // Modo QR: la cámara queda prendida mientras no haya alumno (también después de cada cobro)
+  useEffect(() => {
+    if (modoEscaneo === 'qr' && !alumno && caja && !scannerRef.current && !escaneandoQR) iniciarQR({ auto: true })
+    if (alumno && scannerRef.current) detenerQR()
+  }, [modoEscaneo, alumno, caja]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => () => { if (scannerRef.current) scannerRef.current.stop() }, [])
 
   // Identificar al alumno con lo que se leyó: QR de la credencial (lector USB
   // o cámara), tarjeta NFC 13,56 MHz o llavero 125 kHz, con cualquier lector.
@@ -201,12 +219,13 @@ export default function Venta() {
       const res = await api.get('/alumnos/identificar', { params: { codigo } })
       const encontrado = alumnos.find(a => a.id === res.data.id) || res.data
       if (!encontrado.activo) { showMsg('error', `${encontrado.nombre}: la cuenta está bloqueada`); return }
-      setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
+      setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo(m => m === 'nfc' ? 'manual' : m)
       showMsg('ok', `✓ ${encontrado.nombre}`)
     } catch (err) {
       showMsg('error', err.response?.data?.error || 'No se pudo leer la credencial')
     }
   }
+  identificarRef.current = identificar
 
   // Producto de esta zona con ese código de barras (o nada)
   const productoPorCodigo = codigo => {

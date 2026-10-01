@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
+import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
 
 const NAV = [
   { path: '/dashboard', key: 'dashboard', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
@@ -25,8 +26,13 @@ export default function Layout({ children }) {
   const { dark, toggle } = useTheme()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
+  const ancho = useAncho()
+  const movil = ancho < ANCHO_CELULAR
+  // En tablet el menú arranca angosto; en celular va escondido y se abre con ☰
+  const [plegado, setPlegado] = useState(() => window.innerWidth < ANCHO_TABLET)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const collapsed = movil ? false : plegado
+  const setCollapsed = v => (movil ? setMobileOpen(false) : setPlegado(v))
   const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
 
   useEffect(() => {
@@ -50,9 +56,9 @@ export default function Layout({ children }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      {mobileOpen && <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 40 }} />}
+      {movil && mobileOpen && <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 40 }} />}
 
-      <aside className="sidebar" style={{ width: collapsed ? 64 : 230, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: 'var(--shadow-md)' }}>
+      <aside className="sidebar" style={{ width: movil ? 260 : collapsed ? 64 : 230, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s, transform .2s', transform: movil && !mobileOpen ? 'translateX(-100%)' : 'none', boxShadow: 'var(--shadow-md)' }}>
 
         {/* logo */}
         <div style={{ padding: collapsed ? '20px 0' : '20px 18px', borderBottom: `1px solid ${sidebarBorder}`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
@@ -125,8 +131,16 @@ export default function Layout({ children }) {
       </aside>
 
       {/* main */}
-      <div style={{ flex: 1, marginLeft: collapsed ? 64 : 230, transition: 'margin .2s', minWidth: 0 }}>
-        <main style={{ padding: '28px', maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ flex: 1, marginLeft: movil ? 0 : collapsed ? 64 : 230, transition: 'margin .2s', minWidth: 0 }}>
+        {movil && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
+            <button onClick={() => setMobileOpen(true)} aria-label="Abrir menú" style={{ width: 38, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{branding.nombre_colegio || 'KoleTap'}</span>
+          </div>
+        )}
+        <main style={{ padding: movil ? '16px' : '28px', maxWidth: 1200, margin: '0 auto' }}>
           {children}
         </main>
       </div>

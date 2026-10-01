@@ -86,6 +86,10 @@ export function useLectorEscritorio() {
 // Web NFC (Chrome en Android): lee el número de serie de la tarjeta
 export const nfcDisponible = () => typeof window !== 'undefined' && 'NDEFReader' in window
 
+// Android con un navegador que no puede leer NFC (sólo Chrome lo permite): si se
+// acerca la tarjeta, el celular dice "no hay ninguna aplicación que admita la tarjeta"
+export const nfcEnOtroNavegador = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) && !nfcDisponible()
+
 export async function escucharNfc(onLeer, signal) {
   const ndef = new window.NDEFReader()
   await ndef.scan({ signal })

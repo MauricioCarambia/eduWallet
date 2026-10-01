@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
-import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
+import useLectorTarjeta, { nfcDisponible, nfcEnOtroNavegador, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 import Icono from './Icono'
 
 // Asignación de tarjetas NFC a alumnos. Se puede leer la tarjeta con un
@@ -61,6 +61,11 @@ function Lector({ onLeer, ocupado }) {
         nfcActivo
           ? <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>NFC activo — acercá la tarjeta al dispositivo</p>
           : <button onClick={activarNfc} style={{ ...btn(false), marginTop: 10 }}><Icono nombre="nfc" />Leer con el NFC de este dispositivo</button>
+      )}
+      {nfcEnOtroNavegador() && (
+        <p style={{ margin: '10px 0 0', padding: '8px 10px', borderRadius: 8, fontSize: 12, textAlign: 'left', background: 'var(--amber-bg)', color: 'var(--amber)' }}>
+          <Icono nombre="alerta" />Este navegador no puede leer tarjetas con el NFC del celular. Abrí esta página en <b>Chrome</b> y tocá "Leer con el NFC de este dispositivo" antes de acercar la tarjeta.
+        </p>
       )}
       {errorNfc && <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red)' }}>{errorNfc}</p>}
     </div>

@@ -5,7 +5,7 @@ import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import useUmbralStock from '../hooks/useUmbralStock'
 import { useLocales } from '../hooks/useLocales'
-import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
+import useLectorTarjeta, { nfcDisponible, nfcEnOtroNavegador, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 import { motivoBloqueo, alergiasDe, nombresAlergenos, excedeLimiteZona } from '../utils/alergenos'
 import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
@@ -592,6 +592,11 @@ export default function Venta() {
             <div>
               <div style={{ width: '100%', padding: '12px 14px', border: '2px dashed var(--border)', borderRadius: 12, background: 'var(--bg-subtle)', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 8, textAlign: 'center', boxSizing: 'border-box' }}>
                 <Icono nombre="tarjeta" />Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
+                {nfcEnOtroNavegador() && (
+                  <div style={{ marginTop: 6, fontSize: 12, fontWeight: 500, color: 'var(--amber)' }}>
+                    Para leer tarjetas con el NFC del celular, abrí el POS en Chrome.
+                  </div>
+                )}
                 {lectorEscritorio.disponible && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
                     {lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}

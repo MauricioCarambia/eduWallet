@@ -32,7 +32,8 @@ jest.mock('../src/db/conexion', () => ({
   connect: async () => ({ query: (...a) => ejecutar(...a), release: () => {} }),
 }));
 jest.mock('../src/controllers/auditoriaController', () => ({ registrar: async (...a) => { db.auditoria.push(a); } }));
-jest.mock('../src/services/notificacionesService', () => ({ notificarCompra: () => {} }));
+const mockNotificar = jest.fn();
+jest.mock('../src/services/notificacionesService', () => ({ notificarCompra: (...a) => mockNotificar(...a) }));
 
 const { sincronizarVentas, huella } = require('../src/controllers/offlineController');
 
@@ -69,4 +70,9 @@ test('lo que no se puede registrar vuelve como error y no frena al resto', async
 test('la huella de una credencial es la misma que calcula el POS', () => {
   expect(huella('EW7K3M9QXR2T4P')).toMatch(/^[0-9a-f]{64}$/);
   expect(huella('EW7K3M9QXR2T4P')).toBe(huella('EW7K3M9QXR2T4P'));
+});
+
+test('el aviso a la familia lleva la hora en que se vendió sin conexión', () => {
+  const llamada = mockNotificar.mock.calls.find(c => c[0].total === 1600)?.[0];
+  expect(llamada.sinConexion).toBeInstanceOf(Date);
 });

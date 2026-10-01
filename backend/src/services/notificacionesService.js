@@ -34,13 +34,29 @@ const quiereCompra = (padre, total) =>
 const cruzoUmbral = (padre, saldoAnterior, saldoNuevo) =>
   padre.notif_saldo_bajo && Number(saldoAnterior) >= Number(padre.umbral_saldo_bajo) && Number(saldoNuevo) < Number(padre.umbral_saldo_bajo);
 
-const notificarCompra = async ({ colegioId, alumno, saldoAnterior, saldoNuevo, total, descripcion, lugar }) => {
+// Hora de Argentina de una compra ("11:26", o "30/09 11:26" si no fue hoy)
+const horaAr = fecha => {
+  const zona = { timeZone: 'America/Argentina/Buenos_Aires' };
+  const dia = d => d.toLocaleDateString('es-AR', { ...zona, day: '2-digit', month: '2-digit' });
+  const hora = fecha.toLocaleTimeString('es-AR', { ...zona, hour: '2-digit', minute: '2-digit', hour12: false });
+  return dia(fecha) === dia(new Date()) ? hora : `${dia(fecha)} ${hora}`;
+};
+
+// sinConexion: fecha en que se vendió, si la caja estaba sin internet (el aviso
+// llega recién cuando la venta se sube)
+const notificarCompra = async ({ colegioId, alumno, saldoAnterior, saldoNuevo, total, descripcion, lugar, sinConexion = null }) => {
   try {
+    const cuando = sinConexion ? horaAr(new Date(sinConexion)) : null;
+    const negativo = Number(saldoNuevo) < 0;
+    const notaPush = [
+      cuando && `Compra hecha sin conexión a las ${cuando}.`,
+      negativo && 'El saldo quedó negativo: se descuenta de la próxima recarga.',
+    ].filter(Boolean).join(' ');
     for (const padre of await padresDelAlumno(alumno.id)) {
       if (quiereCompra(padre, total)) {
         await avisar(padre, {
-          email: () => enviarEmailCompra({ colegioId, nombrePadre: padre.nombre, emailPadre: padre.email, nombreAlumno: alumno.nombre, descripcion, monto: total, saldo: saldoNuevo, lugar }),
-          push: { title: `Compra de ${alumno.nombre}`, body: `${descripcion} — ${pesos(total)} en ${lugar}. Saldo: ${pesos(saldoNuevo)}`, url: '/historial' },
+          email: () => enviarEmailCompra({ colegioId, nombrePadre: padre.nombre, emailPadre: padre.email, nombreAlumno: alumno.nombre, descripcion, monto: total, saldo: saldoNuevo, lugar, sinConexion: cuando }),
+          push: { title: `Compra de ${alumno.nombre}`, body: `${descripcion} — ${pesos(total)} en ${lugar}. Saldo: ${pesos(saldoNuevo)}${notaPush ? '. ' + notaPush : ''}`, url: '/historial' },
         });
       }
       if (cruzoUmbral(padre, saldoAnterior, saldoNuevo)) {

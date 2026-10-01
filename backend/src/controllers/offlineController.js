@@ -168,7 +168,7 @@ const sincronizarUna = async (v, req) => {
       await registrar(empleadoId, colegioId, 'Venta sin conexión con saldo negativo',
         `${a.nombre}: ${desc} ($${total}). Saldo ${nuevo.saldo}: se descuenta de la próxima recarga.`);
     }
-    notificarCompra({ colegioId, alumno: a, lugar, total, descripcion: desc, saldoAnterior: a.saldo, saldoNuevo: nuevo.saldo });
+    notificarCompra({ colegioId, alumno: a, lugar, total, descripcion: desc, saldoAnterior: a.saldo, saldoNuevo: nuevo.saldo, sinConexion: fecha });
     return { id_venta, estado: 'ok', transaccion_id: tx.rows[0].id, total, alumno: nuevo };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

@@ -79,7 +79,8 @@ const enviarEmailRecarga = async ({ colegioId, nombrePadre, emailPadre, nombreAl
   });
 };
 
-const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar }) => {
+// sinConexion: hora ("11:26") si la compra se hizo con la caja sin internet
+const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar, sinConexion = null }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
     <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
@@ -88,8 +89,10 @@ const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlu
       <p style="margin: 0 0 6px; font-size: 13px; color: #666;">Detalle</p>
       <p style="margin: 0 0 4px; font-size: 14px; color: #111;">${descripcion}</p>
       <p style="margin: 8px 0 0; font-size: 22px; font-weight: 700; color: #111;">-$${Number(monto).toLocaleString('es-AR')}</p>
-      <p style="margin: 6px 0 0; font-size: 13px; color: #666;">Saldo restante: <b>$${Number(saldo).toLocaleString('es-AR')}</b></p>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #666;">Saldo restante: <b>${Number(saldo).toLocaleString('es-AR')}</b></p>
     </div>
+    ${sinConexion ? `<p style="margin: 0 0 10px; font-size: 13px; color: #5b6660;">La compra se hizo a las <b>${sinConexion}</b>, cuando la caja del colegio estaba sin internet. Por eso este aviso te llega ahora.</p>` : ''}
+    ${Number(saldo) < 0 ? `<p style="margin: 0 0 10px; font-size: 13px; color: #9a5b12;">El saldo quedó en negativo: la diferencia se descuenta automáticamente de la próxima recarga.</p>` : ''}
   `, nombreColegio, logo);
 
   await enviarEmail({

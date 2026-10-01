@@ -113,6 +113,11 @@ let iniciado = false
 export const iniciarOffline = () => {
   if (iniciado || !offlineHabilitado()) return
   iniciado = true
+  // Pedirle al navegador que no borre los datos guardados (la cola de ventas)
+  // aunque le falte espacio; en Android/PC lo da solo a las apps instaladas o muy usadas
+  navigator.storage?.persist?.().catch(() => {})
+  // Bajar ya la parte de la cámara para leer QR, así también anda sin internet
+  setTimeout(() => { import('@zxing/browser').catch(() => {}) }, 15000)
   leerDato('copia').then(c => c && cambiarEstado({ copiaDe: c.generado })).catch(() => {})
   contarCola().catch(() => {})
   refrescarCopia().then(() => sincronizar())

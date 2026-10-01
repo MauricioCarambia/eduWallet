@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import AvisoOffline from './AvisoOffline'
+import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
 
 const NAV = [
   { path: '/venta', key: 'venta', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M7 15h2M13 15h4"/></svg> },
@@ -26,7 +27,13 @@ export default function Layout({ children }) {
   const { caja } = useCaja()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
+  const ancho = useAncho()
+  const movil = ancho < ANCHO_CELULAR
+  // En tablet el menú arranca angosto; en celular va escondido y se abre con ☰
+  const [plegado, setPlegado] = useState(() => window.innerWidth < ANCHO_TABLET)
+  const [menuMovil, setMenuMovil] = useState(false)
+  const collapsed = movil ? false : plegado
+  const setCollapsed = v => (movil ? setMenuMovil(false) : setPlegado(v))
   const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
   const [stockBajo, setStockBajo] = useState([])
   const [mostrarAlertas, setMostrarAlertas] = useState(false)
@@ -57,7 +64,8 @@ export default function Layout({ children }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      <aside className="sidebar" style={{ width: collapsed ? 64 : 220, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s', boxShadow: 'var(--shadow-md)' }}>
+      {movil && menuMovil && <div onClick={() => setMenuMovil(false)} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 45 }} />}
+      <aside className="sidebar" style={{ width: movil ? 260 : collapsed ? 64 : 220, flexShrink: 0, background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 50, transition: 'width .2s, transform .2s', transform: movil && !menuMovil ? 'translateX(-100%)' : 'none', boxShadow: 'var(--shadow-md)' }}>
 
         <div style={{ padding: collapsed ? '20px 0' : '20px 16px', borderBottom: `1px solid ${sidebarBorder}`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && (
@@ -94,7 +102,7 @@ export default function Layout({ children }) {
 
         <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
           {NAV.map(item => (
-            <NavLink key={item.path} to={item.path} style={({ isActive }) => ({
+            <NavLink key={item.path} to={item.path} onClick={() => setMenuMovil(false)} style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10,
               padding: collapsed ? '10px 0' : '9px 12px',
               borderRadius: 8, textDecoration: 'none', marginBottom: 2,
@@ -137,9 +145,18 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      <div style={{ flex: 1, marginLeft: collapsed ? 64 : 220, transition: 'margin .2s', minWidth: 0 }}>
-        {/* alertas de stock bajo */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '14px 24px 0', position: 'relative' }}>
+      <div style={{ flex: 1, marginLeft: movil ? 0 : collapsed ? 64 : 220, transition: 'margin .2s', minWidth: 0 }}>
+        {/* barra de arriba: en celular ☰ y nombre; siempre las alertas de stock bajo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: movil ? 'space-between' : 'flex-end', gap: 10, padding: movil ? '10px 16px 0' : '14px 24px 0', position: 'relative' }}>
+          {movil && <>
+            <button onClick={() => setMenuMovil(true)} aria-label="Abrir menú" style={{ width: 38, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{branding.nombre_colegio || 'KoleTap'}</p>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 500, color: caja ? 'var(--green)' : 'var(--red)' }}>{caja ? `${caja.local} · ${fmt(caja.ventas || 0)}` : t('common.sin_caja_abierta')}</p>
+            </div>
+          </>}
           <button onClick={() => setMostrarAlertas(v => !v)} style={{ position: 'relative', width: 38, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: 'var(--shadow)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             {stockBajo.length > 0 && (
@@ -174,7 +191,7 @@ export default function Layout({ children }) {
         </div>
 
         <AvisoOffline />
-        <main style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+        <main style={{ padding: movil ? '16px' : '24px', maxWidth: 1200, margin: '0 auto' }}>
           {children}
         </main>
       </div>

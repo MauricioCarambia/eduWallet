@@ -3,13 +3,31 @@ import { useSyncExternalStore } from 'react'
 // Estado del modo offline, compartido por toda la app (sin contexto de React:
 // lo actualizan el cliente de la API y la sincronización).
 
-// Etapa 1: el modo offline está en la app de escritorio. En el navegador se
-// puede probar con localStorage.pos_offline = '1'.
+// iPhone / iPad (también el iPad que se presenta como Mac)
+export const esIOS = () => typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+
+// El POS abierto como app instalada (ícono en la pantalla de inicio)
+export const instalada = () => typeof window !== 'undefined' &&
+  (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true)
+
+// Modo offline: en la app de escritorio, en Android, en tablets y en PCs con
+// navegador. En iPhone/iPad sólo con el POS instalado: si no, Safari puede
+// borrar los datos guardados (la cola de ventas) a los pocos días.
+// localStorage.pos_offline = '1' / '0' lo fuerza (para pruebas).
 export const offlineHabilitado = () => {
   if (typeof window === 'undefined') return false
+  try {
+    const forzado = localStorage.getItem('pos_offline')
+    if (forzado === '1') return true
+    if (forzado === '0') return false
+  } catch { /* sin almacenamiento */ }
   if (window.koletapEscritorio || window.edupassEscritorio || window.eduwalletEscritorio) return true
-  try { return localStorage.getItem('pos_offline') === '1' } catch { return false }
+  return !esIOS() || instalada()
 }
+
+// iPhone/iPad sin instalar: se le explica cómo instalarlo para cobrar sin internet
+export const faltaInstalarEnIOS = () => esIOS() && !instalada()
 
 let estado = {
   online: true,          // el último pedido al servidor anduvo

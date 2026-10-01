@@ -44,7 +44,8 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
   const [vista, setVista] = useState(leerVista)
   const [grupoAbierto, setGrupoAbierto] = useState(null) // nombre del grupo
   const [abiertosLista, setAbiertosLista] = useState([]) // grupos desplegados en la vista de lista
-  const [resaltado, setResaltado] = useState(0)
+  // resultado marcado del buscador; vuelve al primero cuando cambia lo escrito
+  const [marca, setMarca] = useState({ texto: '', i: 0 })
 
   const cambiarVista = v => { setVista(v); try { localStorage.setItem(CLAVE_VISTA, v) } catch { /* sin almacenamiento */ } }
   const enCarrito = id => carrito.find(i => i.id === id)?.qty || 0
@@ -81,7 +82,8 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
     return c
   }, [productos])
 
-  useEffect(() => { setResaltado(0) }, [texto])
+  const resaltado = marca.texto === texto ? marca.i : 0
+  const setResaltado = cambio => setMarca({ texto, i: cambio(resaltado) })
 
   // Escribir sin hacer clic: una letra con el cursor fuera de un campo va al buscador
   useEffect(() => {
@@ -219,7 +221,7 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', display: 'flex' }}><Icono nombre="buscar" style={{ marginRight: 0 }} /></span>
-          <input ref={busqRef} placeholder="Buscar producto o código… (escribí directo)" value={busq} onChange={e => setBusq(e.target.value)} onKeyDown={alTeclearBuscador} style={{ paddingLeft: 36 }} />
+          <input ref={busqRef} placeholder={window.matchMedia?.('(pointer: coarse)').matches ? 'Buscar producto o código…' : 'Buscar producto o código… (escribí directo)'} value={busq} onChange={e => setBusq(e.target.value)} onKeyDown={alTeclearBuscador} style={{ paddingLeft: 36 }} />
         </div>
         <div role="group" aria-label="Vista" style={{ display: 'flex', border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
           {[['tarjetas', 'Tarjetas', <svg key="t" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>],

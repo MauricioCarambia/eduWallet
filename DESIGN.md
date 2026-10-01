@@ -69,6 +69,7 @@ Gráficos (Recharts): serie principal `var(--brand)`, segunda `var(--accent)`; p
 - Radios: `--radius` 10px (inputs, botones), `--radius-lg` 16px (tarjetas), 8px (alertas, nav), 6px (badges), 20px (chips), 999px (pills de la landing).
 - Bordes antes que sombras: tarjetas con 1–1.5px `--border` + `--shadow`; `--shadow-md` solo para login y paneles elevados.
 - Espaciado frecuente: 6, 8, 10, 12, 16px; padding de tarjeta 1.25rem. Padres es una columna de 480px; admin tiene sidebar de 230px.
+- POS en tablet y celular (`hooks/useAncho.js`): menos de 1100px, menú angosto (64px) y panel de cobro de 300px; menos de 768px, menú escondido detrás de una barra con ☰, catálogo a una columna y barra de cobro fija abajo que abre el carrito y el alumno a pantalla completa.
 - Foco: `outline: var(--focus-ring)` (3px dorado) con `outline-offset: 2px`; en la sidebar el anillo es blanco.
 
 ## Componentes (patrones)

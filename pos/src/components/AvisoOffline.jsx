@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import Icono from './Icono'
-import { offlineHabilitado, useOffline } from '../offline/estado'
+import { offlineHabilitado, faltaInstalarEnIOS, useOffline } from '../offline/estado'
 import { sincronizar } from '../offline/sync'
+import useAncho, { ANCHO_CELULAR } from '../hooks/useAncho'
 
 // Barra del modo offline arriba del contenido: sin internet, subiendo ventas,
 // ventas con error o "se sincronizaron N ventas" (unos segundos)
 export default function AvisoOffline() {
   const { online, pendientes, conError, sincronizando, ultimaSync } = useOffline()
+  const movil = useAncho() < ANCHO_CELULAR
   // El aviso de "se subieron" se ve 8 segundos; el timer sólo fuerza a redibujar
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
@@ -16,10 +18,18 @@ export default function AvisoOffline() {
   }, [ultimaSync])
   const verListo = !!ultimaSync && Date.parse(ultimaSync.cuando) + 8000 > ahora
 
-  if (!offlineHabilitado()) return null
+  if (!offlineHabilitado()) {
+    // iPhone/iPad sin instalar: sin internet no puede cobrar; se le dice cómo instalarlo
+    if (!online && faltaInstalarEnIOS()) {
+      return <div role="status" style={{ margin: movil ? '10px 16px 0' : '14px 24px 0', padding: '10px 14px', borderRadius: 8, background: 'var(--red-bg)', color: 'var(--red)', borderLeft: '3px solid var(--red)', fontSize: 13 }}>
+        <Icono nombre="alerta" /><b>Sin internet.</b> Para cobrar sin conexión en iPhone o iPad, instalá el POS: botón Compartir → <b>Agregar a inicio</b>, y abrilo desde ese ícono.
+      </div>
+    }
+    return null
+  }
 
   const barra = (fondo, color, contenido, extra) => (
-    <div role="status" style={{ margin: '14px 24px 0', padding: '10px 14px', borderRadius: 8, background: fondo, color, borderLeft: `3px solid ${color}`, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <div role="status" style={{ margin: movil ? '10px 16px 0' : '14px 24px 0', padding: '10px 14px', borderRadius: 8, background: fondo, color, borderLeft: `3px solid ${color}`, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <span style={{ flex: 1, minWidth: 200 }}>{contenido}</span>
       {extra}
     </div>

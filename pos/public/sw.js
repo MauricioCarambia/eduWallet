@@ -6,8 +6,20 @@
 //   - el resto (íconos, logo): la guardada al instante y se renueva por detrás
 const CACHE = 'koletap-pos-v1'
 
+// Guarda una página y los archivos que usa (/assets/..., íconos, manifiesto)
+const guardarPagina = async respuesta => {
+  const cache = await caches.open(CACHE)
+  const html = await respuesta.clone().text()
+  await cache.put('/index.html', respuesta)
+  const archivos = [...html.matchAll(/(?:src|href)="(\/[^"]+)"/g)].map(m => m[1]).filter(u => !u.startsWith('//'))
+  await Promise.all(archivos.map(async u => {
+    if (u.startsWith('/assets/') && await cache.match(u)) return
+    try { const r = await fetch(u); if (r.ok) await cache.put(u, r) } catch { /* se guarda la próxima vez */ }
+  }))
+}
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(c => c.add('/index.html')).catch(() => {}))
+  event.waitUntil(fetch('/index.html', { cache: 'no-store' }).then(r => r.ok && guardarPagina(r)).catch(() => {}))
   self.skipWaiting()
 })
 
@@ -28,7 +40,7 @@ self.addEventListener('fetch', event => {
     event.respondWith((async () => {
       try {
         const respuesta = await fetch(pedido)
-        if (respuesta.ok) (await caches.open(CACHE)).put('/index.html', respuesta.clone())
+        if (respuesta.ok) event.waitUntil(guardarPagina(respuesta.clone()).catch(() => {}))
         return respuesta
       } catch {
         return (await caches.match('/index.html')) || Response.error()

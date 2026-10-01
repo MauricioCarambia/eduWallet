@@ -9,6 +9,7 @@ import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } fro
 import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
 import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
+import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
 import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
 import { leerCopia, refrescarCopia, encolarVenta, gastadoSinConexionHoy } from '../offline/sync'
 import { buscarCredencial } from '../offline/credenciales'
@@ -31,6 +32,9 @@ const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Venta() {
   const umbral = useUmbralStock()
+  const ancho = useAncho()
+  const movil = ancho < ANCHO_CELULAR
+  const [verCobro, setVerCobro] = useState(false) // celular: pantalla del carrito y el alumno
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja, actualizarVentas } = useCaja()
   const { locales } = useLocales()
@@ -193,6 +197,7 @@ export default function Venta() {
       actualizarVentas(totalDesc)
       setUltimaVenta({ id: res.data.transaccion.id, desc: carrito.map(i => i.nombre).join(', '), monto: totalDesc, items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty })) })
       showMsg('ok', `✓ Cobrado ${fmt(totalDesc)} a ${alumno.nombre}`)
+      setVerCobro(false)
       setCarrito([]); setAlumno(null); setDescPct(0); setConfirmados([])
       setTimeout(() => busqRef.current?.focus(), 100)
     } catch (err) {
@@ -256,6 +261,7 @@ export default function Venta() {
     actualizarVentas(total)
     setUltimaVenta({ offline: true, desc: carrito.map(i => i.nombre).join(', '), monto: total, items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty })) })
     showMsg('ok', `✓ Cobrado ${fmt(total)} a ${a.nombre} · sin conexión: se sube sola al volver internet`)
+    setVerCobro(false)
     setCarrito([]); setAlumno(null); setDescPct(0); setConfirmados([])
     setTimeout(() => busqRef.current?.focus(), 100)
   }
@@ -432,7 +438,9 @@ export default function Venta() {
 
   // pantalla principal de venta
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 0, height: 'calc(100vh - 120px)', overflow: 'hidden', margin: '-24px', borderRadius: 0 }}>
+    <div style={movil
+      ? { display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 64px)', overflow: 'hidden', margin: '-16px' }
+      : { display: 'grid', gridTemplateColumns: `1fr ${ancho < ANCHO_TABLET ? 300 : 340}px`, gap: 0, height: 'calc(100vh - 120px)', overflow: 'hidden', margin: '-24px', borderRadius: 0 }}>
       {avisoAlergia && (
         <div role="alertdialog" aria-modal="true" aria-labelledby="alergia-titulo" style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
           <div style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: 'var(--shadow-md)', border: '3px solid var(--red)' }}>
@@ -467,7 +475,7 @@ export default function Venta() {
       )}
 
       {/* panel productos */}
-      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
+      <div style={{ display: movil && verCobro ? 'none' : 'flex', flex: movil ? 1 : undefined, minHeight: 0, flexDirection: 'column', overflow: 'hidden', borderRight: movil ? 'none' : '1px solid var(--border)' }}>
         <CatalogoVenta
           encabezado={(
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
@@ -494,8 +502,24 @@ export default function Venta() {
         />
       </div>
 
-      {/* panel derecho */}
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', overflow: 'hidden', borderLeft: '1px solid var(--border)' }}>
+      {/* celular: barra de abajo con el carrito; abre la pantalla de cobro */}
+      {movil && !verCobro && (
+        <button onClick={() => setVerCobro(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0, padding: '12px 16px', border: 'none', borderTop: '1px solid var(--border)', background: 'var(--bg-card)', textAlign: 'left', boxShadow: 'var(--shadow-md)' }}>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alumno ? alumno.nombre : 'Sin alumno: tocá para identificarlo'}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{carrito.reduce((s, i) => s + i.qty, 0)} producto{carrito.reduce((s, i) => s + i.qty, 0) === 1 ? '' : 's'} · {fmt(totalDesc)}</span>
+          </span>
+          <span style={{ padding: '10px 18px', borderRadius: 'var(--radius)', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{alumno && carrito.length ? 'Cobrar ›' : 'Ver ›'}</span>
+        </button>
+      )}
+
+      {/* panel derecho (en celular, pantalla de cobro) */}
+      <div style={{ display: movil && !verCobro ? 'none' : 'flex', flex: movil ? 1 : undefined, minHeight: 0, flexDirection: 'column', background: 'var(--bg-card)', overflow: 'hidden', borderLeft: movil ? 'none' : '1px solid var(--border)' }}>
+        {movil && (
+          <button onClick={() => setVerCobro(false)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 14px', border: 'none', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--brand)', fontSize: 14, fontWeight: 600, textAlign: 'left' }}>
+            ‹ Seguir agregando productos
+          </button>
+        )}
         {/* info caja */}
         <div style={{ padding: '8px 14px', background: 'var(--green-bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 500 }}>{caja.local} · {fmt(caja.ventas || 0)}</span>

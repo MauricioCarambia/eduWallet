@@ -350,6 +350,7 @@ const anularVenta = async (req, res) => {
     await client.query('COMMIT');
 
     const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [t.alumno_id]);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Venta anulada', `${alumno.rows[0]?.nombre || 'Alumno'}: ${t.descripcion} (${Number(t.monto)}) en ${t.lugar}. Se devolvió el saldo.`);
     res.json({ mensaje: 'Venta anulada correctamente', alumno: alumno.rows[0], monto: t.monto });
   } catch (err) {
     await client.query('ROLLBACK');

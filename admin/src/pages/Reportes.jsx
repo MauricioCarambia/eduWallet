@@ -84,7 +84,10 @@ export default function Reportes() {
     })
   }, [txs, filtroLocal])
 
-  const compras = txsFiltradas.filter(t => t.tipo === 'compra')
+  // Las anuladas se ven en la tabla (marcadas) pero no suman en totales ni gráficos
+  const esAnulada = t => t.descripcion?.startsWith('[ANULADA]')
+  const comprasTodas = txsFiltradas.filter(t => t.tipo === 'compra')
+  const compras = comprasTodas.filter(t => !esAnulada(t))
   const recargas = txsFiltradas.filter(t => t.tipo === 'recarga')
   const totalVentas = compras.reduce((s, t) => s + parseFloat(t.monto), 0)
   const totalRecargas = recargas.reduce((s, t) => s + parseFloat(t.monto), 0)
@@ -153,20 +156,22 @@ export default function Reportes() {
 
   // tabla de transacciones filtrada por curso además
   const txsTabla = useMemo(() => {
-    return compras.filter(t => {
+    return comprasTodas.filter(t => {
       if (filtroCobro === 'Sin conexión' && !t.offline) return false
+      if (filtroCobro === 'Anuladas' && !esAnulada(t)) return false
       if (filtroCobro === 'Con internet' && t.offline) return false
       if (filtroCurso === 'Todos') return true
       const alumno = alumnos.find(a => a.nombre === t.alumno_nombre)
       return alumno?.curso === filtroCurso
     })
-  }, [compras, filtroCurso, filtroCobro, alumnos])
+  }, [comprasTodas, filtroCurso, filtroCobro, alumnos])
   const sinConexion = compras.filter(t => t.offline).length
+  const anuladas = comprasTodas.length - compras.length
 
   // exportar CSV
   const exportCSV = () => {
     const rows = [
-      ['ID', 'Alumno', 'Monto', 'Lugar', 'Descripción', 'Fecha', 'Tipo', 'Sin conexión'],
+      ['ID', 'Alumno', 'Monto', 'Lugar', 'Descripción', 'Fecha', 'Tipo', 'Sin conexión', 'Anulada'],
       ...txsFiltradas.map(t => [
         t.id,
         t.alumno_nombre,
@@ -175,7 +180,8 @@ export default function Reportes() {
         `"${t.descripcion || ''}"`,
         new Date(t.fecha).toLocaleString('es-AR'),
         t.tipo,
-        t.offline ? 'Sí' : 'No'
+        t.offline ? 'Sí' : 'No',
+        t.tipo === 'compra' && t.descripcion?.startsWith('[ANULADA]') ? 'Sí' : 'No'
       ])
     ]
     const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
@@ -393,7 +399,7 @@ export default function Reportes() {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>Cobro</label>
             <select value={filtroCobro} onChange={e => setFiltroCobro(e.target.value)} style={{ minWidth: 150 }}>
-              {['Todos', 'Sin conexión', 'Con internet'].map(c => <option key={c}>{c}</option>)}
+              {['Todos', 'Sin conexión', 'Con internet', 'Anuladas'].map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -696,6 +702,11 @@ export default function Reportes() {
                   · {sinConexion} sin conexión
                 </button>
               )}
+              {anuladas > 0 && filtroCobro === 'Todos' && (
+                <button onClick={() => setFiltroCobro('Anuladas')} style={{ marginLeft: 8, border: 'none', background: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'none', letterSpacing: 0, cursor: 'pointer' }}>
+                  · {anuladas} anulada{anuladas > 1 ? 's' : ''}
+                </button>
+              )}
             </h2>
             <button onClick={exportCSV} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -715,9 +726,9 @@ export default function Reportes() {
                 {txsTabla.slice(0, 100).map((t, i) => (
                   <tr key={t.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap' }}>{t.alumno_nombre}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.offline && <span style={{ display: 'inline-block', marginRight: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin conexión</span>}{t.descripcion}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{esAnulada(t) && <span style={{ display: 'inline-block', marginRight: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text-secondary)' }}>Anulada</span>}{t.offline && <span style={{ display: 'inline-block', marginRight: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin conexión</span>}{t.descripcion?.replace(/^\[ANULADA\]\s*/, '')}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{t.lugar}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.monto)}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: esAnulada(t) ? 'var(--text-tertiary)' : 'var(--text)', textDecoration: esAnulada(t) ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>{fmt(t.monto)}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: 12 }}>{new Date(t.fecha).toLocaleString('es-AR')}</td>
                   </tr>
                 ))}

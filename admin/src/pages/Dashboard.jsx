@@ -34,6 +34,8 @@ const ACTUALIZACION_INTERVALO = 15000 // 15s
 
 // Movimientos que suman saldo (el resto, compras, lo restan)
 const SUMAN_SALDO = ['recarga', 'ajuste', 'anulacion']
+// Venta que cuenta en los totales (las anuladas no)
+const esVenta = t => t.tipo === 'compra' && !t.descripcion?.startsWith('[ANULADA]')
 
 export default function Dashboard() {
   const [transacciones, setTransacciones] = useState([])
@@ -74,7 +76,7 @@ export default function Dashboard() {
 
   const hoy = new Date().toISOString().slice(0, 10)
   const txHoy = transacciones.filter(t => t.fecha?.slice(0, 10) === hoy)
-  const ventasHoy = txHoy.filter(t => t.tipo === 'compra').reduce((s, t) => s + parseFloat(t.monto), 0)
+  const ventasHoy = txHoy.filter(t => esVenta(t)).reduce((s, t) => s + parseFloat(t.monto), 0)
   const recargasHoy = txHoy.filter(t => t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
   const totalSaldo = alumnos.reduce((s, a) => s + parseFloat(a.saldo), 0)
   const bajaSaldo = alumnos.filter(a => parseFloat(a.saldo) < 200 && a.activo)
@@ -84,17 +86,17 @@ export default function Dashboard() {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
     const fecha = d.toISOString().slice(0, 10)
-    const total = transacciones.filter(t => t.fecha?.slice(0, 10) === fecha && t.tipo === 'compra').reduce((s, t) => s + parseFloat(t.monto), 0)
+    const total = transacciones.filter(t => t.fecha?.slice(0, 10) === fecha && esVenta(t)).reduce((s, t) => s + parseFloat(t.monto), 0)
     const recargas = transacciones.filter(t => t.fecha?.slice(0, 10) === fecha && t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
     return { dia: d.toLocaleDateString('es-AR', { weekday: 'short' }), ventas: total, recargas }
   })
 
   const porLocal = {}
-  transacciones.filter(t => t.tipo === 'compra').forEach(t => porLocal[t.lugar] = (porLocal[t.lugar] || 0) + parseFloat(t.monto))
+  transacciones.filter(t => esVenta(t)).forEach(t => porLocal[t.lugar] = (porLocal[t.lugar] || 0) + parseFloat(t.monto))
   const dataLocal = Object.entries(porLocal).map(([local, total]) => ({ local, total }))
 
   const rankProds = {}
-  transacciones.filter(t => t.tipo === 'compra').forEach(t =>
+  transacciones.filter(t => esVenta(t)).forEach(t =>
     t.descripcion?.split(', ').forEach(d => { const n = d.replace(/ ×\d+/, ''); rankProds[n] = (rankProds[n] || 0) + 1 })
   )
   const topProds = Object.entries(rankProds).sort((a, b) => b[1] - a[1]).slice(0, 5)
@@ -125,7 +127,7 @@ export default function Dashboard() {
 
       {/* stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Ventas hoy" value={fmt(ventasHoy)} sub={`${txHoy.filter(t => t.tipo === 'compra').length} transacciones`} color="var(--text)"
+        <StatCard label="Ventas hoy" value={fmt(ventasHoy)} sub={`${txHoy.filter(t => esVenta(t)).length} transacciones`} color="var(--text)"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} />
         <StatCard label="Recargas hoy" value={fmt(recargasHoy)} color="var(--green)"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>} />

@@ -41,7 +41,7 @@ export default function Historial() {
   }
 
   const filtradas = filtro === 'todos' ? txs : txs.filter(t => t.tipo === filtro)
-  const totalGastado = txs.filter(t => t.tipo === 'compra').reduce((s, t) => s + parseFloat(t.monto), 0)
+  const totalGastado = txs.filter(t => t.tipo === 'compra' && !t.descripcion?.startsWith('[ANULADA]')).reduce((s, t) => s + parseFloat(t.monto), 0)
   const totalRecargado = txs.filter(t => t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
 
@@ -95,7 +95,8 @@ export default function Historial() {
                   : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>}
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.descripcion}
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.descripcion?.replace(/^\[ANULADA\]\s*/, '')}
+                  {t.descripcion?.startsWith('[ANULADA]') && <span title="La venta se anuló: no se descontó del saldo" style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Anulada</span>}
                   {t.offline && <span title="La caja estaba sin internet: se registró al volver la conexión" style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}
                 </p>
                 <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>

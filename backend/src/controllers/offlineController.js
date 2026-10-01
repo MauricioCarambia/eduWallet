@@ -135,6 +135,29 @@ const sincronizarUna = async (v, req) => {
       if (e.rows.length) empleadoId = e.rows[0].id;
     }
 
+    const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
+
+    // Anulada en el POS antes de subirse: se registra como cualquier venta
+    // anulada (la venta marcada [ANULADA] y su anulación, que suman cero), sin
+    // tocar saldo, stock ni caja porque nunca se descontaron
+    if (v.anulada === true) {
+      let anuladaEn = new Date(v.anulada_en);
+      if (Number.isNaN(anuladaEn.getTime()) || anuladaEn < fecha) anuladaEn = fecha;
+      const tx = await client.query(
+        `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline, sincronizada_en)
+         VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true, NOW() AT TIME ZONE 'UTC') RETURNING *`,
+        [a.id, empleadoId, total, lugar, '[ANULADA] ' + desc, colegioId, fecha.toISOString(), id_venta]
+      );
+      await client.query(
+        `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, offline, sincronizada_en)
+         VALUES ($1, $2, $3, 'anulacion', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), true, NOW() AT TIME ZONE 'UTC')`,
+        [a.id, empleadoId, total, lugar, `Anulación de venta #${tx.rows[0].id}: ${desc}`, colegioId, anuladaEn.toISOString()]
+      );
+      await client.query('COMMIT');
+      await registrar(empleadoId, colegioId, 'Venta anulada sin conexión', `${a.nombre}: ${desc} (${total}) en ${lugar}. Se anuló antes de subirse: no se le descontó nada.`);
+      return { id_venta, estado: 'ok', anulada: true, transaccion_id: tx.rows[0].id, total: 0 };
+    }
+
     // El gasto de hoy sólo suma si la venta fue hoy
     await client.query(
       `UPDATE alumnos SET saldo = saldo - $1,
@@ -145,7 +168,6 @@ const sincronizarUna = async (v, req) => {
     for (const l of lineas) {
       await client.query('UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 AND colegio_id = $3', [l.qty, l.id, colegioId]);
     }
-    const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
     const tx = await client.query(
       `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline, sincronizada_en)
        VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true, NOW() AT TIME ZONE 'UTC') RETURNING *`,
@@ -253,7 +275,7 @@ const sincronizarVentas = async (req, res) => {
   const resultadosCierres = [];
   for (const c of cierres) resultadosCierres.push(await sincronizarCierre(c, req));
 
-  const ok = resultados.filter(r => r.estado === 'ok');
+  const ok = resultados.filter(r => r.estado === 'ok' && !r.anulada);
   if (ok.length) {
     const total = ok.reduce((s, r) => s + r.total, 0);
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Ventas sin conexión sincronizadas', `${ok.length} venta${ok.length > 1 ? 's' : ''} por $${total}`);

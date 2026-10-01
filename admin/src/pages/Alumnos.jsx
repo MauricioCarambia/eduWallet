@@ -413,7 +413,7 @@ export default function Alumnos() {
         <Modal title={`Historial — ${seleccionado.nombre}`} onClose={cerrarModal}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
             {[['Saldo actual', fmt(seleccionado.saldo), parseFloat(seleccionado.saldo) < 200 ? 'var(--red)' : 'var(--green)'],
-              ['Total gastado', fmt(historialAlumno.filter(t => t.tipo === 'compra').reduce((s, t) => s + parseFloat(t.monto), 0)), 'var(--text)']
+              ['Total gastado', fmt(historialAlumno.filter(t => t.tipo === 'compra' && !t.descripcion?.startsWith('[ANULADA]')).reduce((s, t) => s + parseFloat(t.monto), 0)), 'var(--text)']
             ].map(([label, value, color]) => (
               <div key={label} style={{ background: 'var(--bg-subtle)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--border)' }}>
                 <p style={{ margin: '0 0 2px', fontSize: 11, color: 'var(--text-secondary)' }}>{label}</p>
@@ -425,7 +425,7 @@ export default function Alumnos() {
             historialAlumno.map(t => (
               <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion}{t.offline && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion?.replace(/^\[ANULADA\]\s*/, '')}{t.descripcion?.startsWith('[ANULADA]') && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Anulada</span>}{t.offline && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}</p>
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>

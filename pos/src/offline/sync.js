@@ -75,7 +75,7 @@ export const leerCopia = async () => {
   if (!copia) return null
   const cola = await leerCola()
   const porAlumno = new Map(), porProducto = new Map()
-  for (const v of cola) {
+  for (const v of cola.filter(v => !v.anulada)) {
     const a = porAlumno.get(v.alumno_id) || { total: 0, hoy: 0, semana: 0, categorias: {} }
     a.total += v.total
     a.semana += v.total
@@ -106,19 +106,20 @@ export const leerCopia = async () => {
 
 // Cuánto gastó un alumno hoy en ventas sin internet de esta caja (para el tope)
 export const gastadoSinConexionHoy = async alumnoId =>
-  (await leerCola()).filter(v => v.alumno_id === alumnoId && esHoy(v.fecha)).reduce((s, v) => s + v.total, 0)
+  (await leerCola()).filter(v => v.alumno_id === alumnoId && !v.anulada && esHoy(v.fecha)).reduce((s, v) => s + v.total, 0)
 
 export const encolarVenta = async venta => {
   await encolar(venta)
   await contarPendientes()
 }
 
-// Anular una venta hecha sin internet que todavía no se subió: sale de la cola.
-// Devuelve la venta quitada, o null si ya no estaba (ya se subió).
+// Anular una venta hecha sin internet que todavía no se subió: queda en la cola
+// marcada como anulada (no descuenta nada) y se sube igual, así se ve en el
+// historial, los reportes y la auditoría. Devuelve la venta, o null si ya se subió.
 export const anularEnCola = async idVenta => {
-  const venta = (await leerCola()).find(v => v.id_venta === idVenta)
+  const venta = (await leerCola()).find(v => v.id_venta === idVenta && !v.anulada)
   if (!venta) return null
-  await quitarDeCola([idVenta])
+  await encolar({ ...venta, anulada: true, anulada_en: new Date().toISOString() })
   await contarPendientes()
   return venta
 }
@@ -153,13 +154,13 @@ export const sincronizar = () => {
         ] : []
         const { data } = await api.post('/offline/ventas', {
           cajas: primera ? ops.abiertas.map(({ id_local, local, fondo, apertura }) => ({ id_local, local, fondo, apertura })) : [],
-          ventas: tanda.map(({ id_venta, alumno_id, lugar, items, descuento, caja_id, empleado_id, fecha }) =>
-            ({ id_venta, alumno_id, lugar, items: items.map(({ id, qty }) => ({ id, qty })), descuento, caja_id, empleado_id, fecha })),
+          ventas: tanda.map(({ id_venta, alumno_id, lugar, items, descuento, caja_id, empleado_id, fecha, anulada, anulada_en }) =>
+            ({ id_venta, alumno_id, lugar, items: items.map(({ id, qty }) => ({ id, qty })), descuento, caja_id, empleado_id, fecha, anulada: !!anulada, anulada_en })),
           cierres,
         }, { timeout: 60000 })
         const listas = (data.resultados || []).filter(r => r.estado === 'ok' || r.estado === 'ya_estaba')
         await quitarDeCola(listas.map(r => r.id_venta))
-        recordarSubidas(listas)
+        recordarSubidas(listas.filter(r => !r.anulada))
         subidas += listas.length
         // Errores definitivos (ej. alumno borrado): quedan marcados para revisarlos
         for (const r of (data.resultados || []).filter(r => r.estado === 'error')) {

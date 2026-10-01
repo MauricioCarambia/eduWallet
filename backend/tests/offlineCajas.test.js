@@ -70,3 +70,15 @@ test('cierre sin internet de una caja que ya existía', async () => {
   expect(res.json.mock.calls[0][0].cierres[0].estado).toBe('ok');
   expect(db.cajas.find(c => c.id === 5).abierta).toBe(false);
 });
+
+test('venta anulada antes de subirse: queda registrada como anulada y no descuenta nada', async () => {
+  const saldoAntes = db.alumnos[0].saldo, stockAntes = db.productos[0].stock, ventasCaja = db.cajas.find(c => c.id === 5).ventas
+  const antes = db.transacciones.length
+  const res = respuesta();
+  await sincronizarVentas({ empleado: cajero, body: { ventas: [{ id_venta: 'venta-anulada-0001', alumno_id: 1, lugar: 'Kiosco', items: [{ id: 7, qty: 2 }], caja_id: 5, fecha: hace(10), anulada: true, anulada_en: hace(9) }] } }, res);
+  expect(res.json.mock.calls[0][0].resultados[0]).toMatchObject({ estado: 'ok', anulada: true });
+  expect(db.transacciones.length - antes).toBe(2); // la venta [ANULADA] y su anulación (suman cero)
+  expect(db.alumnos[0].saldo).toBe(saldoAntes);
+  expect(db.productos[0].stock).toBe(stockAntes);
+  expect(db.cajas.find(c => c.id === 5).ventas).toBe(ventasCaja);
+});

@@ -29,7 +29,7 @@ export default function Historial() {
     if (offlineHabilitado()) {
       try {
         enCola = (await leerCola()).reverse().map(v => ({
-          id: 'cola-' + v.id_venta, id_venta: v.id_venta, pendiente: true, error: v.error, tipo: 'compra', alumno_nombre: v.alumno_nombre,
+          id: 'cola-' + v.id_venta, id_venta: v.id_venta, pendiente: true, error: v.error, anulada: !!v.anulada, tipo: 'compra', alumno_nombre: v.alumno_nombre,
           descripcion: v.items.map(i => `${i.nombre}${i.qty > 1 ? ` ×${i.qty}` : ''}`).join(', '), lugar: v.lugar, fecha: v.fecha, monto: v.total,
         }))
       } catch { /* sin cola */ }
@@ -46,6 +46,7 @@ export default function Historial() {
   }
 
   const hoy = new Date().toISOString().slice(0, 10)
+  const esAnulada = t => t.anulada || t.descripcion?.startsWith('[ANULADA]')
 
   const txsFiltradas = txs.filter(t => {
     const matchBusq = busq === '' || t.alumno_nombre?.toLowerCase().includes(busq.toLowerCase()) || t.descripcion?.toLowerCase().includes(busq.toLowerCase())
@@ -58,7 +59,9 @@ export default function Historial() {
     return t.tipo === 'compra' && matchBusq
   })
 
-  const totalFiltrado = txsFiltradas.reduce((s, t) => s + parseFloat(t.monto), 0)
+  // las anuladas se ven (tachadas) pero no suman
+  const validas = txsFiltradas.filter(t => !esAnulada(t))
+  const totalFiltrado = validas.reduce((s, t) => s + parseFloat(t.monto), 0)
 
   if (cargando) return <SkeletonTable rows={8} cols={4} />
 
@@ -74,8 +77,8 @@ export default function Historial() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
         {[
           { label: filtro === 'turno' ? 'Total del turno' : filtro === 'hoy' ? 'Total de hoy' : 'Total general', value: fmt(totalFiltrado), color: 'var(--green)' },
-          { label: 'Transacciones', value: txsFiltradas.length, color: 'var(--text)' },
-          { label: 'Ticket promedio', value: txsFiltradas.length > 0 ? fmt(Math.round(totalFiltrado / txsFiltradas.length)) : '$0', color: 'var(--text)' },
+          { label: 'Transacciones', value: validas.length, color: 'var(--text)' },
+          { label: 'Ticket promedio', value: validas.length > 0 ? fmt(Math.round(totalFiltrado / validas.length)) : '$0', color: 'var(--text)' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '1rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
             <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
@@ -102,15 +105,16 @@ export default function Historial() {
                 </div>
                 <div>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}
+                    {(t.anulada || t.descripcion?.startsWith('[ANULADA]')) && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Anulada</span>}
                     {t.pendiente ? (t.error ? <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>No se pudo subir</span> : <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--brand-light)', color: 'var(--brand)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Por subir</span>)
                       : t.offline && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}
                   </p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion?.replace(/^\[ANULADA\]\s*/, '')} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {t.pendiente && !t.error && <button onClick={() => anularPendiente(t)} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>Anular</button>}
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{fmt(t.monto)}</span>
+                {t.pendiente && !t.error && !t.anulada && <button onClick={() => anularPendiente(t)} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>Anular</button>}
+                <span style={{ fontSize: 14, fontWeight: 700, color: esAnulada(t) ? 'var(--text-tertiary)' : 'var(--text)', textDecoration: esAnulada(t) ? 'line-through' : 'none' }}>{fmt(t.monto)}</span>
               </div>
             </div>
           ))}

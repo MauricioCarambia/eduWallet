@@ -67,7 +67,7 @@ function SelectCategoria({ value, onChange }) {
 const btnSec = { padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }
 const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
 
-const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [] }
+const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [], grupo: '' }
 const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
 
 export default function Productos() {
@@ -130,7 +130,7 @@ export default function Productos() {
   const guardarEdicion = async () => {
     if (!form.nombre) return
     try {
-      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras, alergenos: form.alergenos || [] })
+      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras, alergenos: form.alergenos || [], grupo: form.grupo || '' })
       setProductos(prev => prev.map(p => p.id === res.data.id ? res.data : p))
       showMsg('ok', `Producto ${res.data.nombre} actualizado`); cerrarModal()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar el producto') }
@@ -186,6 +186,7 @@ export default function Productos() {
   const prodsFiltrados = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(texto) || (p.codigo_barras || '').includes(busq.trim())))
   const deLaZona = productos.filter(p => p.local === local)
   const stockBajo = deLaZona.filter(p => p.stock <= umbral)
+  const gruposZona = [...new Set(deLaZona.map(p => p.grupo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
 
   if (cargando) return <SkeletonTable rows={6} cols={4} />
 
@@ -205,6 +206,8 @@ export default function Productos() {
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}
+
+      <datalist id="grupos-zona">{gruposZona.map(g => <option key={g} value={g} />)}</datalist>
 
       {stockBajo.length > 0 && (
         <div style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--amber-bg)', border: '1px solid var(--amber)', marginBottom: 16, fontSize: 13, color: 'var(--amber)', borderLeft: '3px solid var(--amber)' }}>
@@ -236,6 +239,7 @@ export default function Productos() {
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                 <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
                   {p.nombre}
+                  {p.grupo && <span style={{ display: 'inline-block', marginTop: 3, fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: 'var(--brand-light)', color: 'var(--brand)' }}>{p.grupo}</span>}
                   {p.alergenos?.length > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="alerta" />{nombresAlergenos(p.alergenos)}</div>}
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, fontFamily: 'monospace', color: p.codigo_barras ? 'var(--text)' : 'var(--text-tertiary)' }}>{p.codigo_barras || '—'}</td>
@@ -251,7 +255,7 @@ export default function Productos() {
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
                 <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
-                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '', alergenos: p.alergenos || [] }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '', alergenos: p.alergenos || [], grupo: p.grupo || '' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
                   <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
                 </td>
               </tr>
@@ -267,6 +271,9 @@ export default function Productos() {
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
           <Campo label="Stock inicial"><input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} /></Campo>
           <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
+          <Campo label="Grupo (opcional)" ayuda="Para variedades del mismo producto (ej. Alfajores): en Venta se muestran juntas en una sola tarjeta">
+            <input list="grupos-zona" value={form.grupo || ''} onChange={e => setForm(p => ({ ...p, grupo: e.target.value }))} placeholder="Ej: Alfajores" />
+          </Campo>
           <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
             <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
           </Campo>
@@ -285,6 +292,9 @@ export default function Productos() {
           <Campo label="Nombre"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
           <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
+          <Campo label="Grupo (opcional)" ayuda="Para variedades del mismo producto (ej. Alfajores): en Venta se muestran juntas en una sola tarjeta">
+            <input list="grupos-zona" value={form.grupo || ''} onChange={e => setForm(p => ({ ...p, grupo: e.target.value }))} placeholder="Ej: Alfajores" />
+          </Campo>
           <Campo label="Código de barras (opcional)" ayuda="Escanealo con el lector o escribilo">
             <input value={form.codigo_barras} onChange={e => setForm(p => ({ ...p, codigo_barras: e.target.value }))} placeholder="Ej: 7790580000011" />
           </Campo>
@@ -331,7 +341,7 @@ export default function Productos() {
           ) : (
             <div>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b>, <b>codigo_barras</b> y <b>alergenos</b> (ej.: "maní, gluten").
+                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b>, <b>codigo_barras</b>, <b>alergenos</b> y <b>grupo</b> (ej.: "maní, gluten").
                 Los productos que ya existen en {local} (mismo código o mismo nombre) se actualizan; el resto se crea.
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>

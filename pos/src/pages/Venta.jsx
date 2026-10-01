@@ -8,6 +8,7 @@ import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
 import Icono from '../components/Icono'
+import CatalogoVenta from '../components/CatalogoVenta'
 
 // Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
 const esCodigo = texto => {
@@ -24,7 +25,6 @@ const esRepeticion = (ref, codigo) => {
 }
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
-const ICONO_CATEGORIA = { comida: 'comida', bebida: 'bebida', golosina: 'golosina', 'útil': 'util', otro: 'otro' }
 
 export default function Venta() {
   const umbral = useUmbralStock()
@@ -43,6 +43,7 @@ export default function Venta() {
   const [cargando, setCargando] = useState(true)
   const [procesando, setProcesando] = useState(false)
   const [txsHoy, setTxsHoy] = useState([])
+  const [masVendidos, setMasVendidos] = useState([]) // ids de producto, del más vendido al menos
   const [vistaVentas, setVistaVentas] = useState(false)
   const busqRef = useRef(null)
   const [busqAlumno, setBusqAlumno] = useState('')
@@ -62,6 +63,14 @@ export default function Venta() {
   const zonaFija = sesion?.local || null
 
   useEffect(() => { cargarDatos() }, [])
+  useEffect(() => {
+    if (!local) return
+    let vigente = true
+    api.get('/productos/mas-vendidos', { params: { local } })
+      .then(r => { if (vigente) setMasVendidos(r.data.map(x => x.producto_id)) })
+      .catch(() => { if (vigente) setMasVendidos([]) })
+    return () => { vigente = false }
+  }, [local])
 
   // Reglas de la familia y alergias del alumno identificado
   const ctrl = alumno && controlDe.id === alumno.id ? controlDe.datos : null
@@ -96,7 +105,13 @@ export default function Venta() {
 
   const total = carrito.reduce((s, i) => s + i.precio * i.qty, 0)
   const totalDesc = Math.round(total * (1 - descPct / 100))
-  const prods = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(busq.toLowerCase()) || (busq.trim() && (p.codigo_barras || '').includes(busq.trim()))))
+  const productosZona = productos.filter(p => p.local === local)
+  // Bloqueos de la familia y alergias del alumno identificado, para pintar cada producto
+  const estadoProducto = p => {
+    const bloqueo = motivoBloqueo(p, ctrl, carrito)
+    const alergias = alergiasDe(p, ctrl)
+    return { bloqueo, alergias, apagado: p.stock === 0 || !!bloqueo || (alergias.length > 0 && !!ctrl?.bloquear_alergenos) }
+  }
 
   const handleAbrirCaja = async () => {
     try { await abrirCaja(local, fondoCaja); showMsg('ok', `Caja abierta en ${local}`) }
@@ -358,51 +373,30 @@ export default function Venta() {
 
       {/* panel productos */}
       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
-        <div style={{ padding: '12px 16px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            {zonaFija ? (
-              <div style={{ flex: 1, padding: '10px', border: '2px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
-            ) : locales.map(l => (
-              <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
-            ))}
-            <button onClick={() => { setVistaVentas(true); cargarVentasHoy() }} title="Ver ventas del turno" style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </button>
-          </div>
-          <input ref={busqRef} placeholder="Buscar producto o código..." value={busq} onChange={e => setBusq(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { const p = productoPorCodigo(busq); if (p) { addProd(p); setBusq('') } } }} />
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
-            {prods.map(p => {
-              const bloqueo = motivoBloqueo(p, ctrl, carrito)
-              const alergias = alergiasDe(p, ctrl)
-              const apagado = p.stock === 0 || !!bloqueo || (alergias.length > 0 && ctrl?.bloquear_alergenos)
-              const enCarrito = carrito.find(i => i.id === p.id)?.qty || 0
-              const stock = p.stock === 0 ? { texto: 'Sin stock', color: 'var(--red)', fondo: 'var(--red-bg)' }
-                : p.stock <= umbral ? { texto: `Quedan ${p.stock}`, color: 'var(--amber)', fondo: 'var(--amber-bg)' }
-                : { texto: `${p.stock} u.`, color: 'var(--text-secondary)', fondo: 'var(--bg-subtle)' }
-              return (
-                <button key={p.id} className="prod-card" onClick={() => addProd(p)} disabled={p.stock === 0} title={bloqueo || (alergias.length ? `Alergia: ${nombresAlergenos(alergias)}` : undefined)}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 150, padding: 12, border: `1.5px solid ${alergias.length ? 'var(--red)' : enCarrito ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 16, background: enCarrito ? 'var(--brand-light)' : 'var(--bg-card)', boxShadow: 'var(--shadow)', textAlign: 'left', opacity: apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 10, background: enCarrito ? 'var(--bg-card)' : 'var(--brand-light)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icono nombre={ICONO_CATEGORIA[p.categoria] || 'otro'} tamaño={18} style={{ marginRight: 0 }} />
-                    </span>
-                    {enCarrito > 0 && <span style={{ minWidth: 26, height: 26, padding: '0 8px', borderRadius: 999, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>×{enCarrito}</span>}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.nombre}</p>
-                  {alergias.length > 0 && <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)' }}><Icono nombre="alerta" tamaño={12} />{nombresAlergenos(alergias)}</span>}
-                  {bloqueo && <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)' }}><Icono nombre="prohibido" tamaño={12} />No permitido</span>}
-                  <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, width: '100%' }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</span>
-                    <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 6, background: stock.fondo, color: stock.color, whiteSpace: 'nowrap' }}>{stock.texto}</span>
-                  </div>
+        <CatalogoVenta
+          encabezado={(
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                {zonaFija ? (
+                  <div style={{ flex: 1, padding: '10px', border: '2px solid var(--brand)', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{zonaFija}</div>
+                ) : locales.map(l => (
+                  <button key={l} onClick={() => { setLocal(l); setCarrito([]); setBusq('') }} style={{ flex: 1, padding: '10px', border: `2px solid ${local === l ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: local === l ? 'var(--brand)' : 'var(--bg-card)', color: local === l ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 14, fontWeight: local === l ? 600 : 400, cursor: 'pointer' }}>{l}</button>
+                ))}
+                <button onClick={() => { setVistaVentas(true); cargarVentasHoy() }} title="Ver ventas del turno" style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>
-              )
-            })}
-          </div>
-        </div>
+              </div>
+          )}
+          productos={productosZona}
+          carrito={carrito}
+          estado={estadoProducto}
+          umbral={umbral}
+          busq={busq}
+          setBusq={setBusq}
+          busqRef={busqRef}
+          onAgregar={addProd}
+          productoPorCodigo={productoPorCodigo}
+          masVendidos={masVendidos}
+        />
       </div>
 
       {/* panel derecho */}

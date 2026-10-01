@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, importarProductos } = require('../controllers/productosController');
+const { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, getMasVendidos, importarProductos } = require('../controllers/productosController');
 const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
 
 /**
@@ -58,6 +58,7 @@ router.get('/', verificarToken, getProductos);
  *                   items: { $ref: '#/components/schemas/Producto' }
  */
 router.get('/stock-bajo', verificarToken, getStockBajo);
+router.get('/mas-vendidos', verificarToken, getMasVendidos); // ?local=Kiosco (si el empleado no tiene zona fija)
 // Los productos los gestiona el personal del POS: un empleado con zona fija
 // sólo los de su zona; uno sin zona, todos. El admin del colegio sólo los ve.
 router.post('/', verificarToken, soloPersonalPos, crearProducto);

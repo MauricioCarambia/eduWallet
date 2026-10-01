@@ -45,6 +45,12 @@ const normalizarCodigoBarras = v => {
   return c ? c.slice(0, 50) : null;
 };
 
+// Grupo de variedades (ej. "Alfajores"); vacío = producto suelto
+const normalizarGrupo = v => {
+  const g = String(v ?? '').trim().replace(/\s+/g, ' ');
+  return g ? g.slice(0, 80) : null;
+};
+
 // Categorías del POS; lo que venga de un Excel se lleva a la más parecida
 const CATEGORIAS = ['comida', 'bebida', 'golosina', 'útil', 'otro'];
 const normalizarCategoria = v => {
@@ -77,9 +83,9 @@ const crearProducto = async (req, res) => {
     if (existe.rows.length === 0) return res.status(400).json({ error: 'Zona inválida' });
 
     const resultado = await pool.query(
-      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo, alergenos]
+      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo, alergenos, normalizarGrupo(req.body.grupo)]
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo producto', `${String(nombre).trim()} — ${Number(precio)} (${local})`);
     res.json(resultado.rows[0]);
@@ -103,10 +109,11 @@ const actualizarProducto = async (req, res) => {
       return res.status(403).json({ error: `Sólo podés modificar productos de tu zona` });
     }
     const resultado = await pool.query(
-      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4, alergenos = $5 WHERE id = $6 RETURNING *',
+      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4, alergenos = $5, grupo = $6 WHERE id = $7 RETURNING *',
       [nombre.trim(), Number(precio), normalizarCategoria(req.body.categoria) || producto.categoria,
         'codigo_barras' in req.body ? normalizarCodigoBarras(req.body.codigo_barras) : producto.codigo_barras,
-        Array.isArray(req.body.alergenos) ? normalizarAlergenos(req.body.alergenos) : producto.alergenos, id]
+        Array.isArray(req.body.alergenos) ? normalizarAlergenos(req.body.alergenos) : producto.alergenos,
+        'grupo' in req.body ? normalizarGrupo(req.body.grupo) : producto.grupo, id]
     );
     const cambios = [
       producto.nombre !== nombre.trim() && `nombre: ${producto.nombre} → ${nombre.trim()}`,
@@ -193,6 +200,7 @@ const importarProductos = async (req, res) => {
       const categoria = normalizarCategoria(f.categoria);
       const codigo = normalizarCodigoBarras(f.codigo_barras);
       const alergenos = String(f.alergenos ?? '').trim() ? deducirAlergenos(f.alergenos) : null;
+      const grupo = normalizarGrupo(f.grupo);
 
       let previo = null;
       if (codigo) {
@@ -208,16 +216,17 @@ const importarProductos = async (req, res) => {
         if (previo) {
           await db.query(
             `UPDATE productos SET nombre = $1, precio = $2, categoria = COALESCE($3, categoria),
-               codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock), alergenos = COALESCE($7, alergenos)
+               codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock), alergenos = COALESCE($7, alergenos),
+               grupo = COALESCE($8, grupo)
              WHERE id = $6`,
-            [nombre, precio, categoria, codigo, stock, previo.id, alergenos]
+            [nombre, precio, categoria, codigo, stock, previo.id, alergenos, grupo]
           );
           actualizados++;
         } else {
           await db.query(
-            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo, alergenos || []]
+            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo, alergenos || [], grupo]
           );
           creados++;
         }
@@ -238,6 +247,31 @@ const importarProductos = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   } finally {
     db?.release();
+  }
+};
+
+// Más vendidos de una zona en los últimos 30 días (sin ventas anuladas):
+// la Venta del POS arranca mostrando estos
+const getMasVendidos = async (req, res) => {
+  try {
+    const zona = (await zonaDelEmpleado(req.empleado)) || req.query.local;
+    if (!zona) return res.json([]);
+    const resultado = await pool.query(
+      `SELECT ti.producto_id, SUM(ti.cantidad)::int AS cantidad
+       FROM transaccion_items ti
+       JOIN transacciones t ON t.id = ti.transaccion_id
+       WHERE t.colegio_id = $1 AND t.tipo = 'compra' AND t.lugar = $2
+         AND t.fecha > NOW() - INTERVAL '30 days'
+         AND COALESCE(t.descripcion, '') NOT LIKE '[ANULADA]%'
+         AND ti.producto_id IS NOT NULL
+       GROUP BY ti.producto_id
+       ORDER BY cantidad DESC
+       LIMIT 20`,
+      [req.empleado.colegio_id, zona]
+    );
+    res.json(resultado.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
   }
 };
 
@@ -262,4 +296,4 @@ const getStockBajo = async (req, res) => {
   }
 };
 
-module.exports = { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, importarProductos };
+module.exports = { getProductos, crearProducto, actualizarProducto, actualizarStock, eliminarProducto, getStockBajo, getMasVendidos, importarProductos };

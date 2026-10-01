@@ -158,3 +158,6 @@ textarea:focus-visible {
 .prod-card { transition: border-color .15s, box-shadow .15s, transform .1s, background .15s; }
 .prod-card:not(:disabled):hover { border-color: var(--brand) !important; box-shadow: var(--shadow-md) !important; transform: translateY(-2px); }
 .prod-card:not(:disabled):active { transform: scale(0.98); }
+.prod-fila { transition: background .15s; }
+.prod-fila:not(:disabled):hover { background: var(--bg-hover) !important; }
+.prod-fila:last-child { border-bottom: none !important; }

@@ -138,7 +138,8 @@ export default function Login() {
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('login.pin')}</label>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
-              {[0,1,2,3].map(i => (
+              {/* 4 puntos de base; aparecen el 5.º y el 6.º a medida que se escribe (el PIN es de 4 a 6) */}
+              {Array.from({ length: Math.min(6, Math.max(4, pin.length)) }, (_, i) => i).map(i => (
                 <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: pin.length > i ? 'var(--brand)' : 'var(--border)', transition: 'background .2s' }} />
               ))}
             </div>

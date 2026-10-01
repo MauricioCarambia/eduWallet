@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { enviarEmailRecuperacion } = require('../services/emailService');
 const { notificarBloqueo } = require('../services/notificacionesService');
+const { gastoDeLaSemana } = require('../services/consumoAlumno');
 require('dotenv').config();
 
 const registro = async (req, res) => {
@@ -57,6 +58,7 @@ const getAlumnos = async (req, res) => {
        WHERE pa.padre_id = $1`,
       [padreId]
     );
+    for (const a of resultado.rows) a.gasto_semana = a.limite_semanal != null ? await gastoDeLaSemana(pool, a.id) : null;
     res.json(resultado.rows);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -142,10 +144,23 @@ const toggleBloqueo = async (req, res) => {
   }
 };
 
+// Límites de gasto: diario y/o semanal (limite_semanal null = sin límite semanal)
 const actualizarLimite = async (req, res) => {
   const { alumno_id } = req.params;
-  const { limite_diario } = req.body;
   const padreId = req.padre.id;
+  const cambios = {};
+  if ('limite_diario' in req.body) {
+    const d = Number(req.body.limite_diario);
+    if (!Number.isFinite(d) || d <= 0 || d > 10000000) return res.status(400).json({ error: 'El límite diario tiene que ser mayor a 0' });
+    cambios.limite_diario = d;
+  }
+  if ('limite_semanal' in req.body) {
+    const v = req.body.limite_semanal;
+    const s = v === null || v === '' ? null : Number(v);
+    if (s !== null && (!Number.isFinite(s) || s <= 0 || s > 10000000)) return res.status(400).json({ error: 'El límite semanal tiene que ser mayor a 0' });
+    cambios.limite_semanal = s;
+  }
+  if (Object.keys(cambios).length === 0) return res.status(400).json({ error: 'No hay límites para guardar' });
   try {
     const vinculo = await pool.query(
       'SELECT id FROM padres_alumnos WHERE padre_id = $1 AND alumno_id = $2',
@@ -154,11 +169,14 @@ const actualizarLimite = async (req, res) => {
     if (vinculo.rows.length === 0) {
       return res.status(403).json({ error: 'No tenés acceso a este alumno' });
     }
+    const campos = Object.keys(cambios);
     const resultado = await pool.query(
-      'UPDATE alumnos SET limite_diario = $1 WHERE id = $2 RETURNING *',
-      [limite_diario, alumno_id]
+      `UPDATE alumnos SET ${campos.map((c, i) => `${c} = ${i + 1}`).join(', ')} WHERE id = ${campos.length + 1} RETURNING *`,
+      [...campos.map(c => cambios[c]), alumno_id]
     );
-    res.json(resultado.rows[0]);
+    const alumno = resultado.rows[0];
+    alumno.gasto_semana = alumno.limite_semanal != null ? await gastoDeLaSemana(pool, alumno.id) : null;
+    res.json(alumno);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

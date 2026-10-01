@@ -57,7 +57,8 @@ const guardarRestricciones = async (req, res) => {
       restricciones.productos_bloqueados = ok.rows.map(r => r.id);
     }
 
-    let limiteSemanal = req.body.limite_semanal;
+    const conSemanal = 'limite_semanal' in req.body; // ahora se guarda junto al límite diario
+    let limiteSemanal = conSemanal ? req.body.limite_semanal : alumno.limite_semanal;
     if (limiteSemanal === '' || limiteSemanal === undefined) limiteSemanal = null;
     if (limiteSemanal !== null) {
       limiteSemanal = Number(limiteSemanal);

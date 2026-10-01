@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import api from '../api/axios'
-import { tarjeta, tituloTarjeta, ayuda, etiqueta, botonGuardar, fmt } from './controlEstilos'
+import { tarjeta, tituloTarjeta, ayuda, etiqueta, botonGuardar } from './controlEstilos'
 import { Chip } from './ControlUI'
 
 const NOMBRE_CATEGORIA = { comida: 'Comida', bebida: 'Bebidas', golosina: 'Golosinas', 'útil': 'Útiles escolares', otro: 'Otros' }
@@ -21,7 +21,6 @@ export default function ReglasCompra({ alumno, catalogo, onGuardado, showMsg }) 
     (r.categorias_bloqueadas || []).includes(c) ? 'bloq' : r.maximos?.[c] != null ? String(r.maximos[c]) : 'libre'])))
   const [zonasBloq, setZonasBloq] = useState(r.zonas_bloqueadas || [])
   const [productosBloq, setProductosBloq] = useState(r.productos_bloqueados || [])
-  const [semanal, setSemanal] = useState(alumno.limite_semanal != null ? String(Number(alumno.limite_semanal)) : '')
   const [busq, setBusq] = useState('')
   const [guardando, setGuardando] = useState(false)
 
@@ -37,7 +36,6 @@ export default function ReglasCompra({ alumno, catalogo, onGuardado, showMsg }) 
       const maximos = Object.fromEntries(Object.entries(categorias).filter(([, v]) => v !== 'bloq' && v !== 'libre').map(([c, v]) => [c, Number(v)]))
       const res = await api.put(`/padres/alumnos/${alumno.id}/restricciones`, {
         categorias_bloqueadas, maximos, zonas_bloqueadas: zonasBloq, productos_bloqueados: productosBloq,
-        limite_semanal: semanal === '' ? null : Number(semanal),
       })
       onGuardado(res.data)
       showMsg('ok', 'Reglas guardadas: ya las aplica el colegio')
@@ -104,12 +102,6 @@ export default function ReglasCompra({ alumno, catalogo, onGuardado, showMsg }) 
           ))}
         </div>
       )}
-
-      <label htmlFor="limite-semanal" style={etiqueta}>Límite por semana</label>
-      <input id="limite-semanal" type="number" min="0" placeholder="Sin límite semanal" value={semanal} onChange={e => setSemanal(e.target.value)} />
-      <p style={{ ...ayuda, margin: '6px 0 0' }}>
-        Además del límite diario ({fmt(alumno.limite_diario)}). La semana empieza el lunes.
-      </p>
 
       <button onClick={guardar} disabled={guardando} style={{ ...botonGuardar, opacity: guardando ? 0.6 : 1 }}>{guardando ? 'Guardando...' : 'Guardar reglas'}</button>
     </div>

@@ -13,6 +13,7 @@ export default function Control() {
   const [alumnos, setAlumnos] = useState([])
   const [alumnoId, setAlumnoId] = useState(null)
   const [nuevoLimite, setNuevoLimite] = useState('')
+  const [nuevoSemanal, setNuevoSemanal] = useState('')
   const [cargando, setCargando] = useState(true)
   const [msg, setMsg] = useState(null)
   const [catalogoDe, setCatalogoDe] = useState({ id: null, datos: null })
@@ -68,10 +69,21 @@ export default function Control() {
     if (!n || n <= 0) return
     try {
       const res = await api.patch(`/padres/alumnos/${alumnoId}/limite`, { limite_diario: n })
-      setAlumnos(prev => prev.map(a => a.id === alumnoId ? res.data : a))
+      setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
       showMsg('ok', `Límite actualizado a ${fmt(n)}/día`)
       setNuevoLimite('')
-    } catch (err) { showMsg('error', 'Error al actualizar límite') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar límite') }
+  }
+
+  // null = quitar el límite semanal
+  const guardarSemanal = async valor => {
+    if (valor !== null && !(parseInt(valor) > 0)) return
+    try {
+      const res = await api.patch(`/padres/alumnos/${alumnoId}/limite`, { limite_semanal: valor === null ? null : parseInt(valor) })
+      setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
+      showMsg('ok', valor === null ? 'Sin límite semanal' : `Límite actualizado a ${fmt(parseInt(valor))}/semana`)
+      setNuevoSemanal('')
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar límite') }
   }
 
   const alumnoActual = alumnos.find(a => a.id === alumnoId)
@@ -136,7 +148,7 @@ export default function Control() {
 
           {/* límite diario */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '1.25rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 14px', color: 'var(--text)' }}>Límite de gasto diario</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 14px', color: 'var(--text)' }}>Límites de gasto</h2>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6, color: 'var(--text-secondary)' }}>
               <span>Gastado hoy</span>
               <span style={{ fontWeight: 600, color: 'var(--text)' }}>{fmt(alumnoActual.gasto_hoy)} / {fmt(alumnoActual.limite_diario)}</span>
@@ -155,6 +167,28 @@ export default function Control() {
             <div style={{ display: 'flex', gap: 8 }}>
               <input type="number" placeholder="Otro monto" value={nuevoLimite} onChange={e => setNuevoLimite(e.target.value)} style={{ flex: 1 }} />
               <button onClick={guardarLimite} style={{ padding: '0 18px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>Guardar</button>
+            </div>
+
+            {/* límite semanal */}
+            <div style={{ borderTop: '1px solid var(--border-light)', marginTop: 18, paddingTop: 16 }}>
+              {alumnoActual.limite_semanal != null ? <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6, color: 'var(--text-secondary)' }}>
+                  <span>Gastado esta semana</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>{fmt(alumnoActual.gasto_semana || 0)} / {fmt(alumnoActual.limite_semanal)}</span>
+                </div>
+                <div style={{ height: 8, background: 'var(--bg-subtle)', borderRadius: 4, marginBottom: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <div style={{ height: '100%', width: `${pct2(alumnoActual.gasto_semana || 0, alumnoActual.limite_semanal)}%`, background: pct2(alumnoActual.gasto_semana || 0, alumnoActual.limite_semanal) > 80 ? 'var(--red)' : 'var(--brand)', borderRadius: 4, transition: 'width .3s' }} />
+                </div>
+              </> : <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px' }}>Sin límite por semana: solo rige el diario.</p>}
+              <label htmlFor="limite-semanal" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.5px' }}>{alumnoActual.limite_semanal != null ? 'Nuevo límite semanal' : 'Límite por semana'}</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input id="limite-semanal" type="number" min="0" placeholder={alumnoActual.limite_semanal != null ? 'Otro monto' : 'Ej: 20000'} value={nuevoSemanal} onChange={e => setNuevoSemanal(e.target.value)} onKeyDown={e => e.key === 'Enter' && guardarSemanal(nuevoSemanal)} style={{ flex: 1 }} />
+                <button onClick={() => guardarSemanal(nuevoSemanal)} style={{ padding: '0 18px', border: 'none', borderRadius: 10, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>Guardar</button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>Además del diario. La semana empieza el lunes.</p>
+                {alumnoActual.limite_semanal != null && <button onClick={() => guardarSemanal(null)} style={{ border: 'none', background: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: 'var(--red)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Quitar límite semanal</button>}
+              </div>
             </div>
           </div>
 

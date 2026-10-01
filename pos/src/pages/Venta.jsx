@@ -11,7 +11,7 @@ import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
 import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
 import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
-import { leerCopia, refrescarCopia, encolarVenta, gastadoSinConexionHoy } from '../offline/sync'
+import { leerCopia, refrescarCopia, encolarVenta, gastadoSinConexionHoy, anularEnCola, transaccionDeVenta, esCajaLocal, sincronizar } from '../offline/sync'
 import { buscarCredencial } from '../offline/credenciales'
 
 // Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
@@ -139,13 +139,19 @@ export default function Venta() {
   }
 
   const handleAbrirCaja = async () => {
-    try { await abrirCaja(local, fondoCaja); showMsg('ok', `Caja abierta en ${local}`) }
+    try {
+      const c = await abrirCaja(local, fondoCaja)
+      showMsg('ok', c?.offline ? `Caja abierta en ${c.local} sin conexión: se registra al volver internet` : `Caja abierta en ${local}`)
+    }
     catch (err) { showMsg('error', 'Error al abrir caja') }
   }
 
   const handleCerrarCaja = async () => {
     if (!confirm(`¿Cerrar caja? Total del turno: ${fmt(caja?.ventas || 0)}`)) return
-    try { await cerrarCaja(); setCarrito([]); setAlumno(null); setVistaVentas(false); showMsg('ok', 'Caja cerrada') }
+    try {
+      const r = await cerrarCaja(); setCarrito([]); setAlumno(null); setVistaVentas(false)
+      showMsg('ok', r?.sinConexion ? 'Caja cerrada sin conexión: el cierre se registra al volver internet' : 'Caja cerrada')
+    }
     catch (err) { showMsg('error', 'Error al cerrar caja') }
   }
 
@@ -184,6 +190,7 @@ export default function Venta() {
     if (!alumno || !caja || procesando) return
     setProcesando(true)
     idVentaRef.current ??= crypto.randomUUID()
+    if (esCajaLocal(caja)) await sincronizar() // la caja abierta sin internet se crea en el servidor antes de cobrar
     try {
       const res = await api.post('/transacciones/cobrar', {
         alumno_id: alumno.id, empleado_id: sesion.id, caja_id: caja.id,
@@ -250,8 +257,9 @@ export default function Venta() {
       return
     }
 
+    const idVenta = idVentaRef.current
     await encolarVenta({
-      id_venta: idVentaRef.current, alumno_id: a.id, alumno_nombre: a.nombre, lugar: local,
+      id_venta: idVenta, alumno_id: a.id, alumno_nombre: a.nombre, lugar: local,
       items: carrito.map(i => ({ id: i.id, qty: i.qty, nombre: i.nombre, categoria: porId.get(i.id)?.categoria })),
       descuento: descPct, caja_id: caja.id, empleado_id: sesion.id, fecha: new Date().toISOString(), total,
     })
@@ -259,7 +267,7 @@ export default function Venta() {
     setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, saldo: String(Number(a.saldo) - total), gasto_hoy: String(Number(a.gasto_hoy) + total) } : x))
     setProductos(prev => prev.map(p => { const item = carrito.find(i => i.id === p.id); return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p }))
     actualizarVentas(total)
-    setUltimaVenta({ offline: true, desc: carrito.map(i => i.nombre).join(', '), monto: total, items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty })) })
+    setUltimaVenta({ offline: true, id_venta: idVenta, alumno_id: a.id, desc: carrito.map(i => i.nombre).join(', '), monto: total, items: carrito.map(i => ({ id: i.id, nombre: i.nombre, qty: i.qty })) })
     showMsg('ok', `✓ Cobrado ${fmt(total)} a ${a.nombre} · sin conexión: se sube sola al volver internet`)
     setVerCobro(false)
     setCarrito([]); setAlumno(null); setDescPct(0); setConfirmados([])
@@ -268,8 +276,20 @@ export default function Venta() {
 
   const anularUltimaVenta = async () => {
     if (!ultimaVenta || !confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return
+    // Hecha sin internet y todavía sin subir: se saca de la cola y se devuelve todo acá
+    if (ultimaVenta.offline && await anularEnCola(ultimaVenta.id_venta)) {
+      setAlumnos(prev => prev.map(a => a.id === ultimaVenta.alumno_id ? { ...a, saldo: String(Number(a.saldo) + ultimaVenta.monto), gasto_hoy: String(Math.max(0, Number(a.gasto_hoy) - ultimaVenta.monto)) } : a))
+      setProductos(prev => prev.map(p => { const item = ultimaVenta.items?.find(i => i.id === p.id); return item ? { ...p, stock: p.stock + item.qty } : p }))
+      actualizarVentas(-ultimaVenta.monto)
+      setUltimaVenta(null)
+      showMsg('ok', `✓ Venta anulada (no se había subido). Se devolvieron ${fmt(ultimaVenta.monto)}`)
+      return
+    }
+    // ya subida: se anula en el servidor con su número de transacción
+    const id = ultimaVenta.offline ? transaccionDeVenta(ultimaVenta.id_venta) : ultimaVenta.id
+    if (!id) { showMsg('error', 'No se encontró la venta para anularla. Anulala desde el admin.'); return }
     try {
-      const res = await api.delete(`/transacciones/${ultimaVenta.id}/anular`)
+      const res = await api.delete(`/transacciones/${id}/anular`)
       setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
       setProductos(prev => prev.map(p => { const item = ultimaVenta.items?.find(i => i.nombre === p.nombre); return item ? { ...p, stock: p.stock + item.qty } : p }))
       actualizarVentas(-ultimaVenta.monto)
@@ -469,7 +489,7 @@ export default function Venta() {
       {ultimaVenta && (
         <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 16px', borderRadius: 10, background: 'var(--bg-card)', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap', border: '1px solid var(--border)' }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Última venta: <b style={{ color: 'var(--text)' }}>{fmt(ultimaVenta.monto)}</b>{ultimaVenta.offline && ' · sin conexión'}</span>
-          {!ultimaVenta.offline && <button onClick={anularUltimaVenta} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Anular</button>}
+          {<button onClick={anularUltimaVenta} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Anular</button>}
           <button onClick={() => setUltimaVenta(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 2px' }}>×</button>
         </div>
       )}

@@ -7,6 +7,10 @@
  * - transacciones.sincronizada_en: cuándo llegó al servidor (fecha = cuándo se vendió).
  * - configuracion.tope_offline: cuánto puede gastar un alumno por día con la
  *   caja sin internet (aunque tenga más saldo).
+ * - cajas.id_local: número que le pone el POS a una caja abierta sin internet;
+ *   al sincronizar se crea una sola vez y las ventas hechas en ella la encuentran.
+ * - dispositivos_pos: cada equipo del POS avisa cada pocos minutos que está
+ *   conectado y cuántas ventas tiene sin subir (el admin ve los que no avisan).
  *
  * Idempotente. Corre sola al iniciar el servidor (src/index.js); también
  * se puede ejecutar a mano con: node src/db/migracion_offline.js
@@ -22,6 +26,20 @@ const migrarOffline = async () => {
     CREATE UNIQUE INDEX IF NOT EXISTS uq_transacciones_id_venta
       ON transacciones (colegio_id, id_venta) WHERE id_venta IS NOT NULL;
     ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS tope_offline NUMERIC(12,2) NOT NULL DEFAULT 5000;
+    ALTER TABLE cajas ADD COLUMN IF NOT EXISTS id_local VARCHAR(64);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_cajas_id_local ON cajas (colegio_id, id_local) WHERE id_local IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS dispositivos_pos (
+      id VARCHAR(64) NOT NULL,
+      colegio_id INTEGER NOT NULL,
+      empleado_id INTEGER,
+      local VARCHAR(100),
+      equipo VARCHAR(80),
+      pendientes INTEGER NOT NULL DEFAULT 0,
+      con_error INTEGER NOT NULL DEFAULT 0,
+      pendientes_desde TIMESTAMP,
+      ultimo_contacto TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+      PRIMARY KEY (colegio_id, id)
+    );
   `);
   console.log('✅ Modo offline verificado');
 };

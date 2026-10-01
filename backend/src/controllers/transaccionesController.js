@@ -228,11 +228,15 @@ const cobrar = async (req, res) => {
       );
     }
 
-    // actualizar la caja abierta del propio empleado
-    if (caja_id) {
+    // actualizar la caja abierta del propio empleado (una caja abierta sin
+    // internet llega como "local:<id>" y se busca por ese número)
+    const cajaReal = String(caja_id ?? '').startsWith('local:')
+      ? (await client.query('SELECT id FROM cajas WHERE colegio_id = $1 AND id_local = $2', [req.empleado.colegio_id, String(caja_id).slice(6)])).rows[0]?.id
+      : (Number.isInteger(Number(caja_id)) ? Number(caja_id) : null);
+    if (cajaReal) {
       await client.query(
         'UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3 AND empleado_id = $4 AND abierta = true',
-        [total, caja_id, req.empleado.colegio_id, empleado_id]
+        [total, cajaReal, req.empleado.colegio_id, empleado_id]
       );
     }
 

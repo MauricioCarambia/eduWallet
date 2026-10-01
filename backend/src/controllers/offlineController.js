@@ -157,9 +157,13 @@ const sincronizarUna = async (v, req) => {
         [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio]
       );
     }
-    // La caja donde se vendió (aunque ya se haya cerrado)
-    if (v.caja_id) {
-      await client.query('UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3', [total, v.caja_id, colegioId]);
+    // La caja donde se vendió (aunque ya se haya cerrado); si se abrió sin
+    // internet viene como "local:<id>" y ya se creó al principio de la sincronización
+    const cajaId = String(v.caja_id ?? '').startsWith('local:')
+      ? (await client.query('SELECT id FROM cajas WHERE colegio_id = $1 AND id_local = $2', [colegioId, String(v.caja_id).slice(6)])).rows[0]?.id
+      : (Number.isInteger(Number(v.caja_id)) ? Number(v.caja_id) : null);
+    if (cajaId) {
+      await client.query('UPDATE cajas SET ventas = ventas + $1, tx_count = tx_count + 1 WHERE id = $2 AND colegio_id = $3', [total, cajaId, colegioId]);
     }
     await client.query('COMMIT');
 
@@ -180,20 +184,104 @@ const sincronizarUna = async (v, req) => {
   }
 };
 
+// Caja abierta sin internet: se crea una sola vez (por id_local) con la hora real
+const sincronizarCaja = async (c, req) => {
+  const colegioId = req.empleado.colegio_id;
+  const id_local = String(c?.id_local ?? '');
+  if (!ID_VENTA.test(id_local)) return { id_local, estado: 'error', error: 'Caja sin número válido' };
+  try {
+    const ya = await pool.query('SELECT id FROM cajas WHERE colegio_id = $1 AND id_local = $2', [colegioId, id_local]);
+    if (ya.rows.length) return { id_local, estado: 'ya_estaba', id: ya.rows[0].id };
+    let local = c.local;
+    if (req.empleado.local_id) {
+      local = (await pool.query('SELECT nombre FROM locales WHERE id = $1 AND colegio_id = $2', [req.empleado.local_id, colegioId])).rows[0]?.nombre;
+    }
+    if (!local) return { id_local, estado: 'error', error: 'Zona inválida' };
+    let apertura = new Date(c.apertura);
+    if (Number.isNaN(apertura.getTime()) || apertura.getTime() > Date.now() + 5 * 60 * 1000) apertura = new Date();
+    const r = await pool.query(
+      `INSERT INTO cajas (empleado_id, local, fondo, ventas, tx_count, abierta, colegio_id, apertura, id_local)
+       VALUES ($1, $2, $3, 0, 0, true, $4, ($5::timestamptz AT TIME ZONE 'UTC'), $6) RETURNING id`,
+      [req.empleado.id, local, Math.max(0, Number(c.fondo) || 0), colegioId, apertura.toISOString(), id_local]
+    );
+    await registrar(req.empleado.id, colegioId, 'Caja abierta sin conexión', `${local}: se abrió sin internet y se registró al volver la conexión`);
+    return { id_local, estado: 'ok', id: r.rows[0].id };
+  } catch (err) {
+    if (err.code === '23505') {
+      const ya = await pool.query('SELECT id FROM cajas WHERE colegio_id = $1 AND id_local = $2', [colegioId, id_local]);
+      return { id_local, estado: 'ya_estaba', id: ya.rows[0]?.id };
+    }
+    console.error(err);
+    return { id_local, estado: 'reintentar', error: 'Error del servidor' };
+  }
+};
+
+// Cierre hecho sin internet (de una caja real o de una abierta sin internet)
+const sincronizarCierre = async (c, req) => {
+  const colegioId = req.empleado.colegio_id;
+  const clave = String(c?.caja_id ?? '');
+  try {
+    const id = clave.startsWith('local:')
+      ? (await pool.query('SELECT id FROM cajas WHERE colegio_id = $1 AND id_local = $2', [colegioId, clave.slice(6)])).rows[0]?.id
+      : (Number.isInteger(Number(clave)) ? Number(clave) : null);
+    if (!id) return { caja_id: clave, estado: 'error', error: 'Caja no encontrada' };
+    let cierre = new Date(c.cierre);
+    if (Number.isNaN(cierre.getTime()) || cierre.getTime() > Date.now() + 5 * 60 * 1000) cierre = new Date();
+    await pool.query(
+      `UPDATE cajas SET abierta = false, cierre = ($1::timestamptz AT TIME ZONE 'UTC')
+       WHERE id = $2 AND colegio_id = $3 AND empleado_id = $4 AND abierta = true`,
+      [cierre.toISOString(), id, colegioId, req.empleado.id]
+    );
+    return { caja_id: clave, estado: 'ok', id };
+  } catch (err) {
+    console.error(err);
+    return { caja_id: clave, estado: 'reintentar', error: 'Error del servidor' };
+  }
+};
+
 const sincronizarVentas = async (req, res) => {
-  const ventas = req.body?.ventas;
-  if (!Array.isArray(ventas) || ventas.length === 0) return res.status(400).json({ error: 'No hay ventas para sincronizar' });
+  const ventas = Array.isArray(req.body?.ventas) ? req.body.ventas : [];
+  const cajas = Array.isArray(req.body?.cajas) ? req.body.cajas : [];
+  const cierres = Array.isArray(req.body?.cierres) ? req.body.cierres : [];
+  if (ventas.length + cajas.length + cierres.length === 0) return res.status(400).json({ error: 'No hay ventas para sincronizar' });
   if (ventas.length > MAX_VENTAS) return res.status(400).json({ error: `Se sincronizan hasta ${MAX_VENTAS} ventas por vez` });
 
+  const resultadosCajas = [];
+  for (const c of cajas) resultadosCajas.push(await sincronizarCaja(c, req));
   const resultados = [];
   for (const v of ventas) resultados.push(await sincronizarUna(v, req));
+  const resultadosCierres = [];
+  for (const c of cierres) resultadosCierres.push(await sincronizarCierre(c, req));
 
   const ok = resultados.filter(r => r.estado === 'ok');
   if (ok.length) {
     const total = ok.reduce((s, r) => s + r.total, 0);
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Ventas sin conexión sincronizadas', `${ok.length} venta${ok.length > 1 ? 's' : ''} por $${total}`);
   }
-  res.json({ resultados });
+  res.json({ resultados, cajas: resultadosCajas, cierres: resultadosCierres });
+};
+
+// Cada equipo del POS avisa que está conectado y cuántas ventas tiene sin subir
+const reportarEstado = async (req, res) => {
+  const b = req.body || {};
+  const id = String(b.dispositivo ?? '');
+  if (!ID_VENTA.test(id)) return res.status(400).json({ error: 'Equipo inválido' });
+  const entero = v => Math.max(0, Math.min(100000, parseInt(v) || 0));
+  const desde = b.pendientes_desde && !Number.isNaN(new Date(b.pendientes_desde).getTime()) ? new Date(b.pendientes_desde).toISOString() : null;
+  try {
+    await pool.query(
+      `INSERT INTO dispositivos_pos (id, colegio_id, empleado_id, local, equipo, pendientes, con_error, pendientes_desde, ultimo_contacto)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, ($8::timestamptz AT TIME ZONE 'UTC'), NOW() AT TIME ZONE 'UTC')
+       ON CONFLICT (colegio_id, id) DO UPDATE SET empleado_id = $3, local = $4, equipo = $5, pendientes = $6,
+         con_error = $7, pendientes_desde = ($8::timestamptz AT TIME ZONE 'UTC'), ultimo_contacto = NOW() AT TIME ZONE 'UTC'`,
+      [id, req.empleado.colegio_id, req.empleado.id, String(b.local || '').slice(0, 100) || null, String(b.equipo || '').slice(0, 80) || null,
+        entero(b.pendientes), entero(b.con_error), desde]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
 };
 
 // ─── Pantalla "Sin conexión" del admin ──────────────────────────────────────
@@ -202,7 +290,7 @@ const getResumenOffline = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   const dias = Math.min(Math.max(parseInt(req.query.dias) || 30, 1), 365);
   try {
-    const [ventas, sincronizaciones, negativos] = await Promise.all([
+    const [ventas, sincronizaciones, negativos, dispositivos] = await Promise.all([
       pool.query(
         `SELECT t.id, t.fecha, t.sincronizada_en, t.monto, t.lugar, t.descripcion,
                 t.descripcion LIKE '[ANULADA]%' AS anulada,
@@ -220,6 +308,11 @@ const getResumenOffline = async (req, res) => {
                 (SELECT MAX(t.fecha) FROM transacciones t WHERE t.alumno_id = a.id AND t.offline) AS ultima_sin_conexion,
                 (SELECT COUNT(*)::int FROM padres_alumnos pa WHERE pa.alumno_id = a.id) AS padres
          FROM alumnos a WHERE a.colegio_id = $1 AND a.saldo < 0 ORDER BY a.saldo ASC`, [colegioId]),
+      pool.query(
+        `SELECT d.id, d.local, d.equipo, d.pendientes, d.con_error, d.pendientes_desde, d.ultimo_contacto, e.nombre AS empleado_nombre
+         FROM dispositivos_pos d LEFT JOIN empleados e ON e.id = d.empleado_id
+         WHERE d.colegio_id = $1 AND d.ultimo_contacto > (NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days'
+         ORDER BY d.ultimo_contacto DESC`, [colegioId]),
     ]);
     const validas = ventas.rows.filter(v => !v.anulada);
     res.json({
@@ -229,6 +322,7 @@ const getResumenOffline = async (req, res) => {
       total: validas.reduce((s, v) => s + Number(v.monto), 0),
       sincronizaciones: sincronizaciones.rows[0].n,
       negativos: negativos.rows,
+      dispositivos: dispositivos.rows,
       deuda: negativos.rows.reduce((s, a) => s - Number(a.saldo), 0),
     });
   } catch (err) {
@@ -254,4 +348,4 @@ const recordarSaldoNegativo = async (req, res) => {
   }
 };
 
-module.exports = { getDatosOffline, sincronizarVentas, getResumenOffline, recordarSaldoNegativo, huella };
+module.exports = { getDatosOffline, sincronizarVentas, reportarEstado, getResumenOffline, recordarSaldoNegativo, huella };

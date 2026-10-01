@@ -5,12 +5,13 @@ import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
 import { leerCola } from '../offline/almacen'
+import { anularEnCola } from '../offline/sync'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Historial() {
   const { sesion } = useAuth()
-  const { caja } = useCaja()
+  const { caja, actualizarVentas } = useCaja()
   const [txs, setTxs] = useState([])
   const [cargando, setCargando] = useState(true)
   const [filtro, setFiltro] = useState('turno')
@@ -28,13 +29,20 @@ export default function Historial() {
     if (offlineHabilitado()) {
       try {
         enCola = (await leerCola()).reverse().map(v => ({
-          id: 'cola-' + v.id_venta, pendiente: true, error: v.error, tipo: 'compra', alumno_nombre: v.alumno_nombre,
+          id: 'cola-' + v.id_venta, id_venta: v.id_venta, pendiente: true, error: v.error, tipo: 'compra', alumno_nombre: v.alumno_nombre,
           descripcion: v.items.map(i => `${i.nombre}${i.qty > 1 ? ` ×${i.qty}` : ''}`).join(', '), lugar: v.lugar, fecha: v.fecha, monto: v.total,
         }))
       } catch { /* sin cola */ }
     }
     try { const tRes = await api.get('/transacciones'); setTxs([...enCola, ...(tRes.data.data ?? tRes.data)]) }
     catch (err) { setTxs(enCola); if (!esErrorDeRed(err)) console.error(err) } finally { setCargando(false) }
+  }
+
+  // Anular una venta hecha sin internet que todavía no se subió: sale de la cola
+  const anularPendiente = async t => {
+    if (!confirm(`¿Anular la venta de ${fmt(t.monto)} a ${t.alumno_nombre}? Todavía no se subió, así que no le llega a la familia.`)) return
+    if (await anularEnCola(t.id_venta)) actualizarVentas(-t.monto)
+    cargar()
   }
 
   const hoy = new Date().toISOString().slice(0, 10)
@@ -100,7 +108,10 @@ export default function Historial() {
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
                 </div>
               </div>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{fmt(t.monto)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {t.pendiente && !t.error && <button onClick={() => anularPendiente(t)} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>Anular</button>}
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{fmt(t.monto)}</span>
+              </div>
             </div>
           ))}
       </div>

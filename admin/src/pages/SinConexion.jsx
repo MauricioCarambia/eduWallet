@@ -5,7 +5,7 @@ import Icono from '../components/Icono'
 
 // Ventas hechas con la caja sin internet (modo offline del POS): qué se vendió,
 // cuándo se subió y qué alumnos quedaron con saldo negativo
-const fmt = n => `${Number(n) < 0 ? '−' : ''}${Math.abs(Number(n || 0)).toLocaleString('es-AR')}`
+const fmt = n => `${Number(n) < 0 ? '−' : ''}$${Math.abs(Number(n || 0)).toLocaleString('es-AR')}`
 const fecha = f => new Date(f).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
 // "1 min después", "2 h después", "al otro día"
@@ -30,7 +30,7 @@ export default function SinConexion() {
   const [msg, setMsg] = useState(null)
 
   const cargar = useCallback(() => {
-    api.get('/offline/resumen', { params: { dias } }).then(r => setDatos(r.data)).catch(() => setDatos({ error: true }))
+    api.get('/offline/resumen', { params: { dias } }).then(r => setDatos({ ...r.data, ahora: Date.now() })).catch(() => setDatos({ error: true }))
   }, [dias])
   useEffect(() => { cargar() }, [cargar])
 
@@ -48,7 +48,20 @@ export default function SinConexion() {
   if (!datos) return <SkeletonTable rows={5} cols={5} />
   if (datos.error) return <p style={{ color: 'var(--red)', fontSize: 14 }}>No se pudieron cargar las ventas sin conexión. Probá de nuevo en un rato.</p>
 
-  const { ventas, cantidad, total, sincronizaciones, negativos, deuda } = datos
+  const { ventas, cantidad, total, sincronizaciones, negativos, deuda, dispositivos = [], ahora } = datos // ahora: cuándo se cargó
+  const hace = f => {
+    const min = Math.max(0, Math.round((ahora - new Date(f)) / 60000))
+    if (min < 1) return 'recién'
+    if (min < 60) return `hace ${min} min`
+    if (min < 24 * 60) return `hace ${Math.round(min / 60)} h`
+    return `hace ${Math.round(min / 1440)} día${Math.round(min / 1440) > 1 ? 's' : ''}`
+  }
+  // Conectado: avisó en los últimos 5 minutos (cada equipo avisa cada 2)
+  const estadoEquipo = d => {
+    if (d.con_error > 0) return { texto: 'Con errores', color: 'var(--red)', fondo: 'var(--red-bg)' }
+    if (ahora - new Date(d.ultimo_contacto) <= 5 * 60000) return { texto: 'Conectado', color: 'var(--green)', fondo: 'var(--green-bg)' }
+    return { texto: 'Sin contacto', color: 'var(--amber)', fondo: 'var(--amber-bg)' }
+  }
 
   return (
     <div>
@@ -83,6 +96,40 @@ export default function SinConexion() {
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* equipos del POS */}
+      <div style={tarjeta}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--text)' }}>Equipos del POS</h2>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>Cada equipo avisa cada 2 minutos. Si uno figura "Sin contacto", puede tener ventas guardadas sin subir: conectalo a internet y abrí el POS.</p>
+        </div>
+        {dispositivos.length === 0 ? (
+          <p style={{ padding: '16px', margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>Todavía ningún equipo avisó. Aparecen solos cuando alguien usa el POS.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr>{['Equipo', 'Zona y cajero', 'Estado', 'Último contacto', 'Sin subir'].map(h => <th key={h} style={encabezado}>{h}</th>)}</tr></thead>
+              <tbody>
+                {dispositivos.map(d => {
+                  const e = estadoEquipo(d)
+                  return (
+                    <tr key={d.id}>
+                      <td style={{ ...celda, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap' }}>{d.equipo || 'Equipo'}</td>
+                      <td style={{ ...celda, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{d.local || '—'}{d.empleado_nombre ? ` · ${d.empleado_nombre}` : ''}</td>
+                      <td style={celda}><span style={{ fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 6, background: e.fondo, color: e.color, whiteSpace: 'nowrap' }}>{e.texto}</span></td>
+                      <td style={{ ...celda, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{hace(d.ultimo_contacto)}</td>
+                      <td style={{ ...celda, whiteSpace: 'nowrap', color: d.pendientes || d.con_error ? 'var(--text)' : 'var(--text-secondary)' }}>
+                        {d.pendientes > 0 ? <b>{d.pendientes} venta{d.pendientes > 1 ? 's' : ''}{d.pendientes_desde ? ` desde ${fecha(d.pendientes_desde)}` : ''}</b> : 'Nada'}
+                        {d.con_error > 0 && <span style={{ color: 'var(--red)' }}> · {d.con_error} con error</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* saldos negativos */}

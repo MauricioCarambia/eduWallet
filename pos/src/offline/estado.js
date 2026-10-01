@@ -36,6 +36,7 @@ let estado = {
   sincronizando: false,
   copiaDe: null,         // fecha de la copia offline guardada
   ultimaSync: null,      // { cantidad, cuando } de la última sincronización con ventas
+  operaciones: 0,        // cajas abiertas o cerradas sin internet, por subir
 }
 const oyentes = new Set()
 

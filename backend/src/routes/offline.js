@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDatosOffline, sincronizarVentas, getResumenOffline, recordarSaldoNegativo } = require('../controllers/offlineController');
+const { getDatosOffline, sincronizarVentas, reportarEstado, getResumenOffline, recordarSaldoNegativo } = require('../controllers/offlineController');
 const { verificarToken, soloPersonalPos, soloAdmin } = require('../middlewares/auth');
 
 /**
@@ -22,6 +22,16 @@ router.get('/datos', verificarToken, soloPersonalPos, getDatosOffline);
  *     security: [{ bearerAuth: [] }]
  */
 router.post('/ventas', verificarToken, soloPersonalPos, sincronizarVentas);
+
+/**
+ * @swagger
+ * /offline/estado:
+ *   post:
+ *     summary: El equipo del POS avisa que está conectado y cuántas ventas tiene sin subir
+ *     tags: [Offline]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post('/estado', verificarToken, soloPersonalPos, reportarEstado);
 
 /**
  * @swagger

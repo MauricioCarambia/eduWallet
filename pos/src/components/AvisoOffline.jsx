@@ -7,7 +7,7 @@ import useAncho, { ANCHO_CELULAR } from '../hooks/useAncho'
 // Barra del modo offline arriba del contenido: sin internet, subiendo ventas,
 // ventas con error o "se sincronizaron N ventas" (unos segundos)
 export default function AvisoOffline() {
-  const { online, pendientes, conError, sincronizando, ultimaSync } = useOffline()
+  const { online, pendientes, conError, sincronizando, ultimaSync, operaciones } = useOffline()
   const movil = useAncho() < ANCHO_CELULAR
   // El aviso de "se subieron" se ve 8 segundos; el timer sólo fuerza a redibujar
   const [ahora, setAhora] = useState(() => Date.now())
@@ -39,8 +39,10 @@ export default function AvisoOffline() {
   return <>
     {!online && barra('var(--amber-bg)', 'var(--amber)', <>
       <Icono nombre="alerta" /><b>Sin internet.</b> Podés seguir cobrando: las ventas quedan guardadas en esta caja y se suben solas cuando vuelva la conexión
-      {pendientes > 0 && <> · <b>{pendientes} venta{s(pendientes)} sin subir</b></>}.
+      {pendientes > 0 && <> · <b>{pendientes} venta{s(pendientes)} sin subir</b></>}
+      {operaciones > 0 && <> · la apertura o el cierre de caja se registra al volver</>}.
     </>)}
+    {online && pendientes === 0 && operaciones > 0 && barra('var(--brand-light)', 'var(--brand)', <>Registrando la caja abierta o cerrada sin internet…</>)}
     {online && pendientes > 0 && barra('var(--brand-light)', 'var(--brand)', <>
       {sincronizando ? 'Subiendo' : 'Por subir'} <b>{pendientes} venta{s(pendientes)}</b> hecha{s(pendientes)} sin internet…
     </>, !sincronizando && (

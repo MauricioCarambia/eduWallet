@@ -246,12 +246,15 @@ const getStockBajo = async (req, res) => {
   try {
     const config = await pool.query('SELECT umbral_stock_bajo FROM configuracion WHERE colegio_id = $1', [req.empleado.colegio_id]);
     const umbral = config.rows[0]?.umbral_stock_bajo ?? 5;
+    // Un empleado con zona fija sólo ve las alertas de su zona; sin zona, todas
+    const zona = await zonaDelEmpleado(req.empleado);
     const resultado = await pool.query(
       `SELECT id, nombre, stock, categoria, local
        FROM productos
        WHERE activo = true AND stock <= $1 AND colegio_id = $2
+         AND ($3::text IS NULL OR local = $3)
        ORDER BY stock ASC, nombre`,
-      [umbral, req.empleado.colegio_id]
+      [umbral, req.empleado.colegio_id, zona]
     );
     res.json({ umbral, productos: resultado.rows });
   } catch (err) {

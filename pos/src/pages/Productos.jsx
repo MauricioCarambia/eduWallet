@@ -182,7 +182,8 @@ export default function Productos() {
 
   const texto = busq.toLowerCase()
   const prodsFiltrados = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(texto) || (p.codigo_barras || '').includes(busq.trim())))
-  const stockBajo = productos.filter(p => p.stock <= 3)
+  const deLaZona = productos.filter(p => p.local === local)
+  const stockBajo = deLaZona.filter(p => p.stock <= 3)
 
   if (cargando) return <SkeletonTable rows={6} cols={4} />
 
@@ -191,7 +192,7 @@ export default function Productos() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Productos</h1>
-          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{productos.length} productos en total · escaneá un código de barras para cargarlo o sumar stock</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{deLaZona.length} productos{local ? ` en ${local}` : ''} · escaneá un código de barras para cargarlo o sumar stock</p>
         </div>
         {local && (
           <div style={{ display: 'flex', gap: 8 }}>

@@ -76,6 +76,9 @@ const getTransaccionesAlumno = async (req, res) => {
 
 const cobrar = async (req, res) => {
   const { alumno_id, caja_id, items } = req.body;
+  // Número único de la venta (lo pone el POS): si se corta internet a mitad del
+  // cobro y la venta se reenvía desde la cola offline, se toma una sola vez
+  const id_venta = /^[A-Za-z0-9-]{8,64}$/.test(String(req.body.id_venta ?? '')) ? String(req.body.id_venta) : null;
   let { lugar } = req.body;
   // El empleado es el de la sesión, nunca el que mande el cliente
   const empleado_id = req.empleado.id;
@@ -93,6 +96,15 @@ const cobrar = async (req, res) => {
 
   try {
     await client.query('BEGIN');
+
+    if (id_venta) {
+      const ya = await client.query('SELECT * FROM transacciones WHERE colegio_id = $1 AND id_venta = $2', [req.empleado.colegio_id, id_venta]);
+      if (ya.rows.length) {
+        await client.query('ROLLBACK');
+        const al = await pool.query('SELECT * FROM alumnos WHERE id = $1', [ya.rows[0].alumno_id]);
+        return res.json({ transaccion: ya.rows[0], alumno: al.rows[0], repetida: true });
+      }
+    }
 
     // si el empleado tiene zona fija, no puede vender bajo otra
     if (req.empleado.local_id) {
@@ -202,9 +214,9 @@ const cobrar = async (req, res) => {
     // registrar transacción
     const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
     const tx = await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id)
-       VALUES ($1, $2, $3, 'compra', $4, $5, $6) RETURNING *`,
-      [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id]
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, id_venta)
+       VALUES ($1, $2, $3, 'compra', $4, $5, $6, $7) RETURNING *`,
+      [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id, id_venta]
     );
 
     // detalle de la compra (para contar unidades por categoría)
@@ -244,6 +256,12 @@ const cobrar = async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
+    // la misma venta llegó dos veces al mismo tiempo: se devuelve la que quedó
+    if (err.code === '23505' && id_venta) {
+      const ya = await pool.query('SELECT * FROM transacciones WHERE colegio_id = $1 AND id_venta = $2', [req.empleado.colegio_id, id_venta]);
+      const al = ya.rows[0] ? await pool.query('SELECT * FROM alumnos WHERE id = $1', [ya.rows[0].alumno_id]) : { rows: [] };
+      return res.json({ transaccion: ya.rows[0], alumno: al.rows[0], repetida: true });
+    }
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
   } finally {

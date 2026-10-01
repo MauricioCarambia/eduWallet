@@ -18,13 +18,14 @@ const { migrarControlFamilias } = require('./db/migracion_control_familias');
 const { migrarNombreKoletap } = require('./db/migracion_nombre_koletap');
 const { migrarConfigEmail } = require('./db/migracion_config_email');
 const { migrarGrupoProductos } = require('./db/migracion_grupo_productos');
+const { migrarOffline } = require('./db/migracion_offline');
 
 const PORT = process.env.PORT || 3001;
 
 // Las columnas de comisión y el estado 'vencido' tienen que existir antes
 // de aceptar recargas
 const migrar = async () => {
-  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios], ['tarjetas NFC', migrarTarjetasNfc], ['activación de empleados', migrarActivacionEmpleados], ['QR seguros', migrarQrSeguro], ['bloqueo por medio', migrarBloqueoMedios], ['código de barras', migrarCodigoBarras], ['contactos', migrarContactos], ['control de familias y conciliación', migrarControlFamilias], ['nombre KoleTap', migrarNombreKoletap], ['correo en configuración', migrarConfigEmail], ['grupo de productos', migrarGrupoProductos]]) {
+  for (const [nombre, fn] of [['split de pagos', migrarSplit], ['pagos vencidos', migrarPagosVencidos], ['links de pago', migrarLinkPago], ['segundo contacto', migrarContacto2], ['padres por colegio', migrarPadresColegios], ['tarjetas NFC', migrarTarjetasNfc], ['activación de empleados', migrarActivacionEmpleados], ['QR seguros', migrarQrSeguro], ['bloqueo por medio', migrarBloqueoMedios], ['código de barras', migrarCodigoBarras], ['contactos', migrarContactos], ['control de familias y conciliación', migrarControlFamilias], ['nombre KoleTap', migrarNombreKoletap], ['correo en configuración', migrarConfigEmail], ['grupo de productos', migrarGrupoProductos], ['modo offline', migrarOffline]]) {
     try {
       await fn();
     } catch (err) {

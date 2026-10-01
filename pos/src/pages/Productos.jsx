@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 import useUmbralStock from '../hooks/useUmbralStock'
 import { SkeletonTable } from '../components/Skeleton'
@@ -85,7 +85,8 @@ export default function Productos() {
   const [importacion, setImportacion] = useState(null) // { archivo, filas, error, resultado }
   const [importando, setImportando] = useState(false)
 
-  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
+  const timerMsg = useRef(null)
+  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); clearTimeout(timerMsg.current); timerMsg.current = setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => { cargar() }, [])
   const zonaFija = sesion?.local || null

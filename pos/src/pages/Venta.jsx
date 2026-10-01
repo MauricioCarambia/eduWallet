@@ -9,6 +9,9 @@ import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } fro
 import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
 import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
+import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
+import { leerCopia, refrescarCopia, encolarVenta, gastadoSinConexionHoy } from '../offline/sync'
+import { buscarCredencial } from '../offline/credenciales'
 
 // Algo tipeado o pegado en el buscador que parece un código (sin espacios, largo) y no un nombre
 const esCodigo = texto => {
@@ -58,7 +61,9 @@ export default function Venta() {
   const [confirmados, setConfirmados] = useState([]) // productos con alérgeno que el cajero confirmó
   const [avisoAlergia, setAvisoAlergia] = useState(null) // { titulo, detalle, alConfirmar }
 
-  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 4000) }
+  // Cada mensaje dura 4 s desde que aparece (el timer del anterior no borra el nuevo)
+  const timerMsg = useRef(null)
+  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); clearTimeout(timerMsg.current); timerMsg.current = setTimeout(() => setMsg(null), 4000) }
 
   const zonaFija = sesion?.local || null
 
@@ -77,7 +82,11 @@ export default function Venta() {
   useEffect(() => {
     if (!alumno?.id) return
     let vigente = true
-    api.get(`/alumnos/${alumno.id}/control`).then(r => { if (vigente) setControlDe({ id: alumno.id, datos: r.data }) }).catch(() => {})
+    api.get(`/alumnos/${alumno.id}/control`).then(r => { if (vigente) setControlDe({ id: alumno.id, datos: r.data }) }).catch(async err => {
+      if (!offlineHabilitado() || !esErrorDeRed(err)) return
+      const a = (await leerCopia())?.alumnos.find(x => x.id === alumno.id)
+      if (vigente && a) setControlDe({ id: alumno.id, datos: a.control })
+    })
     return () => { vigente = false }
   }, [alumno?.id])
   useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
@@ -91,8 +100,20 @@ export default function Venta() {
     try {
       const [pRes, aRes] = await Promise.all([api.get('/productos'), api.get('/alumnos')])
       setProductos(pRes.data); setAlumnos(aRes.data)
-    } catch (err) { console.error(err) } finally { setCargando(false) }
+      if (offlineHabilitado()) refrescarCopia()
+    } catch (err) {
+      // Sin internet: lo que quedó guardado en el equipo (con las ventas en cola ya descontadas)
+      const copia = offlineHabilitado() && esErrorDeRed(err) ? await leerCopia() : null
+      if (copia) { setProductos(copia.productos); setAlumnos(copia.alumnos) }
+      else console.error(err)
+    } finally { setCargando(false) }
   }
+  // Al subir las ventas hechas sin internet, saldos y stock vuelven a venir del servidor
+  useEffect(() => {
+    const alSincronizar = () => cargarDatos()
+    window.addEventListener('koletap:sincronizado', alSincronizar)
+    return () => window.removeEventListener('koletap:sincronizado', alSincronizar)
+  }, [])
 
   const cargarVentasHoy = async () => {
     try {
@@ -150,15 +171,23 @@ export default function Venta() {
 
   const remProd = id => setCarrito(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty - 1 } : i).filter(i => i.qty > 0))
 
+  // Número único de la venta: si se corta internet a mitad del cobro y la venta
+  // pasa a la cola, el servidor la toma una sola vez
+  const idVentaRef = useRef(null)
+  useEffect(() => { idVentaRef.current = null }, [alumno?.id])
+
   const cobrar = async (opciones = {}) => {
     if (!alumno || !caja || procesando) return
     setProcesando(true)
+    idVentaRef.current ??= crypto.randomUUID()
     try {
       const res = await api.post('/transacciones/cobrar', {
         alumno_id: alumno.id, empleado_id: sesion.id, caja_id: caja.id,
         items: carrito.map(i => ({ id: i.id, nombre: i.nombre, precio: i.precio, qty: i.qty })),
-        lugar: local, descuento: descPct, confirmar_alergias: opciones.confirmarAlergias === true
-      })
+        lugar: local, descuento: descPct, confirmar_alergias: opciones.confirmarAlergias === true,
+        id_venta: idVentaRef.current,
+      }, offlineHabilitado() ? { timeout: 15000 } : undefined) // sin respuesta en 15 s, se vende sin conexión
+      idVentaRef.current = null
       setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
       setProductos(prev => prev.map(p => { const item = carrito.find(i => i.id === p.id); return item ? { ...p, stock: p.stock - item.qty } : p }))
       actualizarVentas(totalDesc)
@@ -176,8 +205,59 @@ export default function Venta() {
           textoConfirmar: 'Cobrar igual',
           alConfirmar: () => cobrar({ confirmarAlergias: true }),
         })
+      } else if (offlineHabilitado() && esErrorDeRed(err)) {
+        await cobrarSinConexion(opciones)
       } else showMsg('error', d?.error || 'Error al cobrar')
     } finally { setProcesando(false) }
+  }
+
+  // Venta sin internet: se controla con la copia del equipo (saldo, límites,
+  // reglas, alergias y el tope por día sin conexión) y queda en la cola
+  const cobrarSinConexion = async (opciones = {}) => {
+    const copia = await leerCopia()
+    const a = copia?.alumnos.find(x => x.id === alumno.id)
+    if (!a) { showMsg('error', 'Sin internet y sin datos de este alumno en el equipo: no se puede cobrar'); return }
+    const nombre = a.nombre.split(' ')[0]
+    if (!a.activo) { showMsg('error', `${a.nombre}: la cuenta está bloqueada`); return }
+    const porId = new Map(productos.map(p => [p.id, p]))
+    const conAlergia = carrito.filter(i => porId.has(i.id) && alergiasDe(porId.get(i.id), a.control).length > 0)
+    if (conAlergia.length > 0) {
+      const alergenos = [...new Set(conAlergia.flatMap(i => alergiasDe(porId.get(i.id), a.control)))]
+      if (a.control.bloquear_alergenos) { showMsg('error', `${nombre} es alérgico/a: no se puede vender ${conAlergia.map(i => i.nombre).join(', ')}`); return }
+      if (!opciones.confirmarAlergias && !conAlergia.every(i => confirmados.includes(i.id))) {
+        setAvisoAlergia({
+          titulo: `ALERGIA A ${nombresAlergenos(alergenos).toUpperCase()}`,
+          detalle: `${nombre} es alérgico/a a ${nombresAlergenos(alergenos).toLowerCase()}: ${conAlergia.map(i => i.nombre).join(', ')}`,
+          textoConfirmar: 'Cobrar igual',
+          alConfirmar: () => cobrar({ confirmarAlergias: true }),
+        })
+        return
+      }
+    }
+    const total = totalDesc
+    if (Number(a.saldo) < total) { showMsg('error', `Saldo insuficiente (disponible: ${fmt(a.saldo)})`); return }
+    if (Number(a.gasto_hoy) + total > Number(a.limite_diario)) { showMsg('error', 'Límite diario excedido'); return }
+    if (a.control.limite_semanal != null && Number(a.control.gasto_semana || 0) + total > Number(a.control.limite_semanal)) { showMsg('error', 'Límite semanal excedido'); return }
+    const tope = Number(copia.tope_offline ?? 5000)
+    const yaGastado = await gastadoSinConexionHoy(a.id)
+    if (yaGastado + total > tope) {
+      showMsg('error', `Sin internet, cada alumno puede gastar hasta ${fmt(tope)} por día${yaGastado ? ` (${nombre} ya gastó ${fmt(yaGastado)})` : ''}`)
+      return
+    }
+
+    await encolarVenta({
+      id_venta: idVentaRef.current, alumno_id: a.id, alumno_nombre: a.nombre, lugar: local,
+      items: carrito.map(i => ({ id: i.id, qty: i.qty, nombre: i.nombre, categoria: porId.get(i.id)?.categoria })),
+      descuento: descPct, caja_id: caja.id, empleado_id: sesion.id, fecha: new Date().toISOString(), total,
+    })
+    idVentaRef.current = null
+    setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, saldo: String(Number(a.saldo) - total), gasto_hoy: String(Number(a.gasto_hoy) + total) } : x))
+    setProductos(prev => prev.map(p => { const item = carrito.find(i => i.id === p.id); return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p }))
+    actualizarVentas(total)
+    setUltimaVenta({ offline: true, desc: carrito.map(i => i.nombre).join(', '), monto: total, items: carrito.map(i => ({ nombre: i.nombre, qty: i.qty })) })
+    showMsg('ok', `✓ Cobrado ${fmt(total)} a ${a.nombre} · sin conexión: se sube sola al volver internet`)
+    setCarrito([]); setAlumno(null); setDescPct(0); setConfirmados([])
+    setTimeout(() => busqRef.current?.focus(), 100)
   }
 
   const anularUltimaVenta = async () => {
@@ -222,8 +302,23 @@ export default function Venta() {
       setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
       showMsg('ok', `✓ ${encontrado.nombre}`)
     } catch (err) {
+      if (offlineHabilitado() && esErrorDeRed(err)) { await identificarSinConexion(codigo); return }
       showMsg('error', err.response?.data?.error || 'No se pudo leer la credencial')
     }
+  }
+
+  const identificarSinConexion = async codigo => {
+    const copia = await leerCopia()
+    if (!copia) { showMsg('error', 'Sin internet y este equipo todavía no tiene la copia para vender sin conexión'); return }
+    const r = await buscarCredencial(codigo, copia.claves)
+    const encontrado = r && copia.alumnos.find(a => a.id === r.alumno_id)
+    if (!encontrado) { showMsg('error', 'Sin internet: credencial no reconocida (si es nueva, va a andar cuando vuelva la conexión)'); return }
+    const nombre = encontrado.nombre.split(' ')[0]
+    if (r.medio === 'qr' && encontrado.qr_bloqueado) { showMsg('error', `La familia bloqueó el QR de ${nombre}. Puede pagar con otro medio.`); return }
+    if (r.medio === 'tarjeta' && encontrado.tarjeta_bloqueada) { showMsg('error', `La familia bloqueó la tarjeta de ${nombre}. Puede pagar con otro medio.`); return }
+    if (!encontrado.activo) { showMsg('error', `${encontrado.nombre}: la cuenta está bloqueada`); return }
+    setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
+    showMsg('ok', `✓ ${encontrado.nombre} (sin conexión)`)
   }
 
   // Producto de esta zona con ese código de barras (o nada)
@@ -365,8 +460,8 @@ export default function Venta() {
       {/* anular última venta */}
       {ultimaVenta && (
         <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 16px', borderRadius: 10, background: 'var(--bg-card)', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Última venta: <b style={{ color: 'var(--text)' }}>{fmt(ultimaVenta.monto)}</b></span>
-          <button onClick={anularUltimaVenta} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Anular</button>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Última venta: <b style={{ color: 'var(--text)' }}>{fmt(ultimaVenta.monto)}</b>{ultimaVenta.offline && ' · sin conexión'}</span>
+          {!ultimaVenta.offline && <button onClick={anularUltimaVenta} style={{ padding: '5px 12px', border: 'none', borderRadius: 7, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Anular</button>}
           <button onClick={() => setUltimaVenta(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 2px' }}>×</button>
         </div>
       )}

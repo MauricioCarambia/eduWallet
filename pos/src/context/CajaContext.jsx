@@ -1,12 +1,19 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import api from '../api/axios'
+import { esErrorDeRed } from '../offline/estado'
+
+// La caja abierta se guarda en el equipo: sin internet el POS sigue vendiendo en ella
+const CLAVE = 'pos_caja'
+const guardar = c => { try { c ? localStorage.setItem(CLAVE, JSON.stringify(c)) : localStorage.removeItem(CLAVE) } catch { /* sin almacenamiento */ } }
+const guardada = empleadoId => { try { const c = JSON.parse(localStorage.getItem(CLAVE)); return c?.empleado_id === empleadoId ? c : null } catch { return null } }
 
 const CajaContext = createContext(null)
 
 export function CajaProvider({ children }) {
   const { sesion } = useAuth()
-  const [caja, setCaja] = useState(null)
+  const [caja, setCajaEstado] = useState(null)
+  const setCaja = valor => setCajaEstado(prev => { const c = typeof valor === 'function' ? valor(prev) : valor; guardar(c); return c })
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -19,7 +26,8 @@ export function CajaProvider({ children }) {
       const cajaMia = res.data.find(c => c.empleado_id === sesion.id && c.abierta)
       setCaja(cajaMia || null)
     } catch (err) {
-      console.error(err)
+      if (esErrorDeRed(err)) setCaja(guardada(sesion.id)) // sin internet: la última conocida
+      else console.error(err)
     } finally {
       setCargando(false)
     }

@@ -48,6 +48,11 @@ const actualizarConfiguracion = async (req, res) => {
     email_smtp, email_smtp_pass, email_smtp_host, email_smtp_port,
     umbral_saldo_bajo, umbral_stock_bajo, moneda
   } = req.body;
+  // Tope por alumno y por día con la caja sin internet (vacío = no se cambia)
+  const topeOffline = req.body.tope_offline === undefined || req.body.tope_offline === '' || req.body.tope_offline === null ? null : Number(req.body.tope_offline);
+  if (topeOffline !== null && (!Number.isFinite(topeOffline) || topeOffline < 0 || topeOffline > 10000000)) {
+    return res.status(400).json({ error: 'El tope sin conexión tiene que ser un monto válido' });
+  }
 
   const { logo } = req.body;
   const colegioId = req.empleado.colegio_id;
@@ -83,6 +88,9 @@ const actualizarConfiguracion = async (req, res) => {
           email_smtp, email_smtp_host, email_smtp_port,
           umbral_saldo_bajo, umbral_stock_bajo, moneda, id]
       );
+      if (topeOffline !== null) {
+        await pool.query('UPDATE configuracion SET tope_offline = $1 WHERE id = $2', [topeOffline, id]);
+      }
       if (email_smtp_pass) {
         await pool.query('UPDATE configuracion SET email_smtp_pass = $1 WHERE id = $2', [email_smtp_pass, id]);
       }

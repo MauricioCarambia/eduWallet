@@ -328,6 +328,16 @@ export default function Configuracion() {
         </Campo>
       </Section>
 
+      <Section title="Cobro sin internet">
+        <Campo label="Tope por alumno sin conexión" hint="Si se corta internet, la app de escritorio del POS sigue cobrando y sube las ventas cuando vuelve la conexión. Cada alumno puede gastar hasta este monto por día sin conexión, aunque tenga más saldo. Si al sincronizar alguien queda con saldo negativo, se descuenta de su próxima recarga.">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>$</span>
+            <input type="number" min="0" value={config.tope_offline ?? 5000} onChange={e => set('tope_offline', e.target.value)} style={{ width: 120 }} />
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>por día</span>
+          </div>
+        </Campo>
+      </Section>
+
       <Section title="Backup de base de datos">
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 14px' }}>El sistema hace un backup automático todos los días a las 3am y lo envía al email de administración.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

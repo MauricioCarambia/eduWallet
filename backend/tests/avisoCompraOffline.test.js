@@ -11,7 +11,7 @@ jest.mock('../src/services/emailService', () => ({
   enviarEmailCompra: (...a) => mockEmail(...a), enviarEmailSaldoBajo: async () => {}, enviarEmailAviso: async () => {},
 }));
 
-const { notificarCompra } = require('../src/services/notificacionesService');
+const { notificarCompra, notificarSaldoNegativo } = require('../src/services/notificacionesService');
 
 const compra = { colegioId: 1, alumno: { id: 1, nombre: 'Martina López' }, lugar: 'Kiosco', total: 1400, descripcion: 'Barra de cereal', saldoAnterior: 4100 };
 
@@ -34,4 +34,10 @@ test('compra sin conexión: dice la hora de Argentina en que se hizo', async () 
 test('si el saldo quedó negativo, avisa que se descuenta de la próxima recarga', async () => {
   await notificarCompra({ ...compra, saldoAnterior: 1000, saldoNuevo: -400, sinConexion: new Date() });
   expect(mockPush.mock.calls[0][1].body).toContain('se descuenta de la próxima recarga');
+});
+
+test('recordatorio de saldo negativo: cuánto debe y que se descuenta de la próxima recarga', async () => {
+  const avisados = await notificarSaldoNegativo({ colegioId: 1, alumno: { id: 1, nombre: 'Martina López', saldo: '-400.00' } });
+  expect(avisados).toBe(1);
+  expect(mockPush.mock.calls[0][1]).toMatchObject({ title: 'Saldo en negativo — Martina López', body: 'Debe $400. Se descuenta de la próxima recarga.' });
 });

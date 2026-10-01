@@ -71,6 +71,24 @@ const notificarCompra = async ({ colegioId, alumno, saldoAnterior, saldoNuevo, t
   }
 };
 
+// Saldo negativo (después de ventas sin conexión): el colegio le recuerda a la
+// familia que recargue. Devuelve a cuántos padres se les mandó.
+const notificarSaldoNegativo = async ({ colegioId, alumno }) => {
+  let avisados = 0;
+  const debe = pesos(-Number(alumno.saldo));
+  const titulo = `El saldo de ${alumno.nombre} está en negativo: debe ${debe}.`;
+  const detalle = 'Pasó porque compró mientras la caja del colegio estaba sin internet. La diferencia se descuenta sola de la próxima recarga: recargá para que pueda seguir comprando.';
+  for (const padre of await padresDelAlumno(alumno.id)) {
+    if (!padre.notif_email && !padre.notif_push) continue;
+    await avisar(padre, {
+      email: () => enviarEmailAviso({ colegioId, nombrePadre: padre.nombre, emailPadre: padre.email, asunto: `Saldo en negativo de ${alumno.nombre}`, titulo, detalle }),
+      push: { title: `Saldo en negativo — ${alumno.nombre}`, body: `Debe ${debe}. Se descuenta de la próxima recarga.`, url: '/recargar' },
+    });
+    avisados++;
+  }
+  return avisados;
+};
+
 // Una compra que no se permitió por las reglas de la familia o por alergia
 const notificarRechazo = async ({ colegioId, alumno, motivos, lugar }) => {
   try {
@@ -123,4 +141,4 @@ const notificarReversion = async ({ colegioId, alumnoId, monto, motivo, saldoNue
   }
 };
 
-module.exports = { notificarCompra, notificarRechazo, notificarBloqueo, notificarReversion, quiereCompra, cruzoUmbral };
+module.exports = { notificarCompra, notificarRechazo, notificarBloqueo, notificarReversion, quiereCompra, cruzoUmbral, notificarSaldoNegativo };

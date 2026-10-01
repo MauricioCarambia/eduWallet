@@ -12,7 +12,7 @@
 const crypto = require('crypto');
 const pool = require('../db/conexion');
 const { registrar } = require('./auditoriaController');
-const { notificarCompra } = require('../services/notificacionesService');
+const { notificarCompra, notificarSaldoNegativo } = require('../services/notificacionesService');
 const { normalizarCodigo } = require('../services/credencialesService');
 const { resumenReglas } = require('../services/reglasCompra');
 
@@ -147,8 +147,8 @@ const sincronizarUna = async (v, req) => {
     }
     const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
     const tx = await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline)
-       VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true) RETURNING *`,
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline, sincronizada_en)
+       VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true, NOW() AT TIME ZONE 'UTC') RETURNING *`,
       [a.id, empleadoId, total, lugar, desc, colegioId, fecha.toISOString(), id_venta]
     );
     for (const l of lineas) {
@@ -196,4 +196,62 @@ const sincronizarVentas = async (req, res) => {
   res.json({ resultados });
 };
 
-module.exports = { getDatosOffline, sincronizarVentas, huella };
+// ─── Pantalla "Sin conexión" del admin ──────────────────────────────────────
+// Ventas sin conexión del período, sincronizaciones y alumnos con saldo negativo
+const getResumenOffline = async (req, res) => {
+  const colegioId = req.empleado.colegio_id;
+  const dias = Math.min(Math.max(parseInt(req.query.dias) || 30, 1), 365);
+  try {
+    const [ventas, sincronizaciones, negativos] = await Promise.all([
+      pool.query(
+        `SELECT t.id, t.fecha, t.sincronizada_en, t.monto, t.lugar, t.descripcion,
+                t.descripcion LIKE '[ANULADA]%' AS anulada,
+                a.id AS alumno_id, a.nombre AS alumno_nombre, a.curso, e.nombre AS empleado_nombre
+         FROM transacciones t
+         LEFT JOIN alumnos a ON a.id = t.alumno_id
+         LEFT JOIN empleados e ON e.id = t.empleado_id
+         WHERE t.colegio_id = $1 AND t.offline AND t.fecha > NOW() - ($2 || ' days')::interval
+         ORDER BY t.fecha DESC LIMIT 500`, [colegioId, dias]),
+      pool.query(
+        `SELECT COUNT(*)::int AS n FROM auditoria
+         WHERE colegio_id = $1 AND accion = 'Ventas sin conexión sincronizadas' AND fecha > NOW() - ($2 || ' days')::interval`, [colegioId, dias]),
+      pool.query(
+        `SELECT a.id, a.nombre, a.curso, a.saldo,
+                (SELECT MAX(t.fecha) FROM transacciones t WHERE t.alumno_id = a.id AND t.offline) AS ultima_sin_conexion,
+                (SELECT COUNT(*)::int FROM padres_alumnos pa WHERE pa.alumno_id = a.id) AS padres
+         FROM alumnos a WHERE a.colegio_id = $1 AND a.saldo < 0 ORDER BY a.saldo ASC`, [colegioId]),
+    ]);
+    const validas = ventas.rows.filter(v => !v.anulada);
+    res.json({
+      dias,
+      ventas: ventas.rows,
+      cantidad: validas.length,
+      total: validas.reduce((s, v) => s + Number(v.monto), 0),
+      sincronizaciones: sincronizaciones.rows[0].n,
+      negativos: negativos.rows,
+      deuda: negativos.rows.reduce((s, a) => s - Number(a.saldo), 0),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Recordarle a la familia que el saldo quedó negativo (push y email)
+const recordarSaldoNegativo = async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM alumnos WHERE id = $1 AND colegio_id = $2', [req.params.id, req.empleado.colegio_id]);
+    const alumno = r.rows[0];
+    if (!alumno) return res.status(404).json({ error: 'Alumno no encontrado' });
+    if (Number(alumno.saldo) >= 0) return res.status(400).json({ error: 'El saldo de este alumno ya no está en negativo' });
+    const avisados = await notificarSaldoNegativo({ colegioId: req.empleado.colegio_id, alumno });
+    if (avisados === 0) return res.status(400).json({ error: 'Este alumno no tiene padres vinculados con avisos activados' });
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Aviso de saldo negativo', `${alumno.nombre}: saldo ${alumno.saldo}, avisado a ${avisados} padre${avisados > 1 ? 's' : ''}`);
+    res.json({ avisados });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = { getDatosOffline, sincronizarVentas, getResumenOffline, recordarSaldoNegativo, huella };

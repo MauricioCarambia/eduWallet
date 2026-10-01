@@ -12,6 +12,7 @@ import Reportes from './pages/Reportes'
 import Auditoria from './pages/Auditoria'
 import Recargas from './pages/Recargas'
 import Conciliacion from './pages/Conciliacion'
+import SinConexion from './pages/SinConexion'
 import Credenciales from './pages/Credenciales'
 import Configuracion from './pages/Configuracion'
 import Layout from './components/Layout'
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/credenciales" element={<PrivateRoute><Layout><Credenciales /></Layout></PrivateRoute>} />
       <Route path="/recargas" element={<PrivateRoute><Layout><Recargas /></Layout></PrivateRoute>} />
       <Route path="/conciliacion" element={<PrivateRoute><Layout><Conciliacion /></Layout></PrivateRoute>} />
+      <Route path="/sin-conexion" element={<PrivateRoute><Layout><SinConexion /></Layout></PrivateRoute>} />
       <Route path="/auditoria" element={<PrivateRoute><Layout><Auditoria /></Layout></PrivateRoute>} />
       <Route path="/configuracion" element={<PrivateRoute><Layout><Configuracion /></Layout></PrivateRoute>} />
       <Route path="/superadmin" element={<SuperAdminLogin />} />

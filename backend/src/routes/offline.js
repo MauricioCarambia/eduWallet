@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getDatosOffline, sincronizarVentas } = require('../controllers/offlineController');
-const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
+const { getDatosOffline, sincronizarVentas, getResumenOffline, recordarSaldoNegativo } = require('../controllers/offlineController');
+const { verificarToken, soloPersonalPos, soloAdmin } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -22,5 +22,25 @@ router.get('/datos', verificarToken, soloPersonalPos, getDatosOffline);
  *     security: [{ bearerAuth: [] }]
  */
 router.post('/ventas', verificarToken, soloPersonalPos, sincronizarVentas);
+
+/**
+ * @swagger
+ * /offline/resumen:
+ *   get:
+ *     summary: Ventas sin conexión del período (?dias=30), sincronizaciones y alumnos con saldo negativo
+ *     tags: [Offline]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get('/resumen', verificarToken, soloAdmin, getResumenOffline);
+
+/**
+ * @swagger
+ * /offline/recordar/{id}:
+ *   post:
+ *     summary: Avisa a la familia que el saldo del alumno quedó negativo
+ *     tags: [Offline]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post('/recordar/:id', verificarToken, soloAdmin, recordarSaldoNegativo);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import useUmbralStock from '../hooks/useUmbralStock'
 import { SkeletonTable } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
 import { useAuth } from '../context/AuthContext'
@@ -70,6 +71,7 @@ const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', c
 const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
 
 export default function Productos() {
+  const umbral = useUmbralStock()
   const { sesion } = useAuth()
   const { locales } = useLocales()
   const [productos, setProductos] = useState([])
@@ -183,7 +185,7 @@ export default function Productos() {
   const texto = busq.toLowerCase()
   const prodsFiltrados = productos.filter(p => p.local === local && (p.nombre.toLowerCase().includes(texto) || (p.codigo_barras || '').includes(busq.trim())))
   const deLaZona = productos.filter(p => p.local === local)
-  const stockBajo = deLaZona.filter(p => p.stock <= 3)
+  const stockBajo = deLaZona.filter(p => p.stock <= umbral)
 
   if (cargando) return <SkeletonTable rows={6} cols={4} />
 
@@ -241,10 +243,10 @@ export default function Productos() {
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button onClick={() => editarStock(p.id, -1)} style={{ width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>−</button>
-                    <span style={{ fontSize: 14, fontWeight: 600, minWidth: 28, textAlign: 'center', color: p.stock <= 3 ? 'var(--red)' : 'var(--text)' }}>{p.stock}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, minWidth: 28, textAlign: 'center', color: p.stock <= umbral ? 'var(--red)' : 'var(--text)' }}>{p.stock}</span>
                     <button onClick={() => editarStock(p.id, 1)} style={{ width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>+</button>
                     <button onClick={() => abrirStock(p)} style={{ padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 11, cursor: 'pointer', color: 'var(--text-secondary)' }}>Ajustar</button>
-                    {p.stock <= 3 && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 5, background: 'var(--red-bg)', color: 'var(--red)' }}>Bajo</span>}
+                    {p.stock <= umbral && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 5, background: 'var(--red-bg)', color: 'var(--red)' }}>Bajo</span>}
                   </div>
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>

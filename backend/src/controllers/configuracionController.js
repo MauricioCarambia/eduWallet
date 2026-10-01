@@ -16,10 +16,10 @@ const getConfiguracion = async (req, res) => {
 const getMiColegio = async (req, res) => {
   try {
     const resultado = await pool.query(
-      'SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1',
+      'SELECT nombre_colegio, logo, umbral_stock_bajo FROM configuracion WHERE colegio_id = $1',
       [req.empleado.colegio_id]
     );
-    res.json(resultado.rows[0] || { nombre_colegio: 'KoleTap', logo: null });
+    res.json(resultado.rows[0] || { nombre_colegio: 'KoleTap', logo: null, umbral_stock_bajo: 5 });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

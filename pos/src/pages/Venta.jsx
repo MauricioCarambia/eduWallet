@@ -3,6 +3,7 @@ import { SkeletonCards } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import useUmbralStock from '../hooks/useUmbralStock'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
 import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
@@ -26,6 +27,7 @@ const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const ICONO_CATEGORIA = { comida: 'comida', bebida: 'bebida', golosina: 'golosina', 'útil': 'util', otro: 'otro' }
 
 export default function Venta() {
+  const umbral = useUmbralStock()
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja, actualizarVentas } = useCaja()
   const { locales } = useLocales()
@@ -378,7 +380,7 @@ export default function Venta() {
               const apagado = p.stock === 0 || !!bloqueo || (alergias.length > 0 && ctrl?.bloquear_alergenos)
               const enCarrito = carrito.find(i => i.id === p.id)?.qty || 0
               const stock = p.stock === 0 ? { texto: 'Sin stock', color: 'var(--red)', fondo: 'var(--red-bg)' }
-                : p.stock <= 3 ? { texto: `Quedan ${p.stock}`, color: 'var(--amber)', fondo: 'var(--amber-bg)' }
+                : p.stock <= umbral ? { texto: `Quedan ${p.stock}`, color: 'var(--amber)', fondo: 'var(--amber-bg)' }
                 : { texto: `${p.stock} u.`, color: 'var(--text-secondary)', fondo: 'var(--bg-subtle)' }
               return (
                 <button key={p.id} className="prod-card" onClick={() => addProd(p)} disabled={p.stock === 0} title={bloqueo || (alergias.length ? `Alergia: ${nombresAlergenos(alergias)}` : undefined)}

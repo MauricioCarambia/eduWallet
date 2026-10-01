@@ -3,6 +3,8 @@ import { SkeletonTable } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
+import { leerCola } from '../offline/almacen'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -19,9 +21,20 @@ export default function Historial() {
 
   useEffect(() => { cargar() }, [])
 
+  // Las ventas hechas sin internet que todavía no se subieron se muestran
+  // primero, marcadas "Por subir" (vienen de la cola del equipo)
   const cargar = async () => {
-    try { const tRes = await api.get('/transacciones'); setTxs(tRes.data.data ?? tRes.data) }
-    catch (err) { console.error(err) } finally { setCargando(false) }
+    let enCola = []
+    if (offlineHabilitado()) {
+      try {
+        enCola = (await leerCola()).reverse().map(v => ({
+          id: 'cola-' + v.id_venta, pendiente: true, error: v.error, tipo: 'compra', alumno_nombre: v.alumno_nombre,
+          descripcion: v.items.map(i => `${i.nombre}${i.qty > 1 ? ` ×${i.qty}` : ''}`).join(', '), lugar: v.lugar, fecha: v.fecha, monto: v.total,
+        }))
+      } catch { /* sin cola */ }
+    }
+    try { const tRes = await api.get('/transacciones'); setTxs([...enCola, ...(tRes.data.data ?? tRes.data)]) }
+    catch (err) { setTxs(enCola); if (!esErrorDeRed(err)) console.error(err) } finally { setCargando(false) }
   }
 
   const hoy = new Date().toISOString().slice(0, 10)
@@ -80,7 +93,10 @@ export default function Historial() {
                   {t.alumno_nombre?.split(' ').slice(0, 2).map(n => n[0]).join('') || '?'}
                 </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}
+                    {t.pendiente ? (t.error ? <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>No se pudo subir</span> : <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--brand-light)', color: 'var(--brand)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Por subir</span>)
+                      : t.offline && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}
+                  </p>
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
                 </div>
               </div>

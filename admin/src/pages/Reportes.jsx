@@ -40,6 +40,7 @@ export default function Reportes() {
   const [fechaHasta, setFechaHasta] = useState(hoy())
   const [filtroLocal, setFiltroLocal] = useState('Todos')
   const [filtroCurso, setFiltroCurso] = useState('Todos')
+  const [filtroCobro, setFiltroCobro] = useState('Todos') // 'Todos' | 'Sin conexión' | 'Con internet'
 
   const [msg, setMsg] = useState(null)
 
@@ -153,16 +154,19 @@ export default function Reportes() {
   // tabla de transacciones filtrada por curso además
   const txsTabla = useMemo(() => {
     return compras.filter(t => {
+      if (filtroCobro === 'Sin conexión' && !t.offline) return false
+      if (filtroCobro === 'Con internet' && t.offline) return false
       if (filtroCurso === 'Todos') return true
       const alumno = alumnos.find(a => a.nombre === t.alumno_nombre)
       return alumno?.curso === filtroCurso
     })
-  }, [compras, filtroCurso, alumnos])
+  }, [compras, filtroCurso, filtroCobro, alumnos])
+  const sinConexion = compras.filter(t => t.offline).length
 
   // exportar CSV
   const exportCSV = () => {
     const rows = [
-      ['ID', 'Alumno', 'Monto', 'Lugar', 'Descripción', 'Fecha', 'Tipo'],
+      ['ID', 'Alumno', 'Monto', 'Lugar', 'Descripción', 'Fecha', 'Tipo', 'Sin conexión'],
       ...txsFiltradas.map(t => [
         t.id,
         t.alumno_nombre,
@@ -170,7 +174,8 @@ export default function Reportes() {
         t.lugar,
         `"${t.descripcion || ''}"`,
         new Date(t.fecha).toLocaleString('es-AR'),
-        t.tipo
+        t.tipo,
+        t.offline ? 'Sí' : 'No'
       ])
     ]
     const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
@@ -385,8 +390,14 @@ export default function Reportes() {
               {cursos.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.5px' }}>Cobro</label>
+            <select value={filtroCobro} onChange={e => setFiltroCobro(e.target.value)} style={{ minWidth: 150 }}>
+              {['Todos', 'Sin conexión', 'Con internet'].map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <button onClick={() => { setModo('rapido'); setPeriodoRapido('semana'); setFiltroLocal('Todos'); setFiltroCurso('Todos'); setFechaDesde(haceN(6)); setFechaHasta(hoy()) }}
+            <button onClick={() => { setModo('rapido'); setPeriodoRapido('semana'); setFiltroLocal('Todos'); setFiltroCurso('Todos'); setFiltroCobro('Todos'); setFechaDesde(haceN(6)); setFechaHasta(hoy()) }}
               style={{ padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>
               Limpiar filtros
             </button>
@@ -680,6 +691,11 @@ export default function Reportes() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, margin: 0, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
               {txsTabla.length} transacciones
+              {sinConexion > 0 && filtroCobro === 'Todos' && (
+                <button onClick={() => setFiltroCobro('Sin conexión')} style={{ marginLeft: 8, border: 'none', background: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: 'var(--amber)', textTransform: 'none', letterSpacing: 0, cursor: 'pointer' }}>
+                  · {sinConexion} sin conexión
+                </button>
+              )}
             </h2>
             <button onClick={exportCSV} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -699,7 +715,7 @@ export default function Reportes() {
                 {txsTabla.slice(0, 100).map((t, i) => (
                   <tr key={t.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap' }}>{t.alumno_nombre}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.descripcion}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.offline && <span style={{ display: 'inline-block', marginRight: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)' }}>Sin conexión</span>}{t.descripcion}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{t.lugar}</td>
                     <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.monto)}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: 12 }}>{new Date(t.fecha).toLocaleString('es-AR')}</td>

@@ -425,7 +425,7 @@ export default function Alumnos() {
             historialAlumno.map(t => (
               <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>{t.descripcion}{t.offline && <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 500, padding: '1px 7px', borderRadius: 6, background: 'var(--amber-bg)', color: 'var(--amber)', whiteSpace: 'nowrap', verticalAlign: '1px' }}>Sin conexión</span>}</p>
                   <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(t.fecha).toLocaleString('es-AR')} · {t.lugar}</p>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Layout from './components/Layout'
+import AvisoInstalar from './components/AvisoInstalar'
 import Venta from './pages/Venta'
 import Productos from './pages/Productos'
 import Caja from './pages/Caja'
@@ -18,6 +19,7 @@ function PrivateRoute({ children }) {
 export default function App() {
   const { sesion } = useAuth()
   return (
+    <>
     <Routes>
       <Route path="/" element={sesion ? <Navigate to="/venta" replace /> : <Login />} />
       <Route path="/venta" element={<PrivateRoute><Layout><Venta /></Layout></PrivateRoute>} />
@@ -27,5 +29,7 @@ export default function App() {
       <Route path="/historial" element={<PrivateRoute><Layout><Historial /></Layout></PrivateRoute>} />
       <Route path="/cuenta" element={<PrivateRoute><Layout><Cuenta /></Layout></PrivateRoute>} />
     </Routes>
+    <AvisoInstalar nombre="el POS" abajo />
+    </>
   )
 }

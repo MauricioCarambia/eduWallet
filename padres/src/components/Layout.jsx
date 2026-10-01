@@ -17,27 +17,11 @@ export default function Layout({ children }) {
   const { dark, toggle } = useTheme()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [mostrarInstalar, setMostrarInstalar] = useState(false)
   const [branding, setBranding] = useState({ nombre_colegio: 'KoleTap', logo: null })
 
   useEffect(() => {
     api.get('/configuracion/branding').then(r => setBranding(r.data)).catch(() => {})
   }, [])
-
-  useEffect(() => {
-    const handler = e => { e.preventDefault(); setDeferredPrompt(e); setMostrarInstalar(true) }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  const instalarApp = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') setMostrarInstalar(false)
-    setDeferredPrompt(null)
-  }
 
   const handleLogout = () => { logout(); navigate('/') }
 
@@ -48,28 +32,6 @@ export default function Layout({ children }) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 72 }}>
-
-      {/* banner instalar PWA */}
-      {mostrarInstalar && (
-        <div style={{ background: 'var(--brand)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: branding.logo ? 'var(--logo-bg)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              {branding.logo
-                ? <img src={branding.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                : <img src="/favicon.svg" alt="KoleTap" style={{ width: '100%', height: '100%', display: 'block' }} />
-              }
-            </div>
-            <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--on-brand)' }}>{t('pwa.instalar_titulo', { nombre: branding.nombre_colegio || 'KoleTap' })}</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--on-brand)', opacity: 0.8 }}>{t('pwa.instalar_subtitulo')}</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={instalarApp} style={{ padding: '6px 14px', border: 'none', borderRadius: 7, background: 'var(--on-brand)', color: 'var(--brand)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{t('pwa.instalar_boton')}</button>
-            <button onClick={() => setMostrarInstalar(false)} style={{ background: 'none', border: 'none', color: 'var(--on-brand)', opacity: 0.8, fontSize: 18, cursor: 'pointer' }}>×</button>
-          </div>
-        </div>
-      )}
 
       {/* header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow)' }}>

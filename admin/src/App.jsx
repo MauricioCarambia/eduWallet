@@ -16,6 +16,7 @@ import SinConexion from './pages/SinConexion'
 import Credenciales from './pages/Credenciales'
 import Configuracion from './pages/Configuracion'
 import Layout from './components/Layout'
+import AvisoInstalar from './components/AvisoInstalar'
 import Padres from './pages/Padres'
 import Mensajes from './pages/Mensajes'
 
@@ -35,6 +36,7 @@ export default function App() {
   const { sesion } = useAuth()
 
   return (
+    <>
     <Routes>
       <Route path="/" element={sesion ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
@@ -53,5 +55,7 @@ export default function App() {
       <Route path="/superadmin" element={<SuperAdminLogin />} />
       <Route path="/superadmin/dashboard" element={<SuperAdminPrivateRoute><SuperAdminDashboard /></SuperAdminPrivateRoute>} />
     </Routes>
+    <AvisoInstalar nombre="el panel admin" abajo />
+    </>
   )
 }

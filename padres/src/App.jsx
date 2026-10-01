@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import AvisoInstalar from './components/AvisoInstalar'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Registro from './pages/Registro'
@@ -20,6 +21,8 @@ function PrivateRoute({ children }) {
 export default function App() {
   const { padre } = useAuth()
   return (
+    <>
+    <AvisoInstalar nombre="la app de KoleTap" />
     <Routes>
       <Route path="/" element={padre ? <Navigate to="/inicio" replace /> : <Login />} />
       <Route path="/registro" element={padre ? <Navigate to="/inicio" replace /> : <Registro />} />
@@ -31,5 +34,6 @@ export default function App() {
       <Route path="/credencial/:alumnoId" element={<PrivateRoute><Layout><Credencial /></Layout></PrivateRoute>} />
       <Route path="/control" element={<PrivateRoute><Layout><Control /></Layout></PrivateRoute>} />
     </Routes>
+    </>
   )
 }

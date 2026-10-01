@@ -76,9 +76,12 @@ export const leerCopia = async () => {
   const cola = await leerCola()
   const porAlumno = new Map(), porProducto = new Map()
   for (const v of cola.filter(v => !v.anulada)) {
-    const a = porAlumno.get(v.alumno_id) || { total: 0, hoy: 0, semana: 0, categorias: {} }
+    const a = porAlumno.get(v.alumno_id) || { total: 0, hoy: 0, semana: 0, categorias: {}, zonas: {} }
     a.total += v.total
     a.semana += v.total
+    const z = a.zonas[v.lugar] ??= { hoy: 0, semana: 0 }
+    z.semana += v.total
+    if (esHoy(v.fecha)) z.hoy += v.total
     if (esHoy(v.fecha)) {
       a.hoy += v.total
       for (const i of v.items) if (i.categoria) a.categorias[i.categoria] = (a.categorias[i.categoria] || 0) + i.qty
@@ -94,11 +97,16 @@ export const leerCopia = async () => {
       if (!d) return a
       const hoy = { ...a.control.hoy_por_categoria }
       for (const [c, n] of Object.entries(d.categorias)) hoy[c] = (hoy[c] || 0) + n
+      const gastoZona = { ...(a.control.gasto_zona || {}) }
+      for (const [zona, g] of Object.entries(d.zonas)) {
+        const previo = gastoZona[zona] || { hoy: 0, semana: 0 }
+        gastoZona[zona] = { hoy: previo.hoy + g.hoy, semana: previo.semana + g.semana }
+      }
       return {
         ...a,
         saldo: String(Number(a.saldo) - d.total),
         gasto_hoy: String(Number(a.gasto_hoy) + d.hoy),
-        control: { ...a.control, hoy_por_categoria: hoy, gasto_semana: a.control.gasto_semana == null ? null : a.control.gasto_semana + d.semana },
+        control: { ...a.control, hoy_por_categoria: hoy, gasto_zona: gastoZona, gasto_semana: a.control.gasto_semana == null ? null : a.control.gasto_semana + d.semana },
       }
     }),
   }

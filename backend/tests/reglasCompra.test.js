@@ -45,7 +45,7 @@ describe('reglas de la familia', () => {
     expect(normalizarRestricciones({ zonas_bloqueadas: ['Marte'] }, ['Kiosco']).error).toBeTruthy();
     expect(normalizarRestricciones({ maximos: { bebida: -1 } }).error).toBeTruthy();
     const { restricciones } = normalizarRestricciones({ categorias_bloqueadas: ['golosina', 'golosina'], maximos: { bebida: '1', golosina: 2, comida: '' }, productos_bloqueados: ['7'] }, ['Kiosco']);
-    expect(restricciones).toEqual({ categorias_bloqueadas: ['golosina'], zonas_bloqueadas: [], productos_bloqueados: [7], maximos: { bebida: 1 } });
+    expect(restricciones).toEqual({ categorias_bloqueadas: ['golosina'], zonas_bloqueadas: [], productos_bloqueados: [7], maximos: { bebida: 1 }, limites_zona: {} });
   });
 
   test('resumen para el cajero', () => {
@@ -85,5 +85,36 @@ describe('avisos', () => {
     expect(cruzoUmbral(padre, 6000, 4000)).toBe(true);
     expect(cruzoUmbral(padre, 4000, 3000)).toBe(false);
     expect(cruzoUmbral({ ...padre, notif_saldo_bajo: false }, 6000, 4000)).toBe(false);
+  });
+});
+
+describe('límite de gasto por zona', () => {
+  const { normalizarRestricciones, evaluarReglas } = require('../src/services/reglasCompra');
+  const zonas = ['Kiosco', 'Comedor'];
+
+  test('se guarda limpio: monto entero, período día o semana, sólo zonas del colegio', () => {
+    const r = normalizarRestricciones({ limites_zona: { Kiosco: { monto: '5000', periodo: 'semana' }, Comedor: { monto: '', periodo: 'dia' } } }, zonas);
+    expect(r.restricciones.limites_zona).toEqual({ Kiosco: { monto: 5000, periodo: 'semana' } });
+    expect(normalizarRestricciones({ limites_zona: { Gimnasio: { monto: 100 } } }, zonas).error).toBe('Zona inválida');
+    expect(normalizarRestricciones({ limites_zona: { Kiosco: { monto: -5 } } }, zonas).error).toMatch(/mayor a 0/);
+  });
+
+  test('una zona bloqueada no guarda límite (no se puede comprar igual)', () => {
+    const r = normalizarRestricciones({ zonas_bloqueadas: ['Kiosco'], limites_zona: { Kiosco: { monto: 5000, periodo: 'dia' } } }, zonas);
+    expect(r.restricciones.limites_zona).toEqual({});
+  });
+
+  const alumno = { nombre: 'Martina López', restricciones: { limites_zona: { Kiosco: { monto: 5000, periodo: 'semana' }, Comedor: { monto: 2000, periodo: 'dia' } } } };
+  const lineas = [{ id: 1, nombre: 'Alfajor', categoria: 'golosina', qty: 1 }];
+
+  test('frena la compra que pasa el límite de la semana en esa zona', () => {
+    const m = evaluarReglas({ alumno, lineas, lugar: 'Kiosco', total: 1500, gastoZona: { hoy: 0, semana: 4000 } });
+    expect(m[0]).toBe('En Kiosco la familia de Martina permite hasta $5.000 por semana (ya gastó $4.000)');
+    expect(evaluarReglas({ alumno, lineas, lugar: 'Kiosco', total: 1000, gastoZona: { hoy: 0, semana: 4000 } })).toEqual([]);
+  });
+
+  test('el límite por día mira sólo lo de hoy, y cada zona tiene el suyo', () => {
+    expect(evaluarReglas({ alumno, lineas, lugar: 'Comedor', total: 1500, gastoZona: { hoy: 1000, semana: 9000 } })[0]).toMatch(/hasta \$2\.000 por día/);
+    expect(evaluarReglas({ alumno, lineas, lugar: 'Comedor', total: 900, gastoZona: { hoy: 1000, semana: 9000 } })).toEqual([]);
   });
 });

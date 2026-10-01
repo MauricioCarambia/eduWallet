@@ -6,7 +6,7 @@ import api from '../api/axios'
 import useUmbralStock from '../hooks/useUmbralStock'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
-import { motivoBloqueo, alergiasDe, nombresAlergenos } from '../utils/alergenos'
+import { motivoBloqueo, alergiasDe, nombresAlergenos, excedeLimiteZona } from '../utils/alergenos'
 import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
 import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
@@ -250,6 +250,8 @@ export default function Venta() {
     if (Number(a.saldo) < total) { showMsg('error', `Saldo insuficiente (disponible: ${fmt(a.saldo)})`); return }
     if (Number(a.gasto_hoy) + total > Number(a.limite_diario)) { showMsg('error', 'Límite diario excedido'); return }
     if (a.control.limite_semanal != null && Number(a.control.gasto_semana || 0) + total > Number(a.control.limite_semanal)) { showMsg('error', 'Límite semanal excedido'); return }
+    const limiteZona = excedeLimiteZona(local, total, a.control)
+    if (limiteZona) { showMsg('error', limiteZona); return }
     const tope = Number(copia.tope_offline ?? 5000)
     const yaGastado = await gastadoSinConexionHoy(a.id)
     if (yaGastado + total > tope) {

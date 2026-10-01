@@ -17,6 +17,9 @@ const CATEGORIAS = ['comida', 'bebida', 'golosina', 'útil', 'otro'];
 const NOMBRE_CATEGORIA = { comida: 'comida', bebida: 'bebidas', golosina: 'golosinas', 'útil': 'útiles escolares', otro: 'otros productos' };
 
 const MAX_POR_DIA = 20;
+const MAX_LIMITE_ZONA = 10000000;
+const PERIODOS = { dia: 'día', semana: 'semana' };
+const pesos = n => `$${Number(n).toLocaleString('es-AR')}`;
 const MAX_PRODUCTOS_BLOQUEADOS = 300;
 
 // Texto libre → claves de alérgenos ("Maní, celíaco" → ['mani', 'gluten'])
@@ -60,7 +63,18 @@ const normalizarRestricciones = (entrada = {}, zonasColegio = []) => {
     if (!categorias.includes(cat)) maximos[cat] = n;
   }
 
-  return { restricciones: { categorias_bloqueadas: categorias, zonas_bloqueadas: zonas, productos_bloqueados: productos, maximos } };
+  // Límite de gasto por zona: { Kiosco: { monto: 5000, periodo: 'semana' } }
+  const limites_zona = {};
+  for (const [zona, l] of Object.entries(entrada.limites_zona || {})) {
+    if (!zonasColegio.includes(zona)) return { error: 'Zona inválida' };
+    if (!l || l.monto === null || l.monto === '' || l.monto === undefined) continue;
+    const monto = Number(l.monto);
+    if (!Number.isFinite(monto) || monto <= 0 || monto > MAX_LIMITE_ZONA) return { error: `El límite de ${zona} tiene que ser un monto mayor a 0` };
+    const periodo = l.periodo === 'dia' ? 'dia' : 'semana';
+    if (!zonas.includes(zona)) limites_zona[zona] = { monto: Math.round(monto), periodo };
+  }
+
+  return { restricciones: { categorias_bloqueadas: categorias, zonas_bloqueadas: zonas, productos_bloqueados: productos, maximos, limites_zona } };
 };
 
 const listaAlergenos = claves => claves.map(a => ALERGENOS[a] || a).join(', ');
@@ -78,9 +92,10 @@ const conflictosAlergia = (alumnoAlergenos = [], productos = []) =>
  *  - lugar: zona donde se cobra
  *  - hoyPorCategoria: unidades ya compradas hoy por categoría
  *  - gastoSemana: lo gastado desde el lunes; total: el total de esta compra
+ *  - gastoZona: lo gastado en esta zona { hoy, semana } (para el límite por zona)
  * Devuelve la lista de motivos por los que no se permite (vacía = se permite).
  */
-const evaluarReglas = ({ alumno, lineas, lugar, hoyPorCategoria = {}, gastoSemana = 0, total = 0 }) => {
+const evaluarReglas = ({ alumno, lineas, lugar, hoyPorCategoria = {}, gastoSemana = 0, total = 0, gastoZona = { hoy: 0, semana: 0 } }) => {
   const r = alumno.restricciones || {};
   const nombre = (alumno.nombre || '').split(' ')[0];
   const motivos = [];
@@ -105,6 +120,14 @@ const evaluarReglas = ({ alumno, lineas, lugar, hoyPorCategoria = {}, gastoSeman
     }
   }
 
+  const lz = (r.limites_zona || {})[lugar];
+  if (lz) {
+    const ya = Number(lz.periodo === 'dia' ? gastoZona.hoy : gastoZona.semana) || 0;
+    if (ya + Number(total) > Number(lz.monto)) {
+      motivos.push(`En ${lugar} la familia de ${nombre} permite hasta ${pesos(lz.monto)} por ${PERIODOS[lz.periodo]} (ya gastó ${pesos(ya)})`);
+    }
+  }
+
   const limite = alumno.limite_semanal == null ? null : Number(alumno.limite_semanal);
   if (limite !== null && Number(gastoSemana) + Number(total) > limite) {
     motivos.push(`Supera el límite semanal de $${limite.toLocaleString('es-AR')} (esta semana gastó $${Number(gastoSemana).toLocaleString('es-AR')})`);
@@ -121,6 +144,7 @@ const resumenReglas = alumno => {
   for (const [cat, max] of Object.entries(r.maximos || {})) partes.push(`${NOMBRE_CATEGORIA[cat] || cat}: hasta ${max} por día`);
   if ((r.zonas_bloqueadas || []).length) partes.push('no compra en ' + r.zonas_bloqueadas.join(', '));
   if ((r.productos_bloqueados || []).length) partes.push(`${r.productos_bloqueados.length} producto(s) bloqueado(s)`);
+  for (const [zona, l] of Object.entries(r.limites_zona || {})) partes.push(`${zona}: hasta ${pesos(l.monto)}/${PERIODOS[l.periodo]}`);
   if (alumno.limite_semanal != null) partes.push(`hasta $${Number(alumno.limite_semanal).toLocaleString('es-AR')}/semana`);
   return partes;
 };

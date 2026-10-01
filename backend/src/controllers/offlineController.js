@@ -27,7 +27,7 @@ const huella = valor => crypto.createHash('sha256').update('koletap:' + valor).d
 const getDatosOffline = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   try {
-    const [alumnos, productos, conf, hoy, semana] = await Promise.all([
+    const [alumnos, productos, conf, hoy, semana, zonas] = await Promise.all([
       pool.query('SELECT * FROM alumnos WHERE colegio_id = $1 ORDER BY nombre', [colegioId]),
       pool.query('SELECT * FROM productos WHERE activo = true AND colegio_id = $1 ORDER BY local, nombre', [colegioId]),
       pool.query('SELECT tope_offline FROM configuracion WHERE colegio_id = $1', [colegioId]),
@@ -42,11 +42,21 @@ const getDatosOffline = async (req, res) => {
          WHERE t.colegio_id = $1 AND ${COMPRA_VALIDA}
            AND (t.fecha AT TIME ZONE 'UTC' AT TIME ZONE ${AR}) >= date_trunc('week', NOW() AT TIME ZONE ${AR})
          GROUP BY 1`, [colegioId]),
+      pool.query(
+        `SELECT t.alumno_id, t.lugar,
+                COALESCE(SUM(t.monto) FILTER (WHERE (t.fecha AT TIME ZONE 'UTC' AT TIME ZONE ${AR})::date = (NOW() AT TIME ZONE ${AR})::date), 0) AS hoy,
+                COALESCE(SUM(t.monto), 0) AS semana
+         FROM transacciones t
+         WHERE t.colegio_id = $1 AND ${COMPRA_VALIDA}
+           AND (t.fecha AT TIME ZONE 'UTC' AT TIME ZONE ${AR}) >= date_trunc('week', NOW() AT TIME ZONE ${AR})
+         GROUP BY 1, 2`, [colegioId]),
     ]);
 
     const hoyPorAlumno = {};
     for (const r of hoy.rows) (hoyPorAlumno[r.alumno_id] ??= {})[r.categoria] = r.cantidad;
     const semanaPorAlumno = Object.fromEntries(semana.rows.map(r => [r.alumno_id, Number(r.total)]));
+    const zonaPorAlumno = {};
+    for (const r of zonas.rows) (zonaPorAlumno[r.alumno_id] ??= {})[r.lugar] = { hoy: Number(r.hoy), semana: Number(r.semana) };
 
     const claves = [];
     const lista = alumnos.rows.map(a => {
@@ -64,6 +74,7 @@ const getDatosOffline = async (req, res) => {
           bloquear_alergenos: a.bloquear_alergenos,
           hoy_por_categoria: hoyPorAlumno[a.id] || {},
           gasto_semana: a.limite_semanal != null ? (semanaPorAlumno[a.id] || 0) : null,
+          gasto_zona: zonaPorAlumno[a.id] || {},
           resumen: resumenReglas(a),
         },
       };
@@ -154,7 +165,7 @@ const sincronizarUna = async (v, req) => {
         [a.id, empleadoId, total, lugar, `Anulación de venta #${tx.rows[0].id}: ${desc}`, colegioId, anuladaEn.toISOString()]
       );
       await client.query('COMMIT');
-      await registrar(empleadoId, colegioId, 'Venta anulada sin conexión', `${a.nombre}: ${desc} (${total}) en ${lugar}. Se anuló antes de subirse: no se le descontó nada.`);
+      await registrar(empleadoId, colegioId, 'Venta anulada sin conexión', `${a.nombre}: ${desc} ($${total}) en ${lugar}. Se anuló antes de subirse: no se le descontó nada.`);
       return { id_venta, estado: 'ok', anulada: true, transaccion_id: tx.rows[0].id, total: 0 };
     }
 

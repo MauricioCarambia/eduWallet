@@ -28,4 +28,19 @@ const gastoDeLaSemana = async (db, alumnoId) => {
   return Number(r.rows[0].total);
 };
 
-module.exports = { compradoHoyPorCategoria, gastoDeLaSemana };
+// Lo gastado en cada zona hoy y en la semana: { Kiosco: { hoy, semana } } (límite por zona)
+const gastoPorZona = async (db, alumnoId) => {
+  const r = await db.query(
+    `SELECT t.lugar,
+            COALESCE(SUM(t.monto) FILTER (WHERE ${FECHA_AR_SQL('t.fecha')}::date = (NOW() AT TIME ZONE ${AR})::date), 0) AS hoy,
+            COALESCE(SUM(t.monto), 0) AS semana
+     FROM transacciones t
+     WHERE t.alumno_id = $1 AND ${COMPRA_VALIDA}
+       AND ${FECHA_AR_SQL('t.fecha')} >= date_trunc('week', NOW() AT TIME ZONE ${AR})
+     GROUP BY t.lugar`,
+    [alumnoId]
+  );
+  return Object.fromEntries(r.rows.map(x => [x.lugar, { hoy: Number(x.hoy), semana: Number(x.semana) }]));
+};
+
+module.exports = { compradoHoyPorCategoria, gastoDeLaSemana, gastoPorZona };

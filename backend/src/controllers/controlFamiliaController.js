@@ -2,6 +2,7 @@
 // Las reglas y las alergias son por hijo; los avisos, por padre.
 const pool = require('../db/conexion');
 const { normalizarRestricciones, normalizarAlergenos, ALERGENOS, CATEGORIAS, listaAlergenos } = require('../services/reglasCompra');
+const { gastoPorZona } = require('../services/consumoAlumno');
 
 // Verifica el vínculo y devuelve el alumno (o null)
 const alumnoDelPadre = async (padreId, alumnoId) =>
@@ -34,6 +35,7 @@ const getCatalogo = async (req, res) => {
     res.json({
       productos: productos.rows,
       zonas: zonas.rows.map(z => z.nombre),
+      gasto_zona: await gastoPorZona(pool, alumno.id),
       categorias: CATEGORIAS,
       alergenos: ALERGENOS,
     });

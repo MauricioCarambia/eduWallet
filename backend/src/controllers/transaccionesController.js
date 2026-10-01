@@ -3,7 +3,7 @@ const { notificarCompra, notificarRechazo } = require('../services/notificacione
 const { evaluarReglas, conflictosAlergia, listaAlergenos } = require('../services/reglasCompra');
 const { registrar } = require('./auditoriaController');
 
-const { compradoHoyPorCategoria, gastoDeLaSemana } = require('../services/consumoAlumno');
+const { compradoHoyPorCategoria, gastoDeLaSemana, gastoPorZona } = require('../services/consumoAlumno');
 const tieneMaximos = a => Object.keys(a.restricciones?.maximos || {}).length > 0;
 
 const getTransacciones = async (req, res) => {
@@ -163,6 +163,7 @@ const cobrar = async (req, res) => {
       alumno: a, lineas, lugar, total,
       hoyPorCategoria: tieneMaximos(a) ? await compradoHoyPorCategoria(client, a.id) : {},
       gastoSemana: a.limite_semanal != null ? await gastoDeLaSemana(client, a.id) : 0,
+      gastoZona: a.restricciones?.limites_zona?.[lugar] ? ((await gastoPorZona(client, a.id))[lugar] || { hoy: 0, semana: 0 }) : undefined,
     });
     if (motivos.length > 0) {
       await client.query('ROLLBACK');
@@ -350,7 +351,7 @@ const anularVenta = async (req, res) => {
     await client.query('COMMIT');
 
     const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [t.alumno_id]);
-    await registrar(req.empleado.id, req.empleado.colegio_id, 'Venta anulada', `${alumno.rows[0]?.nombre || 'Alumno'}: ${t.descripcion} (${Number(t.monto)}) en ${t.lugar}. Se devolvió el saldo.`);
+    await registrar(req.empleado.id, req.empleado.colegio_id, 'Venta anulada', `${alumno.rows[0]?.nombre || 'Alumno'}: ${t.descripcion} ($${Number(t.monto)}) en ${t.lugar}. Se devolvió el saldo.`);
     res.json({ mensaje: 'Venta anulada correctamente', alumno: alumno.rows[0], monto: t.monto });
   } catch (err) {
     await client.query('ROLLBACK');

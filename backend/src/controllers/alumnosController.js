@@ -1,6 +1,6 @@
 const pool = require("../db/conexion");
 const { normalizarAlergenos, resumenReglas } = require("../services/reglasCompra");
-const { compradoHoyPorCategoria, gastoDeLaSemana } = require("../services/consumoAlumno");
+const { compradoHoyPorCategoria, gastoDeLaSemana, gastoPorZona } = require("../services/consumoAlumno");
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { registrar } = require("./auditoriaController");
@@ -479,6 +479,7 @@ const getControlAlumno = async (req, res) => {
       bloquear_alergenos: a.bloquear_alergenos,
       hoy_por_categoria: await compradoHoyPorCategoria(pool, a.id),
       gasto_semana: a.limite_semanal != null ? await gastoDeLaSemana(pool, a.id) : null,
+      gasto_zona: Object.keys(a.restricciones?.limites_zona || {}).length ? await gastoPorZona(pool, a.id) : {},
       resumen: resumenReglas(a),
     });
   } catch (err) {

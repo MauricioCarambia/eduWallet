@@ -10,7 +10,7 @@ import { motivoBloqueo, alergiasDe, nombresAlergenos, excedeLimiteZona } from '.
 import Icono from '../components/Icono'
 import CatalogoVenta from '../components/CatalogoVenta'
 import useAncho, { ANCHO_CELULAR, ANCHO_TABLET } from '../hooks/useAncho'
-import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
+import { offlineHabilitado, esErrorDeRed, instalada } from '../offline/estado'
 import { leerCopia, refrescarCopia, encolarVenta, gastadoSinConexionHoy, anularEnCola, transaccionDeVenta, esCajaLocal, sincronizar } from '../offline/sync'
 import { buscarCredencial } from '../offline/credenciales'
 
@@ -594,7 +594,9 @@ export default function Venta() {
                 <Icono nombre="tarjeta" />Pasá la credencial por el lector (QR o tarjeta){nfcDisponible() ? ', tocá NFC' : ''}, escaneá el QR con la cámara o buscá por nombre
                 {nfcEnOtroNavegador() && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 500, color: 'var(--amber)' }}>
-                    Para leer tarjetas con el NFC del celular, abrí el POS en Chrome.
+                    {instalada()
+                      ? <>Esta app se instaló desde un navegador que no lee NFC. Para leer tarjetas con el celular, borrala e instalala desde <b>Chrome</b> (menú ⋮ → Instalar app).</>
+                      : <>Para leer tarjetas con el NFC del celular, abrí el POS en <b>Chrome</b>.</>}
                   </div>
                 )}
                 {lectorEscritorio.disponible && (

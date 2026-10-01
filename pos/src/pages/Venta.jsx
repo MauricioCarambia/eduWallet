@@ -23,6 +23,7 @@ const esRepeticion = (ref, codigo) => {
 }
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
+const ICONO_CATEGORIA = { comida: 'comida', bebida: 'bebida', golosina: 'golosina', 'útil': 'util', otro: 'otro' }
 
 export default function Venta() {
   const { sesion } = useAuth()
@@ -370,19 +371,31 @@ export default function Venta() {
             onKeyDown={e => { if (e.key === 'Enter') { const p = productoPorCodigo(busq); if (p) { addProd(p); setBusq('') } } }} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
             {prods.map(p => {
               const bloqueo = motivoBloqueo(p, ctrl, carrito)
               const alergias = alergiasDe(p, ctrl)
               const apagado = p.stock === 0 || !!bloqueo || (alergias.length > 0 && ctrl?.bloquear_alergenos)
+              const enCarrito = carrito.find(i => i.id === p.id)?.qty || 0
+              const stock = p.stock === 0 ? { texto: 'Sin stock', color: 'var(--red)', fondo: 'var(--red-bg)' }
+                : p.stock <= 3 ? { texto: `Quedan ${p.stock}`, color: 'var(--amber)', fondo: 'var(--amber-bg)' }
+                : { texto: `${p.stock} u.`, color: 'var(--text-secondary)', fondo: 'var(--bg-subtle)' }
               return (
-                <button key={p.id} onClick={() => addProd(p)} disabled={p.stock === 0} title={bloqueo || (alergias.length ? `Alergia: ${nombresAlergenos(alergias)}` : undefined)}
-                  style={{ padding: '14px 12px', border: `1.5px solid ${alergias.length ? 'var(--red)' : p.stock === 0 ? 'var(--red-bg)' : 'var(--border)'}`, borderRadius: 14, background: p.stock === 0 ? 'var(--red-bg)' : 'var(--bg-card)', textAlign: 'left', opacity: apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
-                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>{p.nombre}</p>
-                  <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: p.stock <= 3 ? 'var(--red)' : 'var(--text-secondary)' }}>Stock: {p.stock}</p>
-                  {alergias.length > 0 && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 700, color: 'var(--red)' }}><Icono nombre="alerta" />{nombresAlergenos(alergias)}</p>}
-                  {bloqueo && <p style={{ margin: '6px 0 0', fontSize: 11, fontWeight: 600, color: 'var(--red)' }}><Icono nombre="prohibido" />No permitido</p>}
+                <button key={p.id} className="prod-card" onClick={() => addProd(p)} disabled={p.stock === 0} title={bloqueo || (alergias.length ? `Alergia: ${nombresAlergenos(alergias)}` : undefined)}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 150, padding: 12, border: `1.5px solid ${alergias.length ? 'var(--red)' : enCarrito ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 16, background: enCarrito ? 'var(--brand-light)' : 'var(--bg-card)', boxShadow: 'var(--shadow)', textAlign: 'left', opacity: apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 10, background: enCarrito ? 'var(--bg-card)' : 'var(--brand-light)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icono nombre={ICONO_CATEGORIA[p.categoria] || 'otro'} tamaño={18} style={{ marginRight: 0 }} />
+                    </span>
+                    {enCarrito > 0 && <span style={{ minWidth: 26, height: 26, padding: '0 8px', borderRadius: 999, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>×{enCarrito}</span>}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.nombre}</p>
+                  {alergias.length > 0 && <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)' }}><Icono nombre="alerta" tamaño={12} />{nombresAlergenos(alergias)}</span>}
+                  {bloqueo && <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)' }}><Icono nombre="prohibido" tamaño={12} />No permitido</span>}
+                  <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, width: '100%' }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{fmt(p.precio)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 6, background: stock.fondo, color: stock.color, whiteSpace: 'nowrap' }}>{stock.texto}</span>
+                  </div>
                 </button>
               )
             })}

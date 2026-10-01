@@ -153,3 +153,8 @@ textarea:focus-visible {
 
 /* El gris más claro queda sólo para los placeholders */
 ::placeholder { color: var(--text-tertiary); }
+
+/* Tarjetas de producto en Venta */
+.prod-card { transition: border-color .15s, box-shadow .15s, transform .1s, background .15s; }
+.prod-card:not(:disabled):hover { border-color: var(--brand) !important; box-shadow: var(--shadow-md) !important; transform: translateY(-2px); }
+.prod-card:not(:disabled):active { transform: scale(0.98); }

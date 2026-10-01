@@ -79,7 +79,8 @@ Gráficos (Recharts): serie principal `var(--brand)`, segunda `var(--accent)`; p
 - **Badge:** 11px/500, `padding: 3px 8px`, radio 6px, color de estado sobre su `-bg`.
 - **Chip:** radio 20px, `1.5px solid var(--border)`; activo con `--brand` de fondo y `--on-brand`.
 - **Tarjeta:** `var(--bg-card)`, radio 16px, `1px solid var(--border)`, `var(--shadow)`, padding 1.25rem.
-- **Íconos:** SVG inline 24×24, trazo 2px, sin relleno, `stroke="currentColor"`; 18px en navegación, 16px en botones. En cada app, `src/components/Icono.jsx` (`<Icono nombre="alerta" />`: alerta, tarjeta, imprimir, nfc, descargar, subir, candado, candadoAbierto, prohibido, ubicacion, familia, buscar, camara).
+- **Tarjeta de producto (Venta del POS):** ícono de categoría en cuadro `--brand-light` 34px, nombre 14/600, precio 18/700 abajo a la izquierda y stock como badge (`--bg-subtle`; `--amber` si quedan 3 o menos; `--red` sin stock). En el carrito: borde `--brand`, fondo `--brand-light` y badge ×N. Hover: borde `--brand` y `--shadow-md`.
+- **Íconos:** SVG inline 24×24, trazo 2px, sin relleno, `stroke="currentColor"`; 18px en navegación, 16px en botones. En cada app, `src/components/Icono.jsx` (`<Icono nombre="alerta" />`: alerta, tarjeta, imprimir, nfc, descargar, subir, candado, candadoAbierto, prohibido, ubicacion, familia, buscar, camara; categorías de producto: comida, bebida, golosina, util, otro).
 
 ## Tono
 

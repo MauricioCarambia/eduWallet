@@ -19,12 +19,29 @@ const getBrandingDB = async (colegioId) => {
   };
 };
 
+// Resend no tira excepción cuando rechaza un mail: devuelve { error }. Sin
+// mirar eso, un mail rechazado se daba por enviado.
+// Motivo de rechazo de Resend en castellano, para mostrarle al admin
+const motivoEnCastellano = m => {
+  if (/testing emails|verify a domain|domain is not verified/i.test(m || '')) return 'el envío de mails está en modo de prueba (solo le llega al dueño de la cuenta de Resend): hay que verificar el dominio';
+  if (/too many requests|rate limit/i.test(m || '')) return 'demasiados envíos seguidos, probá de nuevo en un minuto';
+  return m;
+};
+
+const mandar = async params => {
+  const r = await resend.emails.send(params);
+  if (r?.error) throw new Error(r.error.message || 'Resend rechazó el mail');
+  return r;
+};
+
 const enviarEmail = async ({ to, subject, html, nombre }) => {
   try {
-    await resend.emails.send({ from: remitente(nombre), to, subject, html });
+    await mandar({ from: remitente(nombre), to, subject, html });
     console.log(`Email enviado a ${to}`);
+    return true;
   } catch (err) {
-    console.error('Error enviando email:', err.message);
+    console.error(`Error enviando email a ${to}:`, err.message);
+    return false;
   }
 };
 
@@ -121,7 +138,7 @@ const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
       return;
     }
 
-    await resend.emails.send({
+    await mandar({
       from: remitente(nombreColegio),
       to: emailAdmin,
       subject: `🗄️ Backup — ${nombreColegio} — ${new Date().toLocaleDateString('es-AR')}`,
@@ -182,26 +199,33 @@ const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombr
   });
 };
 
+// Mensaje del admin a las familias: en tandas de hasta 100 (la API de lotes de
+// Resend), así no se choca con el límite de pedidos por segundo. Cuenta como
+// enviados solo los que Resend aceptó y devuelve el primer motivo de rechazo.
 const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #111; margin: 0 0 20px; font-size: 15px; white-space: pre-line;">${mensaje}</p>
+    <p style="color: #111; margin: 0 0 20px; font-size: 15px; white-space: pre-line;">${escapar(mensaje)}</p>
   `, nombreColegio, logo);
 
   let enviados = 0;
   let errores = 0;
-
-  for (const email of destinatarios) {
+  let motivo = null;
+  for (let i = 0; i < destinatarios.length; i += 100) {
+    const tanda = destinatarios.slice(i, i + 100);
     try {
-      await resend.emails.send({ from: remitente(nombreColegio), to: email, subject: asunto, html });
-      enviados++;
+      const r = await resend.batch.send(tanda.map(to => ({ from: remitente(nombreColegio), to, subject: asunto, html })));
+      if (r?.error) throw new Error(r.error.message || 'Resend rechazó el envío');
+      enviados += tanda.length;
     } catch (err) {
-      console.error(`Error enviando a ${email}:`, err.message);
-      errores++;
+      console.error(`Error enviando mensaje a ${tanda.length} destinatarios:`, err.message);
+      errores += tanda.length;
+      motivo ??= motivoEnCastellano(err.message);
     }
+    if (i + 100 < destinatarios.length) await new Promise(r => setTimeout(r, 600));
   }
 
-  return { enviados, errores };
+  return { enviados, errores, motivo };
 };
 
 // Consulta del formulario de la página: le llega a quien vende KoleTap

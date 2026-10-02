@@ -10,6 +10,9 @@ const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const DIRECCION = (FROM.match(/<([^>]+)>/) || [null, FROM])[1].trim();
 const remitente = nombre => `"${String(nombre || 'KoleTap').replace(/["<>\\]/g, '')}" <${DIRECCION}>`;
 
+// Texto del usuario dentro del HTML del mail (nombres, productos): sin etiquetas
+const escapar = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const getBrandingDB = async (colegioId) => {
   if (!colegioId) return { nombre: 'KoleTap', logo: null };
   const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [colegioId]);
@@ -50,7 +53,7 @@ const baseHTML = (contenido, nombreColegio, logo) => `
     <div style="background: #111; padding: 16px 24px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 14px;">
       ${logo ? `<img src="${logo}" alt="${nombreColegio}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;flex-shrink:0;" />` : ''}
       <div>
-        <h1 style="color: white; margin: 0; font-size: 20px;">${nombreColegio}</h1>
+        <h1 style="color: white; margin: 0; font-size: 20px;">${escapar(nombreColegio)}</h1>
         <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema KoleTap</p>
       </div>
     </div>
@@ -66,8 +69,8 @@ const baseHTML = (contenido, nombreColegio, logo) => `
 const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, saldo, curso, umbral = 200 }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${nombreAlumno}</b> (${curso}) está por debajo de $${Number(umbral).toLocaleString('es-AR')}.</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(nombrePadre)}</b>,</p>
+    <p style="color: #111; margin: 0 0 20px;">El saldo de <b>${escapar(nombreAlumno)}</b> (${escapar(curso)}) está por debajo de $${Number(umbral).toLocaleString('es-AR')}.</p>
     <div style="background: #FEF2F2; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 20px;">
       <p style="margin: 0 0 4px; font-size: 13px; color: #666;">Saldo actual</p>
       <p style="margin: 0; font-size: 32px; font-weight: 700; color: #DC2626;">$${Number(saldo).toLocaleString('es-AR')}</p>
@@ -86,8 +89,8 @@ const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombre
 const enviarEmailRecarga = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, monto, nuevoSaldo }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 20px;">La recarga para <b>${nombreAlumno}</b> fue acreditada correctamente.</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(nombrePadre)}</b>,</p>
+    <p style="color: #111; margin: 0 0 20px;">La recarga para <b>${escapar(nombreAlumno)}</b> fue acreditada correctamente.</p>
     <div style="background: #F0FDF4; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 20px;">
       <p style="margin: 0 0 4px; font-size: 13px; color: #666;">Monto recargado</p>
       <p style="margin: 0; font-size: 32px; font-weight: 700; color: #16A34A;">+$${Number(monto).toLocaleString('es-AR')}</p>
@@ -107,11 +110,11 @@ const enviarEmailRecarga = async ({ colegioId, nombrePadre, emailPadre, nombreAl
 const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, descripcion, monto, saldo, lugar, sinConexion = null }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 20px;"><b>${nombreAlumno}</b> realizó una compra en el ${lugar}.</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(nombrePadre)}</b>,</p>
+    <p style="color: #111; margin: 0 0 20px;"><b>${escapar(nombreAlumno)}</b> realizó una compra en el ${escapar(lugar)}.</p>
     <div style="background: #F8F9FA; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
       <p style="margin: 0 0 6px; font-size: 13px; color: #666;">Detalle</p>
-      <p style="margin: 0 0 4px; font-size: 14px; color: #111;">${descripcion}</p>
+      <p style="margin: 0 0 4px; font-size: 14px; color: #111;">${escapar(descripcion)}</p>
       <p style="margin: 8px 0 0; font-size: 22px; font-weight: 700; color: #111;">-$${Number(monto).toLocaleString('es-AR')}</p>
       <p style="margin: 6px 0 0; font-size: 13px; color: #666;">Saldo restante: <b>${Number(saldo).toLocaleString('es-AR')}</b></p>
     </div>
@@ -143,7 +146,7 @@ const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
       to: emailAdmin,
       subject: `🗄️ Backup — ${nombreColegio} — ${new Date().toLocaleDateString('es-AR')}`,
       html: baseHTML(`
-        <p style="color: #111; margin: 0 0 12px;">Backup automático de <b>${nombreColegio}</b></p>
+        <p style="color: #111; margin: 0 0 12px;">Backup automático de <b>${escapar(nombreColegio)}</b></p>
         <p style="color: #666; font-size: 13px; margin: 0 0 16px;">Fecha: ${new Date().toLocaleString('es-AR')}</p>
         <div style="background: #F0FDF4; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #166534;">
           ✓ El archivo SQL adjunto contiene todos los datos del sistema.
@@ -163,7 +166,7 @@ const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
 const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, linkReset }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(nombrePadre)}</b>,</p>
     <p style="color: #111; margin: 0 0 20px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en KoleTap.</p>
     <a href="${linkReset}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
       Restablecer contraseña
@@ -183,8 +186,8 @@ const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, lin
 const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombreAlumno, linkActivacion }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola${nombrePadre ? ` <b>${nombrePadre}</b>` : ''},</p>
-    <p style="color: #111; margin: 0 0 20px;"><b>${nombreColegio}</b> te dio de alta en KoleTap como padre/tutor de <b>${nombreAlumno}</b>, para que puedas ver su saldo y recargarlo desde el celular.</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola${nombrePadre ? ` <b>${escapar(nombrePadre)}</b>` : ''},</p>
+    <p style="color: #111; margin: 0 0 20px;"><b>${escapar(nombreColegio)}</b> te dio de alta en KoleTap como padre/tutor de <b>${escapar(nombreAlumno)}</b>, para que puedas ver su saldo y recargarlo desde el celular.</p>
     <a href="${linkActivacion}" style="display: block; text-align: center; background: #1E3A5F; color: white; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; margin-bottom: 20px;">
       Activar mi cuenta
     </a>
@@ -229,7 +232,6 @@ const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios })
 };
 
 // Consulta del formulario de la página: le llega a quien vende KoleTap
-const escapar = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const enviarEmailContacto = async ({ nombre, colegio, cargo, email, telefono, alumnos, mensaje }) => {
   const fila = (etiqueta, valor) => valor ? `<tr><td style="padding: 6px 12px 6px 0; color: #666; font-size: 13px; white-space: nowrap; vertical-align: top;">${etiqueta}</td><td style="padding: 6px 0; color: #111; font-size: 14px;">${escapar(valor)}</td></tr>` : '';
@@ -252,9 +254,9 @@ const enviarEmailContacto = async ({ nombre, colegio, cargo, email, telefono, al
 const enviarEmailAviso = async ({ colegioId, nombrePadre, emailPadre, asunto, titulo, detalle }) => {
   const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
   const html = baseHTML(`
-    <p style="color: #666; margin: 0 0 16px;">Hola <b>${nombrePadre}</b>,</p>
-    <p style="color: #111; margin: 0 0 12px; font-size: 15px;"><b>${titulo}</b></p>
-    <p style="color: #444; margin: 0; font-size: 14px;">${detalle}</p>
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(nombrePadre)}</b>,</p>
+    <p style="color: #111; margin: 0 0 12px; font-size: 15px;"><b>${escapar(titulo)}</b></p>
+    <p style="color: #444; margin: 0; font-size: 14px;">${escapar(detalle)}</p>
   `, nombreColegio, logo);
   await enviarEmail({ to: emailPadre, subject: `${asunto} — ${nombreColegio}`, html, nombre: nombreColegio });
 };

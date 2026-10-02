@@ -119,7 +119,7 @@ const notificationUrl = (colegioId) =>
 // Datos del alumno + comisión del colegio, verificando que el padre esté vinculado
 const alumnoDelPadre = async (padreId, alumnoId) => {
   const r = await pool.query(
-    `SELECT a.id, a.nombre, a.colegio_id, c.comision_pct
+    `SELECT a.id, a.nombre, a.colegio_id, c.comision_pct, c.activo AS colegio_activo
      FROM alumnos a
      JOIN padres_alumnos pa ON pa.alumno_id = a.id AND pa.padre_id = $1
      JOIN colegios c ON c.id = a.colegio_id
@@ -300,6 +300,7 @@ const crearPreferencia = async (req, res) => {
   try {
     const alumno = await alumnoDelPadre(padreId, alumno_id);
     if (!alumno) return res.status(403).json({ error: 'Sin acceso a este alumno' });
+    if (!alumno.colegio_activo) return res.status(403).json({ error: 'El colegio no está recibiendo recargas por ahora. Consultá en el colegio.' });
 
     const padreRes = await pool.query('SELECT nombre, email FROM padres WHERE id = $1', [padreId]);
     const padre = padreRes.rows[0];
@@ -389,6 +390,7 @@ const procesarPago = async (req, res) => {
   try {
     const alumno = await alumnoDelPadre(padreId, alumno_id);
     if (!alumno) return res.status(403).json({ error: 'Sin acceso a este alumno' });
+    if (!alumno.colegio_activo) return res.status(403).json({ error: 'El colegio no está recibiendo recargas por ahora. Consultá en el colegio.' });
 
     const calc = calcularRecarga(monto, alumno.comision_pct);
     const { client, split } = await clienteColegio(alumno.colegio_id);

@@ -9,6 +9,7 @@ import Alumnos from './pages/Alumnos'
 import Empleados from './pages/Empleados'
 import Cajas from './pages/Cajas'
 import Reportes from './pages/Reportes'
+import Liquidaciones from './pages/Liquidaciones'
 import Auditoria from './pages/Auditoria'
 import Recargas from './pages/Recargas'
 import Conciliacion from './pages/Conciliacion'
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/mensajes" element={<PrivateRoute><Layout><Mensajes /></Layout></PrivateRoute>} />
       <Route path="/cajas" element={<PrivateRoute><Layout><Cajas /></Layout></PrivateRoute>} />
       <Route path="/reportes" element={<PrivateRoute><Layout><Reportes /></Layout></PrivateRoute>} />
+      <Route path="/liquidaciones" element={<PrivateRoute><Layout><Liquidaciones /></Layout></PrivateRoute>} />
       <Route path="/credenciales" element={<PrivateRoute><Layout><Credenciales /></Layout></PrivateRoute>} />
       <Route path="/recargas" element={<PrivateRoute><Layout><Recargas /></Layout></PrivateRoute>} />
       <Route path="/conciliacion" element={<PrivateRoute><Layout><Conciliacion /></Layout></PrivateRoute>} />

@@ -235,7 +235,33 @@ const enviarEmailAviso = async ({ colegioId, nombrePadre, emailPadre, asunto, ti
   await enviarEmail({ to: emailPadre, subject: `${asunto} — ${nombreColegio}`, html, nombre: nombreColegio });
 };
 
+// Liquidación a un concesionario: devuelve true si Resend la aceptó
+const enviarEmailLiquidacion = async ({ colegioId, email, liq }) => {
+  const { nombre: nombreColegio, logo } = await getBrandingDB(colegioId);
+  const pesos = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-AR');
+  const fecha = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString('es-AR') : '';
+  const fila = (etiqueta, valor, fuerte) => `<tr><td style="padding: 6px 0; color: #666; font-size: 14px;">${etiqueta}</td><td style="padding: 6px 0; text-align: right; font-size: ${fuerte ? 16 : 14}px; color: #111;${fuerte ? ' font-weight: 700;' : ''}">${valor}</td></tr>`;
+  const html = baseHTML(`
+    <p style="color: #666; margin: 0 0 16px;">Hola <b>${escapar(liq.operador)}</b>,</p>
+    <p style="color: #111; margin: 0 0 16px; font-size: 15px;">Liquidación N° ${liq.id} de <b>${escapar(liq.local)}</b>, del ${fecha(liq.desde)} al ${fecha(liq.hasta)}.</p>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+      ${fila(`Ventas (${liq.cantidad_ventas})`, pesos(liq.ventas))}
+      ${Number(liq.anulaciones) ? fila(`Anulaciones (${liq.cantidad_anulaciones})`, '− ' + pesos(liq.anulaciones)) : ''}
+      ${Number(liq.canon) ? fila(`Canon del colegio (${Number(liq.canon_pct)}%)`, '− ' + pesos(liq.canon)) : ''}
+      ${Number(liq.ajuste) ? fila(`Ajuste${liq.ajuste_motivo ? ': ' + escapar(liq.ajuste_motivo) : ''}`, (Number(liq.ajuste) < 0 ? '− ' : '') + pesos(Math.abs(liq.ajuste))) : ''}
+      ${fila('Total a cobrar', pesos(liq.total), true)}
+    </table>
+    <p style="color: #444; margin: 0; font-size: 14px;">${liq.estado === 'pagada' ? `<b>Pagada</b>${liq.referencia_pago ? ' · ' + escapar(liq.referencia_pago) : ''}.` : 'Pendiente de pago.'}</p>
+  `, nombreColegio, logo);
+  try {
+    const r = await resend.emails.send({ from: remitente(nombreColegio), to: email, subject: `Liquidación N° ${liq.id} — ${liq.local} — ${nombreColegio}`, html });
+    if (r?.error) { console.error('Error enviando liquidación:', r.error.message); return false; }
+    return true;
+  } catch (err) { console.error('Error enviando liquidación:', err.message); return false; }
+};
+
 module.exports = {
+  enviarEmailLiquidacion,
   enviarEmailAviso,
   enviarEmailContacto,
   enviarEmailSaldoBajo,

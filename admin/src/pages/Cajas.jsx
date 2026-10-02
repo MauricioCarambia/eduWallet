@@ -72,7 +72,7 @@ export default function Cajas() {
   if (cargando) return <SkeletonTable rows={6} cols={4} />
 
   const filtroBtn = (label, active, onClick) => (
-    <button onClick={onClick} style={{ padding: '5px 12px', border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: active ? 'var(--brand)' : 'var(--bg-card)', color: active ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer' }}>{label}</button>
+    <button key={label} onClick={onClick} style={{ padding: '5px 12px', border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', background: active ? 'var(--brand)' : 'var(--bg-card)', color: active ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer' }}>{label}</button>
   )
 
   return (

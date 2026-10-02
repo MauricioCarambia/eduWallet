@@ -204,7 +204,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.alumno_nombre}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{t.tipo === 'recarga' && /^MP:/.test(t.descripcion || '') ? 'Recarga por Mercado Pago' : t.descripcion} · {t.lugar} · {new Date(t.fecha).toLocaleString('es-AR')}</p>
               </div>
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: SUMAN_SALDO.includes(t.tipo) ? 'var(--green)' : 'var(--text)' }}>

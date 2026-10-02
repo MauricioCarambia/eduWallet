@@ -135,6 +135,52 @@ const alumnoDelPadre = async (padreId, alumnoId) => {
 // avisos del mismo pago al mismo tiempo, el saldo se suma una sola vez.
 // El monto a acreditar sale siempre de nuestra fila de `pagos`, nunca del
 // cliente ni de la URL de retorno.
+// Otro pago de Mercado Pago con la misma referencia que una recarga ya
+// acreditada con otro pago (ej.: la familia eligió pagar en Rapipago y después
+// pagó con tarjeta, o pagó dos veces). Cada pago se trata por separado:
+//   - aprobado y todavía sin acreditar → se acredita (la plata entró)
+//   - devuelto, cancelado o contracargo, y se había acreditado → se descuenta
+//   - cualquier otra cosa (ej.: el cupón de Rapipago que venció) → nada
+// Antes se lo tomaba como un cambio del pago acreditado: si vencía el cupón,
+// se le descontaba al alumno la recarga que sí había pagado con tarjeta.
+const aplicarOtroPago = async (db, pago, pagoData) => {
+  const paymentId = String(pagoData.id);
+  const ref = `MP:${paymentId}`;
+  const acreditada = (await db.query(
+    "SELECT 1 FROM transacciones WHERE tipo = 'recarga' AND descripcion = $1", [ref]
+  )).rows.length > 0;
+  const monto = Number(pago.monto);
+
+  if (pagoData.status === 'approved' && !acreditada) {
+    const esperado = Number(pago.monto_total ?? pago.monto);
+    if (Number(pagoData.transaction_amount) + 0.01 < esperado) return { accion: 'monto_inconsistente' };
+    const tx = await db.query(
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'recarga', 'Mercado Pago', $3, $4) ON CONFLICT DO NOTHING RETURNING id`,
+      [pago.alumno_id, monto, ref, pago.colegio_id]
+    );
+    if (!tx.rows.length) return { accion: null };
+    await db.query('UPDATE alumnos SET saldo = saldo + $1 WHERE id = $2', [monto, pago.alumno_id]);
+    return { accion: 'acreditado', monto };
+  }
+
+  if (['refunded', 'cancelled', 'charged_back'].includes(pagoData.status) && acreditada) {
+    const yaRevertida = (await db.query(
+      "SELECT 1 FROM transacciones WHERE tipo = 'reversion' AND descripcion LIKE $1", [`% ${ref}`]
+    )).rows.length > 0;
+    if (yaRevertida) return { accion: null };
+    const motivo = pagoData.status === 'charged_back' ? 'Contracargo' : 'Devolución';
+    const a = await db.query('UPDATE alumnos SET saldo = saldo - $1 WHERE id = $2 RETURNING saldo', [monto, pago.alumno_id]);
+    await db.query(
+      `INSERT INTO transacciones (alumno_id, monto, tipo, lugar, descripcion, colegio_id)
+       VALUES ($1, $2, 'reversion', 'Mercado Pago', $3, $4)`,
+      [pago.alumno_id, monto, `${motivo} de recarga ${ref}`, pago.colegio_id]
+    );
+    return { accion: 'revertido', monto, motivo, saldoNuevo: a.rows[0]?.saldo };
+  }
+  return { accion: null };
+};
+
 const acreditarPago = async (pagoData) => {
   const ref = pagoData.external_reference;
   if (!ref) return { estado: null, acreditado: false, pago: null };
@@ -171,6 +217,25 @@ const acreditarPago = async (pagoData) => {
       r = await db.query('SELECT * FROM pagos WHERE external_reference = $1 FOR UPDATE', [ref]);
     }
     pago = r.rows[0];
+
+    if (YA_ACREDITADOS.includes(pago.estado) && pago.mp_payment_id && pago.mp_payment_id !== paymentId) {
+      const otro = await aplicarOtroPago(db, pago, pagoData);
+      await db.query('COMMIT');
+      if (otro.accion === 'acreditado') {
+        await registrar(null, pago.colegio_id, 'Recarga pagada dos veces',
+          `Pago MP ${paymentId} con la misma referencia que el ${pago.mp_payment_id}: se acreditaron ${otro.monto} al alumno #${pago.alumno_id}`).catch(() => {});
+        await notificarRecargaMP(pago.padre_id, pago.alumno_id, otro.monto);
+        return { estado: pago.estado, acreditado: true, pago };
+      }
+      if (otro.accion === 'revertido') {
+        await registrar(null, pago.colegio_id, `Recarga revertida por Mercado Pago (${otro.motivo.toLowerCase()})`,
+          `Pago MP ${paymentId}: se descontaron ${otro.monto} del alumno #${pago.alumno_id}`).catch(() => {});
+        await notificarReversion({ colegioId: pago.colegio_id, alumnoId: pago.alumno_id, monto: otro.monto, motivo: otro.motivo, saldoNuevo: otro.saldoNuevo });
+        return { estado: pago.estado, acreditado: false, pago, revertido: otro.monto };
+      }
+      if (otro.accion === 'monto_inconsistente') console.error(`Pago MP ${paymentId}: monto menor al esperado, no se acreditó`);
+      return { estado: pago.estado, acreditado: false, pago };
+    }
 
     if (YA_ACREDITADOS.includes(pago.estado)) {
       // Ya se acreditó antes: sólo pueden venir devoluciones, contracargos o disputas

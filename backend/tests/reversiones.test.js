@@ -13,7 +13,12 @@ const mockQuery = async (sql, params = []) => {
   if (sql.startsWith('SELECT * FROM pagos WHERE external_reference')) return { rows: [{ ...mockDb.pago }] };
   if (sql.startsWith('UPDATE pagos SET estado = $1, mp_payment_id')) { Object.assign(mockDb.pago, { estado: params[0], mp_payment_id: params[1], detalle: params[2] }); return { rows: [] }; }
   if (sql.startsWith('UPDATE pagos SET estado = $1, monto_revertido')) { Object.assign(mockDb.pago, { estado: params[0], monto_revertido: String(params[1]) }); return { rows: [] }; }
-  if (sql.includes("VALUES ($1, $2, 'recarga'")) { mockDb.movs.push(['recarga', Number(params[1])]); return { rows: [{ id: 1 }] }; }
+  if (sql.includes("WHERE tipo = 'recarga' AND descripcion = $1")) return { rows: mockDb.movs.some(m => m[0] === 'recarga' && m[2] === params[0]) ? [{}] : [] };
+  if (sql.includes("WHERE tipo = 'reversion' AND descripcion LIKE $1")) return { rows: mockDb.movs.some(m => m[0] === 'reversion' && m[2].endsWith(params[0].slice(1))) ? [{}] : [] };
+  if (sql.includes("VALUES ($1, $2, 'recarga'")) {
+    if (mockDb.movs.some(m => m[0] === 'recarga' && m[2] === params[2])) return { rows: [] }; // índice único de MP:id
+    mockDb.movs.push(['recarga', Number(params[1]), params[2]]); return { rows: [{ id: 1 }] };
+  }
   if (sql.startsWith('UPDATE alumnos SET saldo = saldo + $1')) { mockDb.saldo += Number(params[0]); return { rows: [] }; }
   if (sql.startsWith('UPDATE alumnos SET saldo = saldo - $1')) { mockDb.saldo -= Number(params[0]); return { rows: [{ saldo: String(mockDb.saldo) }] }; }
   if (sql.includes("'reversion'")) { mockDb.movs.push(['reversion', Number(params[1]), params[2]]); return { rows: [] }; }
@@ -106,5 +111,36 @@ describe('conciliación', () => {
     const r = await conciliarColegio(3, { mp: { obtenerPago: async () => { throw new Error('timeout') }, buscarPorReferencia: async () => null } });
     expect(r.diferencias[0]).toMatchObject({ tipo: 'no_verificado', estado: 'revisar' });
     expect(mockDb.saldo).toBe(12000);
+  });
+});
+
+describe('otro pago con la misma referencia', () => {
+  test('el cupón de Rapipago que vence no le saca la recarga pagada con tarjeta', async () => {
+    await acreditada(); // pagó con tarjeta (555)
+    const r = await acreditarPago(mp('cancelled', { id: 777 })); // el cupón que había generado antes
+    expect(r.revertido).toBeUndefined();
+    expect(mockDb.saldo).toBe(12000);
+    expect(mockDb.pago.estado).toBe('acreditado');
+    expect(mockDb.movs.filter(m => m[0] === 'reversion')).toHaveLength(0);
+  });
+
+  test('si la familia pagó dos veces, el segundo pago también se acredita (una sola vez)', async () => {
+    await acreditada();
+    const r = await acreditarPago(mp('approved', { id: 777 }));
+    expect(r.acreditado).toBe(true);
+    expect(mockDb.saldo).toBe(22000);
+    await acreditarPago(mp('approved', { id: 777 })); // aviso repetido
+    expect(mockDb.saldo).toBe(22000);
+  });
+
+  test('si después devuelven el pago repetido, se descuenta solo ese', async () => {
+    await acreditada();
+    await acreditarPago(mp('approved', { id: 777 }));
+    const r = await acreditarPago(mp('refunded', { id: 777, transaction_amount_refunded: 10500 }));
+    expect(r.revertido).toBe(10000);
+    expect(mockDb.saldo).toBe(12000);
+    await acreditarPago(mp('refunded', { id: 777, transaction_amount_refunded: 10500 })); // repetido
+    expect(mockDb.saldo).toBe(12000);
+    expect(mockDb.pago.estado).toBe('acreditado'); // el pago con tarjeta sigue intacto
   });
 });

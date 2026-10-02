@@ -125,4 +125,19 @@ const testEmail = async (req, res) => {
   }
 };
 
-module.exports = { getConfiguracion, getBranding, getMiColegio, actualizarConfiguracion, testEmail };
+// Logo del colegio como imagen (público): los mails no pueden mostrar el logo
+// guardado como data: URL (Gmail y la mayoría lo bloquean), así que lo piden acá
+const getLogo = async (req, res) => {
+  try {
+    const r = await pool.query('SELECT logo FROM configuracion WHERE colegio_id = $1', [Number.parseInt(req.params.colegioId, 10) || 0]);
+    // Solo imágenes comunes (un SVG puede traer scripts)
+    const m = /^data:(image\/(?:png|jpe?g|gif|webp));base64,(.+)$/s.exec(r.rows[0]?.logo || '');
+    if (!m) return res.status(404).end();
+    res.set({ 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
+    res.type(m[1]).send(Buffer.from(m[2], 'base64'));
+  } catch {
+    res.status(500).end();
+  }
+};
+
+module.exports = { getLogo, getConfiguracion, getBranding, getMiColegio, actualizarConfiguracion, testEmail };

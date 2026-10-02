@@ -18,7 +18,11 @@ const getBrandingDB = async (colegioId) => {
   const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [colegioId]);
   return {
     nombre: res.rows[0]?.nombre_colegio || 'KoleTap',
-    logo:   res.rows[0]?.logo || null
+    // En el mail va un link a la imagen (un data: URL no se ve en Gmail); el
+    // largo cambia si cambian el logo, así no queda el viejo en la caché
+    logo:   res.rows[0]?.logo
+      ? (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api/configuracion/logo/${colegioId}?v=${res.rows[0].logo.length}` : res.rows[0].logo)
+      : null
   };
 };
 
@@ -51,7 +55,7 @@ const enviarEmail = async ({ to, subject, html, nombre }) => {
 const baseHTML = (contenido, nombreColegio, logo) => `
   <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
     <div style="background: #111; padding: 16px 24px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 14px;">
-      ${logo ? `<img src="${logo}" alt="${nombreColegio}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;flex-shrink:0;" />` : ''}
+      ${logo ? `<img src="${escapar(logo)}" alt="${escapar(nombreColegio)}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;flex-shrink:0;" />` : ''}
       <div>
         <h1 style="color: white; margin: 0; font-size: 20px;">${escapar(nombreColegio)}</h1>
         <p style="color: #999; margin: 4px 0 0; font-size: 12px;">Sistema KoleTap</p>

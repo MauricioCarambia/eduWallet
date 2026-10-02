@@ -45,4 +45,14 @@ const contactoLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter, contactoLimiter };
+// Vincular un hijo con el código del colegio — 20 intentos por hora por IP
+// (que no se puedan probar códigos al azar)
+const vincularLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: 'Demasiados intentos con códigos de vinculación. Probá de nuevo en una hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { vincularLimiter, loginEmpleadosLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter, contactoLimiter };

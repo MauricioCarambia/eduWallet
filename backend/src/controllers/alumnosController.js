@@ -10,7 +10,9 @@ const { nuevoCodigoQr, normalizarCodigo, esCodigoQr } = require("../services/cre
 const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
 
-const generarCodigoVinculacion = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+// 8 caracteres al azar (con crypto: Math.random no es seguro para algo que da acceso a un alumno)
+const LETRAS_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const generarCodigoVinculacion = () => [...crypto.randomBytes(8)].map(b => LETRAS_CODIGO[b % LETRAS_CODIGO.length]).join('');
 
 const getAlumnos = async (req, res) => {
   try {

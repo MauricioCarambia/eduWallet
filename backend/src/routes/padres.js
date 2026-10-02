@@ -4,7 +4,7 @@ const { registro, login, getAlumnos, getCredencial, bloquearMedio, vincularAlumn
 const { getClavePublica, suscribir, desuscribir } = require('../controllers/pushController');
 const { getCatalogo, guardarRestricciones, guardarAlergias, getNotificaciones, guardarNotificaciones } = require('../controllers/controlFamiliaController');
 const { verificarPadre } = require('../middlewares/auth');
-const { loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
+const { vincularLimiter, loginPadresLimiter, registroPadresLimiter, recuperacionLimiter } = require('../middlewares/rateLimiter');
 
 /**
  * @swagger
@@ -203,7 +203,7 @@ router.patch('/alumnos/:alumno_id/medios', verificarPadre, bloquearMedio);
  *       200:
  *         description: Alumno vinculado
  */
-router.post('/alumnos/vincular', verificarPadre, vincularAlumno);
+router.post('/alumnos/vincular', vincularLimiter, verificarPadre, vincularAlumno);
 
 /**
  * @swagger

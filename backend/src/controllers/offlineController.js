@@ -130,7 +130,7 @@ const sincronizarUna = async (v, req) => {
 
     // Precios de la base; un producto borrado mientras tanto se cobra igual (la venta ya pasó)
     const ids = [...new Set(items.map(i => Number(i.id)))];
-    const prods = await client.query('SELECT id, nombre, precio, categoria FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2', [ids, colegioId]);
+    const prods = await client.query('SELECT id, nombre, precio, categoria, costo FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2', [ids, colegioId]);
     const porId = new Map(prods.rows.map(p => [p.id, p]));
     const lineas = items.filter(i => porId.has(Number(i.id))).map(i => ({ ...porId.get(Number(i.id)), qty: Number(i.qty) }));
     if (lineas.length === 0) { await client.query('ROLLBACK'); return { id_venta, estado: 'error', error: 'Productos inexistentes' }; }
@@ -186,8 +186,8 @@ const sincronizarUna = async (v, req) => {
     );
     for (const l of lineas) {
       await client.query(
-        'INSERT INTO transaccion_items (transaccion_id, producto_id, nombre, categoria, cantidad, precio) VALUES ($1, $2, $3, $4, $5, $6)',
-        [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio]
+        'INSERT INTO transaccion_items (transaccion_id, producto_id, nombre, categoria, cantidad, precio, costo) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio, l.costo ?? null]
       );
     }
     // La caja donde se vendió (aunque ya se haya cerrado); si se abrió sin

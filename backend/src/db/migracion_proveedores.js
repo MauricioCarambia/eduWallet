@@ -2,6 +2,8 @@
  * Proveedores, su catálogo, pedidos y recepción de mercadería (POS).
  * - productos.costo: precio de compra por unidad que pone el empleado; la
  *   ganancia es precio (venta) − costo.
+ * - transaccion_items.costo: el precio de compra que tenía el producto al
+ *   venderse, así la ganancia de ventas viejas no cambia si cambia el costo.
  * - proveedores: compartidos entre las zonas del colegio.
  * - proveedor_productos: lo que vende cada proveedor (precio de compra por
  *   unidad, código, categoría y unidades por bulto, ej. caja x 12).
@@ -17,6 +19,7 @@ const pool = require('./conexion');
 const migrarProveedores = async () => {
   await pool.query(`
     ALTER TABLE productos ADD COLUMN IF NOT EXISTS costo NUMERIC(12,2);
+    ALTER TABLE transaccion_items ADD COLUMN IF NOT EXISTS costo NUMERIC(12,2);
 
     CREATE TABLE IF NOT EXISTS proveedores (
       id SERIAL PRIMARY KEY,

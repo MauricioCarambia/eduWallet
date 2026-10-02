@@ -7,6 +7,7 @@ import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
+import Rentabilidad from '../components/Rentabilidad'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 const tooltipStyle = {
@@ -428,10 +429,10 @@ export default function Reportes() {
       </div>
 
       {/* tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-        {[['general', 'General'], ['productos', 'Por producto'], ['locales', 'Por local'], ['cursos', 'Por curso'], ['transacciones', 'Transacciones']].map(([val, label]) => (
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {[['general', 'General'], ['productos', 'Por producto'], ['locales', 'Por local'], ['cursos', 'Por curso'], ['rentabilidad', 'Rentabilidad'], ['transacciones', 'Transacciones']].map(([val, label]) => (
           <button key={val} onClick={() => setTab(val)}
-            style={{ padding: '8px 16px', border: 'none', borderBottom: `2px solid ${tab === val ? 'var(--brand)' : 'transparent'}`, background: 'transparent', fontSize: 13, fontWeight: tab === val ? 600 : 400, color: tab === val ? 'var(--brand)' : 'var(--text-secondary)', cursor: 'pointer', marginBottom: -1 }}>
+            style={{ padding: '8px 16px', whiteSpace: 'nowrap', flexShrink: 0, border: 'none', borderBottom: `2px solid ${tab === val ? 'var(--brand)' : 'transparent'}`, background: 'transparent', fontSize: 13, fontWeight: tab === val ? 600 : 400, color: tab === val ? 'var(--brand)' : 'var(--text-secondary)', cursor: 'pointer', marginBottom: -1 }}>
             {label}
           </button>
         ))}
@@ -692,6 +693,8 @@ export default function Reportes() {
       )}
 
       {/* TAB: TRANSACCIONES */}
+      {tab === 'rentabilidad' && <Rentabilidad desde={fechaDesde} hasta={fechaHasta} local={filtroLocal} />}
+
       {tab === 'transacciones' && (
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>

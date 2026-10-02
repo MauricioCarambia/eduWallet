@@ -21,7 +21,7 @@ const ejecutar = async (sql, p = []) => {
   if (sql.startsWith('SELECT id FROM transacciones WHERE colegio_id')) return { rows: db.transacciones.filter(t => t.id_venta === p[1]) };
   if (sql.startsWith('SELECT nombre FROM locales WHERE colegio_id')) return { rows: [{ nombre: p[1] }] };
   if (sql.startsWith('SELECT * FROM alumnos WHERE id')) return { rows: db.alumnos.map(a => ({ ...a })) };
-  if (sql.startsWith('SELECT id, nombre, precio, categoria FROM productos')) return { rows: db.productos };
+  if (sql.startsWith('SELECT id, nombre, precio, categoria')) return { rows: db.productos };
   if (sql.startsWith('UPDATE alumnos SET saldo')) { db.alumnos[0].saldo -= p[0]; return { rows: [] }; }
   if (sql.startsWith('INSERT INTO transacciones')) { const t = { id: db.transacciones.length + 1, id_venta: p[7] }; db.transacciones.push(t); return { rows: [t] }; }
   if (sql.startsWith('SELECT id, saldo, gasto_hoy FROM alumnos')) return { rows: [{ id: 1, saldo: db.alumnos[0].saldo, gasto_hoy: 0 }] };

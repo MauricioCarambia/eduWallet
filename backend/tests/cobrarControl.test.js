@@ -49,7 +49,7 @@ beforeEach(() => { mockReset(); jest.clearAllMocks(); });
 test('sin reglas ni alergias vende y guarda el detalle por categoría', async () => {
   const res = await vender([{ id: 2, qty: 2 }]);
   expect(res.status).not.toHaveBeenCalled();
-  expect(mockDb.items).toEqual([[77, 2, 'Agua', 'bebida', 2, '1000']]);
+  expect(mockDb.items).toEqual([[77, 2, 'Agua', 'bebida', 2, '1000', null]]); // costo null: sin precio de compra cargado
   expect(mockAvisos.notificarCompra).toHaveBeenCalledWith(expect.objectContaining({ total: 2000, saldoAnterior: '10000' }));
 });
 

@@ -136,7 +136,7 @@ const cobrar = async (req, res) => {
     // Precios y nombres salen de la base, no de lo que manda el POS
     const ids = [...new Set(items.map(i => Number(i.id)))];
     const prods = await client.query(
-      'SELECT id, nombre, precio, local, categoria, alergenos FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2 AND activo = true',
+      'SELECT id, nombre, precio, local, categoria, alergenos, costo FROM productos WHERE id = ANY($1::int[]) AND colegio_id = $2 AND activo = true',
       [ids, req.empleado.colegio_id]
     );
     const porId = new Map(prods.rows.map(p => [p.id, p]));
@@ -223,9 +223,9 @@ const cobrar = async (req, res) => {
     // detalle de la compra (para contar unidades por categoría)
     for (const l of lineas) {
       await client.query(
-        `INSERT INTO transaccion_items (transaccion_id, producto_id, nombre, categoria, cantidad, precio)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio]
+        `INSERT INTO transaccion_items (transaccion_id, producto_id, nombre, categoria, cantidad, precio, costo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [tx.rows[0].id, l.id, l.nombre, l.categoria, l.qty, l.precio, l.costo ?? null]
       );
     }
 

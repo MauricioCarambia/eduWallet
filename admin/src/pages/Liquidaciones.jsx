@@ -193,7 +193,7 @@ export default function Liquidaciones() {
             {zonas.map(z => (
               <div key={z.local} style={{ ...tarjeta, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{z.local}</p>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{z.local}{z.activo === false && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}> · desactivada</span>}</p>
                   <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
                     {z.operador
                       ? <>{z.tipo === 'encargado' ? 'Encargado' : 'Concesionario'}: <b style={{ color: 'var(--text)' }}>{z.operador}</b> · {z.canon_pct ? `${nombreCanon(z.tipo).toLowerCase()} ${z.canon_pct}%` : 'se le liquida todo'}</>

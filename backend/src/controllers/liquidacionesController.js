@@ -81,12 +81,13 @@ const getZonas = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   try {
     const r = await pool.query(
-      `SELECT l.nombre AS local, z.operador, z.tipo, z.empleado_id, z.frecuencia, z.dia_semana, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
+      `SELECT l.nombre AS local, l.activo, z.operador, z.tipo, z.empleado_id, z.frecuencia, z.dia_semana, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
          (SELECT MAX(hasta) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre) AS ultima_hasta,
          (SELECT COUNT(*) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre AND q.estado = 'pendiente') AS por_pagar
        FROM locales l
        LEFT JOIN zonas_operador z ON z.colegio_id = l.colegio_id AND z.local = l.nombre
-       WHERE l.colegio_id = $1 AND l.activo
+       -- una zona desactivada sigue apareciendo si tiene a quién liquidarle (puede quedar plata pendiente)
+       WHERE l.colegio_id = $1 AND (l.activo OR z.id IS NOT NULL)
        ORDER BY l.nombre`,
       [colegioId]
     );

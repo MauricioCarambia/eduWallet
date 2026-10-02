@@ -5,6 +5,11 @@ require('dotenv').config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
+// Remitente con nombre visible ("Colegio Modelo" en vez de "onboarding"):
+// la bandeja muestra el nombre del colegio aunque la dirección sea la de envío
+const DIRECCION = (FROM.match(/<([^>]+)>/) || [null, FROM])[1].trim();
+const remitente = nombre => `"${String(nombre || 'KoleTap').replace(/["<>\\]/g, '')}" <${DIRECCION}>`;
+
 const getBrandingDB = async (colegioId) => {
   if (!colegioId) return { nombre: 'KoleTap', logo: null };
   const res = await pool.query('SELECT nombre_colegio, logo FROM configuracion WHERE colegio_id = $1', [colegioId]);
@@ -14,9 +19,9 @@ const getBrandingDB = async (colegioId) => {
   };
 };
 
-const enviarEmail = async ({ to, subject, html }) => {
+const enviarEmail = async ({ to, subject, html, nombre }) => {
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
+    await resend.emails.send({ from: remitente(nombre), to, subject, html });
     console.log(`Email enviado a ${to}`);
   } catch (err) {
     console.error('Error enviando email:', err.message);
@@ -54,6 +59,7 @@ const enviarEmailSaldoBajo = async ({ colegioId, nombrePadre, emailPadre, nombre
   `, nombreColegio, logo);
 
   await enviarEmail({
+    nombre: nombreColegio,
     to: emailPadre,
     subject: `⚠ Saldo bajo de ${nombreAlumno} — ${nombreColegio}`,
     html
@@ -73,6 +79,7 @@ const enviarEmailRecarga = async ({ colegioId, nombrePadre, emailPadre, nombreAl
   `, nombreColegio, logo);
 
   await enviarEmail({
+    nombre: nombreColegio,
     to: emailPadre,
     subject: `✓ Recarga exitosa para ${nombreAlumno} — ${nombreColegio}`,
     html
@@ -96,6 +103,7 @@ const enviarEmailCompra = async ({ colegioId, nombrePadre, emailPadre, nombreAlu
   `, nombreColegio, logo);
 
   await enviarEmail({
+    nombre: nombreColegio,
     to: emailPadre,
     subject: `🛒 Compra de ${nombreAlumno} en ${lugar} — ${nombreColegio}`,
     html
@@ -114,7 +122,7 @@ const enviarEmailBackup = async ({ colegioId, sql, nombre }) => {
     }
 
     await resend.emails.send({
-      from: FROM,
+      from: remitente(nombreColegio),
       to: emailAdmin,
       subject: `🗄️ Backup — ${nombreColegio} — ${new Date().toLocaleDateString('es-AR')}`,
       html: baseHTML(`
@@ -148,6 +156,7 @@ const enviarEmailRecuperacion = async ({ colegioId, nombrePadre, emailPadre, lin
   `, nombreColegio, logo);
 
   await enviarEmail({
+    nombre: nombreColegio,
     to: emailPadre,
     subject: `Restablecer contraseña — ${nombreColegio}`,
     html
@@ -166,6 +175,7 @@ const enviarEmailInvitacion = async ({ colegioId, nombrePadre, emailPadre, nombr
   `, nombreColegio, logo);
 
   await enviarEmail({
+    nombre: nombreColegio,
     to: emailPadre,
     subject: `Te invitaron a KoleTap — ${nombreColegio}`,
     html
@@ -183,7 +193,7 @@ const enviarMensajeAdmin = async ({ colegioId, asunto, mensaje, destinatarios })
 
   for (const email of destinatarios) {
     try {
-      await resend.emails.send({ from: FROM, to: email, subject: asunto, html });
+      await resend.emails.send({ from: remitente(nombreColegio), to: email, subject: asunto, html });
       enviados++;
     } catch (err) {
       console.error(`Error enviando a ${email}:`, err.message);
@@ -222,7 +232,7 @@ const enviarEmailAviso = async ({ colegioId, nombrePadre, emailPadre, asunto, ti
     <p style="color: #111; margin: 0 0 12px; font-size: 15px;"><b>${titulo}</b></p>
     <p style="color: #444; margin: 0; font-size: 14px;">${detalle}</p>
   `, nombreColegio, logo);
-  await enviarEmail({ to: emailPadre, subject: `${asunto} — ${nombreColegio}`, html });
+  await enviarEmail({ to: emailPadre, subject: `${asunto} — ${nombreColegio}`, html, nombre: nombreColegio });
 };
 
 module.exports = {

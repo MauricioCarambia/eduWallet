@@ -6,7 +6,11 @@
  * - zonas_operador: quién opera cada zona (sin fila = la opera el colegio):
  *   un concesionario o un empleado encargado (tipo, empleado_id), y el canon o
  *   comisión (% que se queda el colegio; con un encargado suele ser 0).
- * - liquidaciones: cada corte, con sus totales y si ya se pagó.
+ * - zonas_operador.frecuencia: cómo quiere liquidar el colegio esa zona: a mano,
+ *   semanal (el día dia_semana, 1 = lunes), quincenal (días 1 y 16) o mensual
+ *   (día 1). Las automáticas las crea la tarea diaria con corte el día anterior.
+ * - liquidaciones: cada corte, con sus totales, si ya se pagó y si la creó
+ *   el sistema (automatica).
  * - transacciones.liquidacion_id: en qué liquidación entró cada venta o
  *   anulación, así nada se liquida dos veces y lo que se sube tarde (ventas
  *   sin conexión) o se anula después entra en la próxima.
@@ -60,6 +64,9 @@ const migrarLiquidaciones = async () => {
 
     ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS tipo VARCHAR(15) NOT NULL DEFAULT 'concesionario';
     ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS empleado_id INTEGER;
+    ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS frecuencia VARCHAR(12) NOT NULL DEFAULT 'manual';
+    ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS dia_semana INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE liquidaciones ADD COLUMN IF NOT EXISTS automatica BOOLEAN NOT NULL DEFAULT false;
     ALTER TABLE liquidaciones ADD COLUMN IF NOT EXISTS tipo_operador VARCHAR(15) NOT NULL DEFAULT 'concesionario';
 
     ALTER TABLE transacciones ADD COLUMN IF NOT EXISTS liquidacion_id INTEGER;

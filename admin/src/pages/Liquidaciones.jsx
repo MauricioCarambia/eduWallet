@@ -13,6 +13,14 @@ const dia = d => (d ? new Date(d + 'T12:00:00Z').toLocaleDateString('es-AR', { d
 const nombreCanon = tipo => (tipo === 'encargado' ? 'Comisión' : 'Canon')
 const MODOS = [['colegio', 'El colegio'], ['encargado', 'Un encargado'], ['concesionario', 'Un concesionario']]
 
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+// "Se liquida sola cada lunes" / "A mano"
+const textoFrecuencia = z => ({
+  semanal: `Se liquida sola cada ${DIAS[(z.dia_semana || 1) - 1]}`,
+  quincenal: 'Se liquida sola los días 1 y 16',
+  mensual: 'Se liquida sola el día 1 de cada mes',
+}[z.frecuencia] || 'Se liquida a mano')
+
 const hoyAR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 
 const tarjeta = { background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }
@@ -95,6 +103,7 @@ export default function Liquidaciones() {
       local: z.local, modo: z.operador ? (z.tipo || 'concesionario') : 'colegio',
       operador: z.tipo === 'encargado' ? '' : (z.operador || ''), empleado_id: z.empleado_id ? String(z.empleado_id) : '',
       contacto: z.contacto || '', email: z.email || '', telefono: z.telefono || '', cuenta_pago: z.cuenta_pago || '', canon_pct: z.canon_pct ?? 0,
+      frecuencia: z.frecuencia || 'manual', dia_semana: z.dia_semana || 1,
     })
     if (!empleados.length) api.get('/empleados').then(r => setEmpleados(r.data.filter(e => e.activo))).catch(() => {})
   }
@@ -194,6 +203,7 @@ export default function Liquidaciones() {
                 {z.operador && (
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                     <p style={{ margin: 0 }}>Sin liquidar: <b style={{ color: 'var(--text)', fontSize: 15 }}>{fmt(z.pendiente?.neto)}</b>{z.pendiente?.desde ? ` desde ${dia(z.pendiente.desde)}` : ''}</p>
+                    <p style={{ margin: '2px 0 0' }}>{textoFrecuencia(z)}</p>
                     <p style={{ margin: '2px 0 0' }}>{z.ultima_hasta ? `Última liquidación hasta el ${dia(z.ultima_hasta)}` : 'Todavía sin liquidaciones'}{z.por_pagar ? ` · ${z.por_pagar} sin pagar` : ''}</p>
                   </div>
                 )}
@@ -222,7 +232,7 @@ export default function Liquidaciones() {
                         <td style={{ ...td, color: 'var(--text-secondary)' }}>{l.id}</td>
                         <td style={{ ...td, fontWeight: 500 }}>{l.local}</td>
                         <td style={td}>{l.operador}</td>
-                        <td style={{ ...td, color: 'var(--text-secondary)' }}>{dia(l.desde)} – {dia(l.hasta)}</td>
+                        <td style={{ ...td, color: 'var(--text-secondary)' }}>{dia(l.desde)} – {dia(l.hasta)}{l.automatica && <span title="La creó el sistema" style={{ marginLeft: 6, fontSize: 11, padding: '2px 6px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text-secondary)' }}>auto</span>}</td>
                         <td style={td}>{fmt(Number(l.ventas) - Number(l.anulaciones))}</td>
                         <td style={{ ...td, color: 'var(--text-secondary)' }}>{fmt(l.canon)}</td>
                         <td style={{ ...td, fontWeight: 600 }}>{fmt(l.total)}</td>
@@ -273,6 +283,27 @@ export default function Liquidaciones() {
                   <div><label style={etiqueta} htmlFor="z-tel">Teléfono</label><input id="z-tel" value={zonaEditada.telefono} onChange={e => setZonaEditada(z => ({ ...z, telefono: e.target.value }))} /></div>
                 </div>
               )}
+              <div>
+                <label style={etiqueta} htmlFor="z-frec">Cómo se liquida</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <select id="z-frec" value={zonaEditada.frecuencia} onChange={e => setZonaEditada(z => ({ ...z, frecuencia: e.target.value }))} style={{ flex: '1 1 200px' }}>
+                    <option value="manual">A mano, cuando el colegio decida</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quincenal">Quincenal (días 1 y 16)</option>
+                    <option value="mensual">Mensual (día 1)</option>
+                  </select>
+                  {zonaEditada.frecuencia === 'semanal' && (
+                    <select aria-label="Día de la semana" value={zonaEditada.dia_semana} onChange={e => setZonaEditada(z => ({ ...z, dia_semana: Number(e.target.value) }))} style={{ flex: '1 1 140px' }}>
+                      {DIAS.slice(0, 5).map((d, i) => <option key={d} value={i + 1}>los {d}</option>)}
+                    </select>
+                  )}
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  {zonaEditada.frecuencia === 'manual'
+                    ? 'El admin toca Liquidar cuando quiere y elige hasta qué día.'
+                    : 'El sistema crea la liquidación sola con lo vendido hasta el día anterior y se la manda por mail (a quien la cobra y al email del colegio). Después solo hay que transferir y marcarla pagada.'}
+                </p>
+              </div>
               <div><label style={etiqueta} htmlFor="z-mail">Email (para mandarle cada liquidación)</label><input id="z-mail" type="email" value={zonaEditada.email} onChange={e => setZonaEditada(z => ({ ...z, email: e.target.value }))} /></div>
               <div><label style={etiqueta} htmlFor="z-cta">CBU o alias donde se le paga</label><input id="z-cta" value={zonaEditada.cuenta_pago} onChange={e => setZonaEditada(z => ({ ...z, cuenta_pago: e.target.value }))} /></div>
             </div>
@@ -323,6 +354,7 @@ export default function Liquidaciones() {
         <Modal titulo={`Liquidación N° ${detalle.id} — ${detalle.local}`} onCerrar={() => setDetalle(null)} ancho={620}>
           <p style={{ margin: '-8px 0 14px', fontSize: 13, color: 'var(--text-secondary)' }}>
             {detalle.operador} · del {dia(detalle.desde)} al {dia(detalle.hasta)}
+            {detalle.automatica ? ' · creada automáticamente' : detalle.creado_por_nombre ? ` · creada por ${detalle.creado_por_nombre}` : ''}
             {detalle.cuenta_pago && <> · se le paga a <b style={{ color: 'var(--text)' }}>{detalle.cuenta_pago}</b></>}
           </p>
           <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}><Cuentas l={detalle} /></div>

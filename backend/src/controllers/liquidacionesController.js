@@ -13,6 +13,28 @@ const pool = require('../db/conexion');
 const { registrar } = require('./auditoriaController');
 const { enviarEmailLiquidacion } = require('../services/emailService');
 
+const FRECUENCIAS = ['manual', 'semanal', 'quincenal', 'mensual'];
+const sumarDias = (fecha, n) => { const d = new Date(fecha + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+// Último corte que correspondía según la frecuencia (el día anterior al día de
+// liquidar), o null si se liquida a mano. Ej.: semanal los lunes y hoy jueves
+// 08/10 → el lunes 05/10 se liquidaba hasta el domingo 04/10.
+const ultimoCorte = (frecuencia, diaSemana, hoy) => {
+  if (frecuencia === 'semanal') {
+    const d = new Date(hoy + 'T12:00:00Z');
+    const dow = d.getUTCDay() || 7; // 1 = lunes … 7 = domingo
+    const atras = (dow - (Number(diaSemana) || 1) + 7) % 7;
+    return sumarDias(hoy, -atras - 1);
+  }
+  if (frecuencia === 'quincenal') {
+    const [a, m, dia] = hoy.split('-').map(Number);
+    const liquidar = dia >= 16 ? `${hoy.slice(0, 8)}16` : `${a}-${String(m).padStart(2, '0')}-01`;
+    return sumarDias(liquidar, -1);
+  }
+  if (frecuencia === 'mensual') return sumarDias(hoy.slice(0, 8) + '01', -1);
+  return null;
+};
+
 const ZONA = 'America/Argentina/Buenos_Aires';
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const hoyAR = () => new Date().toLocaleDateString('en-CA', { timeZone: ZONA });
@@ -59,7 +81,7 @@ const getZonas = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   try {
     const r = await pool.query(
-      `SELECT l.nombre AS local, z.operador, z.tipo, z.empleado_id, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
+      `SELECT l.nombre AS local, z.operador, z.tipo, z.empleado_id, z.frecuencia, z.dia_semana, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
          (SELECT MAX(hasta) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre) AS ultima_hasta,
          (SELECT COUNT(*) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre AND q.estado = 'pendiente') AS por_pagar
        FROM locales l
@@ -105,13 +127,15 @@ const guardarZona = async (req, res) => {
     const canon = Number(req.body.canon_pct ?? 0);
     if (!Number.isFinite(canon) || canon < 0 || canon > 100) return res.status(400).json({ error: 'El canon tiene que ser un porcentaje entre 0 y 100' });
     const email = texto(req.body.email, 150);
+    const frecuencia = FRECUENCIAS.includes(req.body.frecuencia) ? req.body.frecuencia : 'manual';
+    const diaSemana = Math.min(7, Math.max(1, Number.parseInt(req.body.dia_semana, 10) || 1));
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'El email no es válido' });
     const r = await pool.query(
-      `INSERT INTO zonas_operador (colegio_id, local, operador, contacto, email, telefono, cuenta_pago, canon_pct, tipo, empleado_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       ON CONFLICT (colegio_id, local) DO UPDATE SET operador = $3, contacto = $4, email = $5, telefono = $6, cuenta_pago = $7, canon_pct = $8, tipo = $9, empleado_id = $10
+      `INSERT INTO zonas_operador (colegio_id, local, operador, contacto, email, telefono, cuenta_pago, canon_pct, tipo, empleado_id, frecuencia, dia_semana)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (colegio_id, local) DO UPDATE SET operador = $3, contacto = $4, email = $5, telefono = $6, cuenta_pago = $7, canon_pct = $8, tipo = $9, empleado_id = $10, frecuencia = $11, dia_semana = $12
        RETURNING *`,
-      [colegioId, local, operador, texto(req.body.contacto, 120), email, texto(req.body.telefono, 40), texto(req.body.cuenta_pago, 120), canon, tipo, empleadoId]
+      [colegioId, local, operador, texto(req.body.contacto, 120), email, texto(req.body.telefono, 40), texto(req.body.cuenta_pago, 120), canon, tipo, empleadoId, frecuencia, diaSemana]
     );
     await registrar(req.empleado.id, colegioId, tipo === 'encargado' ? 'Encargado de zona' : 'Concesionario de zona', `${local}: ${operador}, ${tipo === 'encargado' ? 'comisión' : 'canon'} ${canon}%`);
     res.json(r.rows[0]);
@@ -148,22 +172,43 @@ const crearLiquidacion = async (req, res) => {
   const ajusteMotivo = texto(req.body.ajuste_motivo, 200);
   if (ajuste && !ajusteMotivo) return res.status(400).json({ error: 'Poné el motivo del ajuste' });
 
+  try {
+    const r = await liquidar({ colegioId, local, hasta, ajuste, ajusteMotivo, creadoPor: req.empleado.id });
+    if (r.error) return res.status(400).json({ error: r.error });
+    res.status(201).json(r.liq);
+  } catch (err) {
+    console.error('Liquidaciones (crear):', err.message);
+    res.status(500).json({ error: 'No se pudo crear la liquidación. Probá de nuevo.' });
+  }
+};
+
+// Crea la liquidación de una zona hasta el corte. Con automatica, no hace nada
+// si ya hay una liquidación que llega hasta ese corte (lo que se suba tarde
+// entra en la próxima). Devuelve { liq } o { error } (o {} si no había nada).
+const liquidar = async ({ colegioId, local, hasta, ajuste = 0, ajusteMotivo = null, creadoPor = null, automatica = false }) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     // Bloquea la zona: dos liquidaciones a la vez no pueden tomar las mismas ventas
     const z = await client.query('SELECT * FROM zonas_operador WHERE colegio_id = $1 AND local = $2 FOR UPDATE', [colegioId, local]);
-    if (!z.rows.length) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Esta zona la opera el colegio: no se liquida' }); }
+    if (!z.rows.length) { await client.query('ROLLBACK'); return { error: 'Esta zona la opera el colegio: no se liquida' }; }
     const zona = z.rows[0];
+    if (automatica) {
+      const ya = await client.query('SELECT 1 FROM liquidaciones WHERE colegio_id = $1 AND local = $2 AND hasta >= $3::date', [colegioId, local, hasta]);
+      if (ya.rows.length) { await client.query('ROLLBACK'); return {}; }
+    }
     const p = await pendiente(client, colegioId, local, hasta);
-    if (!p.cantidad_ventas && !p.cantidad_anulaciones) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'No hay ventas sin liquidar en esta zona hasta esa fecha' }); }
+    if (!p.cantidad_ventas && !p.cantidad_anulaciones) {
+      await client.query('ROLLBACK');
+      return automatica ? {} : { error: 'No hay ventas sin liquidar en esta zona hasta esa fecha' };
+    }
     const t = totales(p, zona.canon_pct, ajuste);
     const liq = await client.query(
       `INSERT INTO liquidaciones (colegio_id, local, operador, desde, hasta, ventas, cantidad_ventas, anulaciones, cantidad_anulaciones,
-         canon_pct, canon, ajuste, ajuste_motivo, total, creado_por, tipo_operador)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *, to_char(desde, 'YYYY-MM-DD') AS desde, to_char(hasta, 'YYYY-MM-DD') AS hasta`,
+         canon_pct, canon, ajuste, ajuste_motivo, total, creado_por, tipo_operador, automatica)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *, to_char(desde, 'YYYY-MM-DD') AS desde, to_char(hasta, 'YYYY-MM-DD') AS hasta`,
       [colegioId, local, zona.operador, p.desde, hasta, p.ventas, p.cantidad_ventas, p.anulaciones, p.cantidad_anulaciones,
-        t.canon_pct, t.canon, t.ajuste, ajusteMotivo, t.total, req.empleado.id, zona.tipo || 'concesionario']
+        t.canon_pct, t.canon, t.ajuste, ajusteMotivo, t.total, creadoPor, zona.tipo || 'concesionario', automatica]
     );
     const id = liq.rows[0].id;
     const marcadas = await client.query(
@@ -174,13 +219,40 @@ const crearLiquidacion = async (req, res) => {
     );
     if (marcadas.rowCount !== p.cantidad_ventas + p.cantidad_anulaciones) throw new Error('Las ventas cambiaron mientras se liquidaba');
     await client.query('COMMIT');
-    await registrar(req.empleado.id, colegioId, 'Liquidación creada', `N° ${id} · ${local} (${zona.operador}) hasta ${hasta}: ${pesos(t.total)}`);
-    res.status(201).json(liq.rows[0]);
+    await registrar(creadoPor, colegioId, automatica ? 'Liquidación automática' : 'Liquidación creada', `N° ${id} · ${local} (${zona.operador}) hasta ${hasta}: ${pesos(t.total)}`);
+    return { liq: { ...liq.rows[0], email: zona.email } };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Liquidaciones (crear):', err.message);
-    res.status(500).json({ error: 'No se pudo crear la liquidación. Probá de nuevo.' });
+    throw err;
   } finally { client.release(); }
+};
+
+// Tarea diaria: crea las liquidaciones que tocaban según la frecuencia de cada
+// zona y se las manda por mail al encargado o concesionario y al admin. Si el
+// servidor estuvo dormido, igual crea la del último corte que correspondía.
+const liquidarAutomaticas = async (hoy = hoyAR()) => {
+  const zonas = await pool.query(
+    `SELECT z.colegio_id, z.local, z.frecuencia, z.dia_semana, c.email_admin
+     FROM zonas_operador z
+     JOIN colegios co ON co.id = z.colegio_id AND co.activo
+     LEFT JOIN configuracion c ON c.colegio_id = z.colegio_id
+     WHERE z.frecuencia <> 'manual'`
+  );
+  let creadas = 0;
+  for (const z of zonas.rows) {
+    const corte = ultimoCorte(z.frecuencia, z.dia_semana, hoy);
+    if (!corte) continue;
+    try {
+      const { liq } = await liquidar({ colegioId: z.colegio_id, local: z.local, hasta: corte, automatica: true });
+      if (!liq) continue;
+      creadas++;
+      for (const email of new Set([liq.email, z.email_admin].filter(Boolean))) {
+        await enviarEmailLiquidacion({ colegioId: z.colegio_id, email, liq });
+      }
+    } catch (err) { console.error(`Liquidación automática de ${z.local} (colegio ${z.colegio_id}):`, err.message); }
+  }
+  if (creadas) console.log(`${creadas} liquidación(es) automática(s) creada(s)`);
+  return creadas;
 };
 
 const getLiquidaciones = async (req, res) => {
@@ -310,4 +382,4 @@ const enviarLiquidacion = async (req, res) => {
   }
 };
 
-module.exports = { getZonas, guardarZona, getVistaPrevia, crearLiquidacion, getLiquidaciones, getLiquidacion, pagarLiquidacion, eliminarLiquidacion, enviarLiquidacion };
+module.exports = { liquidarAutomaticas, ultimoCorte, getZonas, guardarZona, getVistaPrevia, crearLiquidacion, getLiquidaciones, getLiquidacion, pagarLiquidacion, eliminarLiquidacion, enviarLiquidacion };

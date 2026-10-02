@@ -71,3 +71,35 @@ test('un ajuste necesita motivo y la fecha de corte no puede ser futura', async 
   expect((await llamar(crearLiquidacion, { body: { local: 'Kiosco', ajuste: 300 } })).code).toBe(400);
   expect((await llamar(crearLiquidacion, { body: { local: 'Kiosco', hasta: '2099-01-01' } })).code).toBe(400);
 });
+
+describe('liquidación automática', () => {
+  const { ultimoCorte, liquidarAutomaticas } = require('../src/controllers/liquidacionesController');
+
+  test('el corte es el día anterior al día de liquidar', () => {
+    expect(ultimoCorte('semanal', 1, '2026-10-08')).toBe('2026-10-04'); // jueves → el lunes se liquidó hasta el domingo
+    expect(ultimoCorte('semanal', 1, '2026-10-05')).toBe('2026-10-04'); // el mismo lunes
+    expect(ultimoCorte('quincenal', 1, '2026-10-20')).toBe('2026-10-15');
+    expect(ultimoCorte('quincenal', 1, '2026-10-02')).toBe('2026-09-30');
+    expect(ultimoCorte('mensual', 1, '2026-03-01')).toBe('2026-02-28');
+    expect(ultimoCorte('manual', 1, '2026-10-02')).toBeNull();
+  });
+
+  test('si ya hay una liquidación hasta ese corte, no crea otra', async () => {
+    const base = mockQuery;
+    let insertadas = 0;
+    const consultas = async (sql, params) => {
+      if (sql.includes("WHERE z.frecuencia <> 'manual'")) return { rows: [{ colegio_id: 3, local: 'Kiosco', frecuencia: 'semanal', dia_semana: 1, email_admin: null }] };
+      if (sql.includes('hasta >= $3::date')) return { rows: [{ 1: 1 }] };
+      if (sql.includes('INSERT INTO liquidaciones')) insertadas++;
+      return base(sql, params);
+    };
+    const conexion = require('../src/db/conexion');
+    const q = conexion.query, c = conexion.connect;
+    conexion.query = consultas;
+    conexion.connect = async () => ({ query: consultas, release: () => {} });
+    try {
+      expect(await liquidarAutomaticas('2026-10-08')).toBe(0);
+      expect(insertadas).toBe(0);
+    } finally { conexion.query = q; conexion.connect = c; }
+  });
+});

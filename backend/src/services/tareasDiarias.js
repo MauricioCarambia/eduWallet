@@ -4,8 +4,8 @@
 // hace el primer pedido del día (o el cron, si el servidor está despierto):
 //   - cierra las cajas abiertas en días anteriores
 //   - pone en 0 el gasto del día de los alumnos
-// y después, en segundo plano, los backups, la conciliación con Mercado Pago
-// y la renovación de tokens. La tabla tareas_estado asegura que se haga una
+// y después, en segundo plano, los backups, la conciliación con Mercado Pago,
+// la renovación de tokens y las liquidaciones automáticas de las zonas. La tabla tareas_estado asegura que se haga una
 // sola vez por día aunque lleguen varios pedidos juntos o haya varios servidores.
 const pool = require('../db/conexion');
 
@@ -37,6 +37,10 @@ const tareasEnSegundoPlano = () => {
       const { conciliarTodos } = require('../controllers/conciliacionController');
       await conciliarTodos();
     } catch (err) { console.error('Error en la conciliación diaria:', err.message); }
+    try {
+      const { liquidarAutomaticas } = require('../controllers/liquidacionesController');
+      await liquidarAutomaticas();
+    } catch (err) { console.error('Error en las liquidaciones automáticas:', err.message); }
   });
 };
 

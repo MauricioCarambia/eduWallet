@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { SkeletonTable } from '../components/Skeleton'
-import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
 import { offlineHabilitado, esErrorDeRed } from '../offline/estado'
@@ -8,9 +7,10 @@ import { leerCola } from '../offline/almacen'
 import { anularEnCola } from '../offline/sync'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
+// Día en Argentina (AAAA-MM-DD): con la fecha UTC, lo vendido después de las 21 h caía en el día siguiente
+const diaAR = f => new Date(f).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 
 export default function Historial() {
-  const { sesion } = useAuth()
   const { caja, actualizarVentas } = useCaja()
   const [txs, setTxs] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -18,7 +18,7 @@ export default function Historial() {
   const [busq, setBusq] = useState('')
   const [msg, setMsg] = useState(null)
 
-  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
+  const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(m => (m?.texto === texto ? null : m)), 5000) }
 
   useEffect(() => { cargar() }, [])
 
@@ -35,7 +35,10 @@ export default function Historial() {
       } catch { /* sin cola */ }
     }
     try { const tRes = await api.get('/transacciones'); setTxs([...enCola, ...(tRes.data.data ?? tRes.data)]) }
-    catch (err) { setTxs(enCola); if (!esErrorDeRed(err)) console.error(err) } finally { setCargando(false) }
+    catch (err) {
+      setTxs(enCola)
+      showMsg('error', esErrorDeRed(err) ? 'Sin internet: se muestran solo las ventas de este equipo que faltan subir' : err.response?.data?.error || 'No se pudo cargar el historial')
+    } finally { setCargando(false) }
   }
 
   // Anular una venta hecha sin internet que todavía no se subió: sale de la cola
@@ -45,7 +48,7 @@ export default function Historial() {
     cargar()
   }
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  const hoy = diaAR(new Date())
   const esAnulada = t => t.anulada || t.descripcion?.startsWith('[ANULADA]')
 
   const txsFiltradas = txs.filter(t => {
@@ -55,7 +58,7 @@ export default function Historial() {
       const fecha = new Date(t.fecha)
       return t.lugar === caja.local && fecha >= inicio && t.tipo === 'compra' && matchBusq
     }
-    if (filtro === 'hoy') return t.fecha?.slice(0, 10) === hoy && t.tipo === 'compra' && matchBusq
+    if (filtro === 'hoy') return t.fecha && diaAR(t.fecha) === hoy && t.tipo === 'compra' && matchBusq
     return t.tipo === 'compra' && matchBusq
   })
 

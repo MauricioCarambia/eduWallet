@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
+import { hoyAR } from '../utils/fechas'
 import { SkeletonLine, SkeletonCard } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
 
@@ -112,7 +113,7 @@ export default function Configuracion() {
     try {
       const res = await api.get('/backup/descargar', { responseType: 'blob' })
       const url = URL.createObjectURL(res.data)
-      const a = document.createElement('a'); a.href = url; a.download = `koletap-backup-${new Date().toISOString().slice(0, 10)}.sql`; a.click()
+      const a = document.createElement('a'); a.href = url; a.download = `koletap-backup-${hoyAR()}.sql`; a.click()
       URL.revokeObjectURL(url)
       showMsg('ok', 'Backup descargado correctamente')
     } catch { showMsg('error', 'Error al descargar backup') }

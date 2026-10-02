@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { verificarToken, soloPersonalPos } = require('../middlewares/auth');
-const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia } = require('../controllers/transaccionesController');
+const { soloAdmin, verificarToken, soloPersonalPos } = require('../middlewares/auth');
+const { getTablero, getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia } = require('../controllers/transaccionesController');
 
 /**
  * @swagger
@@ -43,6 +43,8 @@ const { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResume
  *             schema: { $ref: '#/components/schemas/TransaccionesPaginadas' }
  */
 router.get('/', verificarToken, getTransacciones);
+// Resumen del Dashboard del admin (hoy, 7 días, zonas, productos, últimas)
+router.get('/tablero', verificarToken, soloAdmin, getTablero);
 
 /**
  * @swagger

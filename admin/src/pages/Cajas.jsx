@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { diaAR, hoyAR } from '../utils/fechas'
 import { SkeletonTable } from '../components/Skeleton'
 import { useLocales } from '../hooks/useLocales'
 
@@ -33,8 +34,8 @@ export default function Cajas() {
 
   const cargar = async () => {
     try {
-      const [cRes, tRes] = await Promise.all([api.get('/cajas'), api.get('/transacciones')])
-      setCajas(cRes.data); setTxs(tRes.data.data ?? tRes.data)
+      const cRes = await api.get('/cajas')
+      setCajas(cRes.data)
     } catch (err) { console.error(err) }
     finally { setCargando(false) }
   }
@@ -46,13 +47,26 @@ export default function Cajas() {
   )
 
   const cajasAbiertas = cajas.filter(c => c.abierta)
-  const totalHoy = cajas.filter(c => c.apertura?.slice(0, 10) === new Date().toISOString().slice(0, 10)).reduce((s, c) => s + parseFloat(c.ventas || 0), 0)
+  const totalHoy = cajas.filter(c => c.apertura && diaAR(c.apertura) === hoyAR()).reduce((s, c) => s + parseFloat(c.ventas || 0), 0)
+
+  // Ventas de la caja elegida: se piden las de su zona en esos días (antes se
+  // filtraban las últimas 500 del colegio, que no alcanzan en un colegio grande)
+  // y quedan las de su turno y su cajero
+  useEffect(() => {
+    if (!seleccionada) return
+    let vigente = true
+    const params = { lugar: seleccionada.local, desde: diaAR(seleccionada.apertura), hasta: seleccionada.cierre ? diaAR(seleccionada.cierre) : hoyAR(), limit: 2000 }
+    api.get('/transacciones', { params })
+      .then(r => { if (vigente) setTxs(r.data.data ?? r.data) })
+      .catch(() => { if (vigente) setTxs([]) })
+    return () => { vigente = false }
+  }, [seleccionada])
 
   const txsCaja = seleccionada ? txs.filter(t => {
     const inicio = new Date(seleccionada.apertura)
     const fin = seleccionada.cierre ? new Date(seleccionada.cierre) : new Date()
     const fecha = new Date(t.fecha)
-    return t.lugar === seleccionada.local && fecha >= inicio && fecha <= fin
+    return t.lugar === seleccionada.local && fecha >= inicio && fecha <= fin && (!seleccionada.empleado_id || t.empleado_id === seleccionada.empleado_id)
   }) : []
 
   if (cargando) return <SkeletonTable rows={6} cols={4} />

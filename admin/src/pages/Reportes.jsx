@@ -7,6 +7,7 @@ import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
+import { diaAR, hoyAR, sumarDias, fechaDeDia } from '../utils/fechas'
 import Rentabilidad from '../components/Rentabilidad'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -21,10 +22,9 @@ const cardStyle = {
 
 const COLORES = ['#1D5C47', '#B8871F', '#4E7D96', '#9A5B12', '#B3372F', '#6B7670', '#5E8C4A', '#8A5A83']
 
-// helpers de fecha
-const toISO = d => d.toISOString().slice(0, 10)
-const hoy = () => toISO(new Date())
-const haceN = n => { const d = new Date(); d.setDate(d.getDate() - n); return toISO(d) }
+// helpers de fecha (días en hora argentina)
+const hoy = () => hoyAR()
+const haceN = n => sumarDias(hoyAR(), -n)
 
 export default function Reportes() {
   const [txs, setTxs] = useState([])
@@ -99,14 +99,14 @@ export default function Reportes() {
 
   // datos por día para gráfico de área
   const diasEnRango = useMemo(() => {
-    const desde = new Date(fechaDesde + 'T00:00:00')
-    const hasta = new Date(fechaHasta + 'T00:00:00')
+    const desde = fechaDeDia(fechaDesde)
+    const hasta = fechaDeDia(fechaHasta)
     const dias = []
-    for (let d = new Date(desde); d <= hasta; d.setDate(d.getDate() + 1)) {
-      const fecha = toISO(d)
-      const ventas = compras.filter(t => t.fecha?.slice(0, 10) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
-      const recargasD = recargas.filter(t => t.fecha?.slice(0, 10) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
-      const diffDias = Math.round((hasta - desde) / (1000 * 60 * 60 * 24))
+    const diffDias = Math.round((hasta - desde) / (1000 * 60 * 60 * 24))
+    for (let fecha = fechaDesde; fecha <= fechaHasta && dias.length < 400; fecha = sumarDias(fecha, 1)) {
+      const d = fechaDeDia(fecha)
+      const ventas = compras.filter(t => t.fecha && diaAR(t.fecha) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
+      const recargasD = recargas.filter(t => t.fecha && diaAR(t.fecha) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
       const label = diffDias > 30
         ? d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
         : diffDias > 7
@@ -467,7 +467,7 @@ export default function Reportes() {
             ) : <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Sin datos para este rango</p>}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
             {/* por local mini */}
             <div style={cardStyle}>
               <h2 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 14px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Por local</h2>
@@ -562,7 +562,7 @@ export default function Reportes() {
       {/* TAB: LOCALES */}
       {tab === 'locales' && (
         <div style={{ display: 'grid', gap: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
             <div style={cardStyle}>
               <h2 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 16px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Ventas por local</h2>
               {porLocal.length > 0 ? (
@@ -616,7 +616,7 @@ export default function Reportes() {
                 <BarChart data={diasEnRango.map(d => {
                   const obj = { label: d.label }
                   locales.filter(l => l !== 'Todos').forEach(l => {
-                    obj[l] = compras.filter(t => t.fecha?.slice(0, 10) === d.fecha && t.lugar === l).reduce((s, t) => s + parseFloat(t.monto), 0)
+                    obj[l] = compras.filter(t => t.fecha && diaAR(t.fecha) === d.fecha && t.lugar === l).reduce((s, t) => s + parseFloat(t.monto), 0)
                   })
                   return obj
                 })}>

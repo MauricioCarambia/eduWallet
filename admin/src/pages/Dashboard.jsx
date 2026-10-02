@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import api from '../api/axios'
+import { fechaDeDia } from '../utils/fechas'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
@@ -34,11 +35,11 @@ const ACTUALIZACION_INTERVALO = 15000 // 15s
 
 // Movimientos que suman saldo (el resto, compras, lo restan)
 const SUMAN_SALDO = ['recarga', 'ajuste', 'anulacion']
-// Venta que cuenta en los totales (las anuladas no)
-const esVenta = t => t.tipo === 'compra' && !t.descripcion?.startsWith('[ANULADA]')
+const TABLERO_VACIO = { hoy: { ventas: 0, cantidad: 0, recargas: 0 }, ultimos7: [], por_local: [], top_productos: [], ultimas: [] }
 
 export default function Dashboard() {
-  const [transacciones, setTransacciones] = useState([])
+  // Totales calculados en el servidor (días en hora argentina, sin anuladas)
+  const [tablero, setTablero] = useState(TABLERO_VACIO)
   const [alumnos, setAlumnos] = useState([])
   const [cajas, setCajas] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -51,12 +52,12 @@ export default function Dashboard() {
       if (mostrarSkeleton) setCargando(true)
       try {
         const [txRes, alumRes, cajaRes] = await Promise.all([
-          api.get('/transacciones'),
+          api.get('/transacciones/tablero'),
           api.get('/alumnos'),
           api.get('/cajas'),
         ])
         if (!activo) return
-        setTransacciones(txRes.data.data ?? txRes.data)
+        setTablero(txRes.data)
         setAlumnos(alumRes.data)
         setCajas(cajaRes.data)
         setUltimaActualizacion(new Date())
@@ -74,32 +75,15 @@ export default function Dashboard() {
     return () => { activo = false; if (id) clearInterval(id) }
   }, [autoActualizar])
 
-  const hoy = new Date().toISOString().slice(0, 10)
-  const txHoy = transacciones.filter(t => t.fecha?.slice(0, 10) === hoy)
-  const ventasHoy = txHoy.filter(t => esVenta(t)).reduce((s, t) => s + parseFloat(t.monto), 0)
-  const recargasHoy = txHoy.filter(t => t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
+  const ventasHoy = tablero.hoy.ventas
+  const recargasHoy = tablero.hoy.recargas
   const totalSaldo = alumnos.reduce((s, a) => s + parseFloat(a.saldo), 0)
   const bajaSaldo = alumnos.filter(a => parseFloat(a.saldo) < 200 && a.activo)
   const cajasAbiertas = cajas.filter(c => c.abierta)
 
-  const ultimos7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    const fecha = d.toISOString().slice(0, 10)
-    const total = transacciones.filter(t => t.fecha?.slice(0, 10) === fecha && esVenta(t)).reduce((s, t) => s + parseFloat(t.monto), 0)
-    const recargas = transacciones.filter(t => t.fecha?.slice(0, 10) === fecha && t.tipo === 'recarga').reduce((s, t) => s + parseFloat(t.monto), 0)
-    return { dia: d.toLocaleDateString('es-AR', { weekday: 'short' }), ventas: total, recargas }
-  })
-
-  const porLocal = {}
-  transacciones.filter(t => esVenta(t)).forEach(t => porLocal[t.lugar] = (porLocal[t.lugar] || 0) + parseFloat(t.monto))
-  const dataLocal = Object.entries(porLocal).map(([local, total]) => ({ local, total }))
-
-  const rankProds = {}
-  transacciones.filter(t => esVenta(t)).forEach(t =>
-    t.descripcion?.split(', ').forEach(d => { const n = d.replace(/ ×\d+/, ''); rankProds[n] = (rankProds[n] || 0) + 1 })
-  )
-  const topProds = Object.entries(rankProds).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const ultimos7 = tablero.ultimos7.map(d => ({ dia: fechaDeDia(d.dia).toLocaleDateString('es-AR', { weekday: 'short', timeZone: 'UTC' }), ventas: d.ventas, recargas: d.recargas }))
+  const dataLocal = tablero.por_local
+  const topProds = tablero.top_productos.map(p => [p.nombre, p.unidades])
 
   if (cargando) return <div><SkeletonCards count={4} /><SkeletonTable rows={6} cols={4} /></div>
 
@@ -127,7 +111,7 @@ export default function Dashboard() {
 
       {/* stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Ventas hoy" value={fmt(ventasHoy)} sub={`${txHoy.filter(t => esVenta(t)).length} transacciones`} color="var(--text)"
+        <StatCard label="Ventas hoy" value={fmt(ventasHoy)} sub={`${tablero.hoy.cantidad} ventas`} color="var(--text)"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} />
         <StatCard label="Recargas hoy" value={fmt(recargasHoy)} color="var(--green)"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>} />
@@ -138,7 +122,7 @@ export default function Dashboard() {
       </div>
 
       {/* gráficos */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
           <SectionTitle>Ventas últimos 7 días</SectionTitle>
           <ResponsiveContainer width="100%" height={180}>
@@ -159,7 +143,7 @@ export default function Dashboard() {
         </div>
 
         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-          <SectionTitle>Ventas por local</SectionTitle>
+          <SectionTitle>Ventas por local · 7 días</SectionTitle>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={dataLocal}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)"/>
@@ -172,17 +156,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
         {/* top productos */}
         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-          <SectionTitle>Productos más vendidos</SectionTitle>
+          <SectionTitle>Más vendidos · 7 días</SectionTitle>
           {topProds.length === 0 ? <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sin datos</p> : topProds.map(([nombre, cnt], i) => (
             <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: i < topProds.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>{i + 1}</span>
                 <span style={{ fontSize: 13, color: 'var(--text)' }}>{nombre}</span>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--brand-light)', color: 'var(--brand)', padding: '2px 8px', borderRadius: 6 }}>{cnt} ventas</span>
+              <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--brand-light)', color: 'var(--brand)', padding: '2px 8px', borderRadius: 6 }}>{cnt} u.</span>
             </div>
           ))}
         </div>
@@ -210,7 +194,7 @@ export default function Dashboard() {
       {/* últimas transacciones */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1.5px solid var(--border)', boxShadow: 'var(--shadow)' }}>
         <SectionTitle>Últimas transacciones</SectionTitle>
-        {transacciones.slice(0, 8).map((t, i) => (
+        {tablero.ultimas.map((t, i) => (
           <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 7 ? '1px solid var(--border-light)' : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: SUMAN_SALDO.includes(t.tipo) ? 'var(--green-bg)' : 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -14,8 +14,12 @@ const getTransacciones = async (req, res) => {
     const condiciones = ['t.colegio_id = $1'];
     const valores = [req.empleado.colegio_id];
 
-    if (desde) { valores.push(desde); condiciones.push(`t.fecha::date >= $${valores.length}`); }
-    if (hasta) { valores.push(hasta); condiciones.push(`t.fecha::date <= $${valores.length}`); }
+    // Días en hora argentina (la fecha se guarda en UTC): con t.fecha::date lo
+    // vendido después de las 21 h caía en el día siguiente
+    const DIA = /^\d{4}-\d{2}-\d{2}$/;
+    if ((desde && !DIA.test(desde)) || (hasta && !DIA.test(hasta))) return res.status(400).json({ error: 'Fecha inválida (AAAA-MM-DD)' });
+    if (desde) { valores.push(desde); condiciones.push(`t.fecha >= ($${valores.length}::date::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires' AT TIME ZONE 'UTC')`); }
+    if (hasta) { valores.push(hasta); condiciones.push(`t.fecha < (($${valores.length}::date + 1)::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires' AT TIME ZONE 'UTC')`); }
     if (tipo)  { valores.push(tipo);  condiciones.push(`t.tipo = $${valores.length}`); }
     if (lugar) { valores.push(lugar); condiciones.push(`t.lugar = $${valores.length}`); }
 
@@ -470,4 +474,57 @@ const getResumenDia = async (req, res) => {
   }
 };
 
-module.exports = { getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia };
+// Dashboard del admin: hoy, los últimos 7 días (por día, por zona y productos
+// más vendidos) y las últimas transacciones, calculado en la base. Antes se
+// sumaba en el navegador con las últimas 500 transacciones, que en un colegio
+// grande no alcanzan ni para un día. Días en hora argentina; anuladas no cuentan.
+const getTablero = async (req, res) => {
+  const colegioId = req.empleado.colegio_id;
+  const VALIDA = "t.tipo = 'compra' AND COALESCE(t.descripcion, '') NOT LIKE '[ANULADA]%'";
+  const DESDE_7 = "((NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date - 6)::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires' AT TIME ZONE 'UTC'";
+  try {
+    const [dias, zonas, productos, ultimas] = await Promise.all([
+      pool.query(
+        `SELECT to_char(d::date, 'YYYY-MM-DD') AS dia,
+           COALESCE(SUM(t.monto) FILTER (WHERE ${VALIDA}), 0) AS ventas,
+           COUNT(t.id) FILTER (WHERE ${VALIDA}) AS cantidad,
+           COALESCE(SUM(t.monto) FILTER (WHERE t.tipo = 'recarga'), 0) AS recargas
+         FROM generate_series((NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date - 6, (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date, '1 day') d
+         LEFT JOIN transacciones t ON t.colegio_id = $1 AND t.fecha >= ${DESDE_7} AND ${FECHA_AR('t.fecha')}::date = d::date
+         GROUP BY d ORDER BY d`,
+        [colegioId]
+      ),
+      pool.query(
+        `SELECT t.lugar AS local, SUM(t.monto) AS total FROM transacciones t
+         WHERE t.colegio_id = $1 AND ${VALIDA} AND t.fecha >= ${DESDE_7}
+         GROUP BY t.lugar ORDER BY SUM(t.monto) DESC`,
+        [colegioId]
+      ),
+      pool.query(
+        `SELECT ti.nombre, SUM(ti.cantidad) AS unidades FROM transacciones t JOIN transaccion_items ti ON ti.transaccion_id = t.id
+         WHERE t.colegio_id = $1 AND ${VALIDA} AND t.fecha >= ${DESDE_7}
+         GROUP BY ti.nombre ORDER BY SUM(ti.cantidad) DESC LIMIT 5`,
+        [colegioId]
+      ),
+      pool.query(
+        `SELECT t.id, t.tipo, t.monto, t.lugar, t.descripcion, t.fecha, a.nombre AS alumno_nombre
+         FROM transacciones t LEFT JOIN alumnos a ON a.id = t.alumno_id
+         WHERE t.colegio_id = $1 ORDER BY t.fecha DESC LIMIT 8`,
+        [colegioId]
+      ),
+    ]);
+    const ultimos7 = dias.rows.map(d => ({ dia: d.dia, ventas: Number(d.ventas), cantidad: Number(d.cantidad), recargas: Number(d.recargas) }));
+    res.json({
+      hoy: ultimos7[ultimos7.length - 1],
+      ultimos7,
+      por_local: zonas.rows.map(z => ({ local: z.local, total: Number(z.total) })),
+      top_productos: productos.rows.map(p => ({ nombre: p.nombre, unidades: Number(p.unidades) })),
+      ultimas: ultimas.rows,
+    });
+  } catch (err) {
+    console.error('Tablero:', err.message);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+module.exports = { getTablero, getTransacciones, getTransaccionesAlumno, cobrar, anularVenta, getResumenDia };

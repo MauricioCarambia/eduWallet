@@ -3,6 +3,7 @@ import { SkeletonCards } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import { hoyAR } from '../utils/fechas'
 import useUmbralStock from '../hooks/useUmbralStock'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta, { nfcDisponible, nfcEnOtroNavegador, escucharNfc, useLectorEscritorio } from '../hooks/useLectorTarjeta'
@@ -124,10 +125,10 @@ export default function Venta() {
 
   const cargarVentasHoy = async () => {
     try {
-      const res = await api.get('/transacciones')
-      const hoy = new Date().toISOString().slice(0, 10)
-      const data = res.data.data ?? res.data
-      setTxsHoy(data.filter(t => t.fecha?.slice(0, 10) === hoy && t.lugar === local && t.tipo === 'compra'))
+      // Las de hoy (en Argentina) de esta zona: el servidor filtra el día
+      const hoy = hoyAR()
+      const res = await api.get('/transacciones', { params: { desde: hoy, hasta: hoy, lugar: local, tipo: 'compra', limit: 2000 } })
+      setTxsHoy(res.data.data ?? res.data)
     } catch (err) { console.error(err) }
   }
 

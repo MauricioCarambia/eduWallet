@@ -9,10 +9,19 @@ const { notificarBloqueo } = require('../services/notificacionesService');
 const { gastoDeLaSemana } = require('../services/consumoAlumno');
 require('dotenv').config();
 
+// Email siempre en minúscula y sin espacios: "Juan@Gmail.com " y "juan@gmail.com" son la misma cuenta
+const normalizarEmail = e => String(e ?? '').trim().toLowerCase();
+const EMAIL = /^[^s@]+@[^s@]+.[^s@]+$/;
+
 const registro = async (req, res) => {
-  const { nombre, email, password } = req.body;
+  const nombre = String(req.body?.nombre ?? '').trim();
+  const email = normalizarEmail(req.body?.email);
+  const password = String(req.body?.password ?? '');
+  if (nombre.length < 2 || nombre.length > 100) return res.status(400).json({ error: 'Poné tu nombre y apellido' });
+  if (!EMAIL.test(email) || email.length > 150) return res.status(400).json({ error: 'El email no es válido' });
+  if (password.length < 6 || password.length > 72) return res.status(400).json({ error: 'La contraseña tiene que tener entre 6 y 72 caracteres' });
   try {
-    const existe = await pool.query('SELECT id FROM padres WHERE email = $1', [email]);
+    const existe = await pool.query('SELECT id FROM padres WHERE lower(email) = $1', [email]);
     if (existe.rows.length > 0) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
@@ -30,16 +39,15 @@ const registro = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const email = normalizarEmail(req.body?.email);
+  const password = String(req.body?.password ?? '');
+  if (!email || !password) return res.status(400).json({ error: 'Completá email y contraseña' });
   try {
-    const resultado = await pool.query('SELECT * FROM padres WHERE email = $1 AND activo = true', [email]);
-    if (resultado.rows.length === 0) {
-      return res.status(401).json({ error: 'Email no encontrado' });
-    }
+    const resultado = await pool.query('SELECT * FROM padres WHERE lower(email) = $1 AND activo = true', [email]);
     const padre = resultado.rows[0];
-    const valido = await bcrypt.compare(password, padre.password);
-    if (!valido) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    // El mismo mensaje en los dos casos: no revela qué emails tienen cuenta
+    if (!padre || !padre.password || !(await bcrypt.compare(password, padre.password))) {
+      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
     const token = jwt.sign({ id: padre.id, tipo: 'padre' }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, padre: { id: padre.id, nombre: padre.nombre, email: padre.email } });
@@ -183,10 +191,10 @@ const actualizarLimite = async (req, res) => {
 };
 
 const solicitarRecuperacion = async (req, res) => {
-  const { email } = req.body;
+  const email = normalizarEmail(req.body?.email);
   if (!email) return res.status(400).json({ error: 'Email requerido' });
   try {
-    const resultado = await pool.query('SELECT * FROM padres WHERE email = $1 AND activo = true', [email]);
+    const resultado = await pool.query('SELECT * FROM padres WHERE lower(email) = $1 AND activo = true', [email]);
 
     // Siempre respondemos OK para no revelar si el email existe o no
     if (resultado.rows.length === 0) {

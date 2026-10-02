@@ -7,7 +7,8 @@ import { SkeletonCards, SkeletonTable } from '../components/Skeleton'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
-import { diaAR, hoyAR, sumarDias, fechaDeDia } from '../utils/fechas'
+import { hoyAR, sumarDias, fechaDeDia } from '../utils/fechas'
+import { useLocales } from '../hooks/useLocales'
 import Rentabilidad from '../components/Rentabilidad'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -28,6 +29,10 @@ const haceN = n => sumarDias(hoyAR(), -n)
 
 export default function Reportes() {
   const [txs, setTxs] = useState([])
+  const [totalTxs, setTotalTxs] = useState(0)
+  // Totales, gráficos y rankings calculados en el servidor (todo el período)
+  const [resumen, setResumen] = useState(null)
+  const { locales: zonas } = useLocales()
   const [alumnos, setAlumnos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [tab, setTab] = useState('general')
@@ -67,13 +72,16 @@ export default function Reportes() {
     try {
       const params = new URLSearchParams({ desde: fechaDesde, hasta: fechaHasta, limit: 2000 })
       if (filtroLocal !== 'Todos') params.set('lugar', filtroLocal)
-      const [tRes, aRes] = await Promise.all([
+      const [tRes, aRes, rRes] = await Promise.all([
         api.get(`/transacciones?${params}`),
-        api.get('/alumnos')
+        api.get('/alumnos'),
+        api.get('/reportes/resumen', { params: { desde: fechaDesde, hasta: fechaHasta, lugar: filtroLocal } }),
       ])
       setTxs(tRes.data.data ?? tRes.data)
+      setTotalTxs(tRes.data.total ?? (tRes.data.data ?? tRes.data).length)
       setAlumnos(aRes.data)
-    } catch (err) { console.error(err) }
+      setResumen(rRes.data)
+    } catch (err) { showMsg('error', err.response?.data?.error || 'No se pudo cargar el reporte') }
     finally { setCargando(false) }
   }
 
@@ -88,72 +96,40 @@ export default function Reportes() {
   // Las anuladas se ven en la tabla (marcadas) pero no suman en totales ni gráficos
   const esAnulada = t => t.descripcion?.startsWith('[ANULADA]')
   const comprasTodas = txsFiltradas.filter(t => t.tipo === 'compra')
-  const compras = comprasTodas.filter(t => !esAnulada(t))
-  const recargas = txsFiltradas.filter(t => t.tipo === 'recarga')
-  const totalVentas = compras.reduce((s, t) => s + parseFloat(t.monto), 0)
-  const totalRecargas = recargas.reduce((s, t) => s + parseFloat(t.monto), 0)
-  const ticketPromedio = compras.length > 0 ? totalVentas / compras.length : 0
+  const tot = resumen?.totales || { ventas: 0, cantidad_ventas: 0, sin_conexion: 0, anuladas: 0, recargas: 0, cantidad_recargas: 0 }
+  const totalVentas = tot.ventas
+  const totalRecargas = tot.recargas
+  const cantidadVentas = tot.cantidad_ventas
+  const ticketPromedio = cantidadVentas > 0 ? totalVentas / cantidadVentas : 0
+  const cursoDe = useMemo(() => new Map(alumnos.map(a => [a.id, a.curso])), [alumnos])
 
-  const cursos = ['Todos', ...new Set(alumnos.map(a => a.curso))]
-  const locales = ['Todos', ...new Set(txs.map(t => t.lugar).filter(Boolean))]
+  const cursos = ['Todos', ...new Set(alumnos.map(a => a.curso).filter(Boolean))]
+  // Todas las zonas del colegio (antes salían de las transacciones cargadas:
+  // al elegir una, desaparecían las otras del filtro)
+  const locales = ['Todos', ...new Set([...zonas.map(z => z.nombre), ...(resumen?.por_local || []).map(l => l.local)].filter(Boolean))]
 
-  // datos por día para gráfico de área
+  // datos por día para gráfico de área (todos los días del rango, aunque no haya ventas)
   const diasEnRango = useMemo(() => {
+    const porDia = new Map((resumen?.por_dia || []).map(d => [d.dia, d]))
     const desde = fechaDeDia(fechaDesde)
     const hasta = fechaDeDia(fechaHasta)
-    const dias = []
     const diffDias = Math.round((hasta - desde) / (1000 * 60 * 60 * 24))
+    const dias = []
     for (let fecha = fechaDesde; fecha <= fechaHasta && dias.length < 400; fecha = sumarDias(fecha, 1)) {
       const d = fechaDeDia(fecha)
-      const ventas = compras.filter(t => t.fecha && diaAR(t.fecha) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
-      const recargasD = recargas.filter(t => t.fecha && diaAR(t.fecha) === fecha).reduce((s, t) => s + parseFloat(t.monto), 0)
-      const label = diffDias > 30
-        ? d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
-        : diffDias > 7
-          ? d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
-          : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit' })
-      dias.push({ label, fecha, ventas, recargas: recargasD })
+      const label = diffDias > 7
+        ? d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+        : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', timeZone: 'UTC' })
+      dias.push({ label, fecha, ventas: porDia.get(fecha)?.ventas || 0, recargas: porDia.get(fecha)?.recargas || 0 })
     }
     return dias
-  }, [compras, recargas, fechaDesde, fechaHasta])
+  }, [resumen, fechaDesde, fechaHasta])
 
-  // por local
-  const porLocal = useMemo(() => {
-    const map = {}
-    compras.forEach(t => map[t.lugar] = (map[t.lugar] || 0) + parseFloat(t.monto))
-    return Object.entries(map).map(([local, total]) => ({ local, total }))
-  }, [compras])
-
-  // por producto
-  const porProducto = useMemo(() => {
-    const map = {}
-    compras.forEach(t => {
-      const items = t.descripcion?.split(',') || [t.descripcion]
-      items.forEach(item => {
-        const nombre = item.trim()
-        if (nombre) map[nombre] = (map[nombre] || 0) + 1
-      })
-    })
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([nombre, cantidad]) => ({ nombre, cantidad }))
-  }, [compras])
-
-  // por curso
-  const porCurso = useMemo(() => {
-    const map = {}
-    compras.forEach(t => {
-      const alumno = alumnos.find(a => a.nombre === t.alumno_nombre)
-      const curso = alumno?.curso || 'Sin curso'
-      map[curso] = (map[curso] || 0) + parseFloat(t.monto)
-    })
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([curso, total]) => ({ curso, total }))
-  }, [compras, alumnos])
-
-  // top alumnos
-  const topAlumnos = useMemo(() => {
-    const map = {}
-    compras.forEach(t => map[t.alumno_nombre] = (map[t.alumno_nombre] || 0) + parseFloat(t.monto))
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
-  }, [compras])
+  // rankings del servidor: unidades vendidas de verdad y curso por id de alumno
+  const porLocal = resumen?.por_local || []
+  const porProducto = resumen?.por_producto || []
+  const porCurso = resumen?.por_curso || []
+  const topAlumnos = (resumen?.top_alumnos || []).map(a => [a.nombre, a.total])
 
   // tabla de transacciones filtrada por curso además
   const txsTabla = useMemo(() => {
@@ -162,12 +138,12 @@ export default function Reportes() {
       if (filtroCobro === 'Anuladas' && !esAnulada(t)) return false
       if (filtroCobro === 'Con internet' && t.offline) return false
       if (filtroCurso === 'Todos') return true
-      const alumno = alumnos.find(a => a.nombre === t.alumno_nombre)
-      return alumno?.curso === filtroCurso
+      return cursoDe.get(t.alumno_id) === filtroCurso
     })
-  }, [comprasTodas, filtroCurso, filtroCobro, alumnos])
-  const sinConexion = compras.filter(t => t.offline).length
-  const anuladas = comprasTodas.length - compras.length
+  }, [comprasTodas, filtroCurso, filtroCobro, cursoDe])
+  const sinConexion = tot.sin_conexion
+  const anuladas = tot.anuladas
+  const listaIncompleta = totalTxs > txs.length
 
   // exportar CSV
   const exportCSV = () => {
@@ -234,7 +210,7 @@ export default function Reportes() {
           fmt(totalRecargas),
           fmt(Math.round(ticketPromedio)),
           fmt(Math.round(totalVentas / Math.max(diasTotal, 1))),
-          String(compras.length)
+          String(cantidadVentas)
         ]],
         theme: 'striped',
         headStyles: { fillColor: [29, 92, 71] },
@@ -333,7 +309,7 @@ export default function Reportes() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>Reportes</h1>
-          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{labelRango} · {txsFiltradas.length} transacciones</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>{labelRango} · {cantidadVentas + tot.cantidad_recargas} transacciones</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={exportPDF} disabled={generandoPDF} style={{ padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 500, opacity: generandoPDF ? 0.7 : 1 }}>
@@ -415,8 +391,8 @@ export default function Reportes() {
       {/* métricas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Ventas', value: fmt(totalVentas), color: 'var(--text)', sub: `${compras.length} transacciones` },
-          { label: 'Recargas', value: fmt(totalRecargas), color: 'var(--green)', sub: `${recargas.length} recargas` },
+          { label: 'Ventas', value: fmt(totalVentas), color: 'var(--text)', sub: `${cantidadVentas} transacciones` },
+          { label: 'Recargas', value: fmt(totalRecargas), color: 'var(--green)', sub: `${tot.cantidad_recargas} recargas` },
           { label: 'Ticket promedio', value: fmt(Math.round(ticketPromedio)), color: 'var(--text)', sub: labelRango },
           { label: 'Promedio diario', value: fmt(Math.round(totalVentas / Math.max(diasTotal, 1))), color: 'var(--text)', sub: `${diasTotal} días` },
         ].map(s => (
@@ -616,7 +592,7 @@ export default function Reportes() {
                 <BarChart data={diasEnRango.map(d => {
                   const obj = { label: d.label }
                   locales.filter(l => l !== 'Todos').forEach(l => {
-                    obj[l] = compras.filter(t => t.fecha && diaAR(t.fecha) === d.fecha && t.lugar === l).reduce((s, t) => s + parseFloat(t.monto), 0)
+                    obj[l] = (resumen?.por_dia_local || []).find(x => x.dia === d.fecha && x.local === l)?.ventas || 0
                   })
                   return obj
                 })}>
@@ -667,10 +643,7 @@ export default function Reportes() {
               </thead>
               <tbody>
                 {porCurso.map((c, i) => {
-                  const txsCurso = compras.filter(t => {
-                    const alumno = alumnos.find(a => a.nombre === t.alumno_nombre)
-                    return alumno?.curso === c.curso
-                  })
+                  const txsCurso = { length: c.cantidad }
                   return (
                     <tr key={c.curso} style={{ borderBottom: '1px solid var(--border-light)' }}>
                       <td style={{ padding: '10px 12px' }}>
@@ -711,6 +684,11 @@ export default function Reportes() {
                 </button>
               )}
             </h2>
+            {listaIncompleta && (
+              <p style={{ flexBasis: '100%', order: 3, margin: 0, fontSize: 12, color: 'var(--amber)' }}>
+                El período tiene {totalTxs.toLocaleString('es-AR')} movimientos: la lista y el CSV traen los últimos {txs.length.toLocaleString('es-AR')}. Los totales y gráficos incluyen todo. Para ver el resto, achicá el período.
+              </p>
+            )}
             <button onClick={exportCSV} style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Exportar CSV

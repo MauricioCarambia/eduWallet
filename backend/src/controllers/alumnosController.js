@@ -109,9 +109,25 @@ const toggleAlumno = async (req, res) => {
 const eliminarAlumno = async (req, res) => {
   const { id } = req.params;
   try {
+    // Borrar se lleva puestos sus pagos de Mercado Pago (y la plata que le queda):
+    // con saldo o con historial, se bloquea en vez de borrarse
+    const al = await pool.query(
+      `SELECT a.nombre, a.saldo,
+         EXISTS (SELECT 1 FROM transacciones t WHERE t.alumno_id = a.id) OR EXISTS (SELECT 1 FROM pagos p WHERE p.alumno_id = a.id) AS con_historial
+       FROM alumnos a WHERE a.id = $1 AND a.colegio_id = $2`,
+      [id, req.empleado.colegio_id]
+    );
+    if (al.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
+    const { nombre, saldo, con_historial } = al.rows[0];
+    if (Number(saldo) !== 0) {
+      return res.status(409).json({ error: `${nombre} tiene saldo ($${Number(saldo).toLocaleString("es-AR")}): no se puede borrar. Bloquealo para que no compre; para devolver el saldo, hablá con KoleTap.` });
+    }
+    if (con_historial) {
+      return res.status(409).json({ error: `${nombre} tiene compras o recargas: para no perder ese historial no se puede borrar. Bloquealo para que no compre más.` });
+    }
     const borrado = await pool.query("DELETE FROM alumnos WHERE id = $1 AND colegio_id = $2 RETURNING id", [id, req.empleado.colegio_id]);
     if (borrado.rows.length === 0) return res.status(404).json({ error: "Alumno no encontrado" });
-    await registrar(req.empleado.id, req.empleado.colegio_id, "Alumno eliminado", `ID: ${id}`);
+    await registrar(req.empleado.id, req.empleado.colegio_id, "Alumno eliminado", `${nombre} (ID ${id})`);
     res.json({ mensaje: "Alumno eliminado" });
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });

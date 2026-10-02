@@ -104,7 +104,12 @@ const eliminarPadre = async (req, res) => {
       const otros = await db.query('SELECT 1 FROM padres_colegios WHERE padre_id = $1 LIMIT 1', [id]);
       if (otros.rows.length === 0) {
         await db.query('DELETE FROM padres_alumnos WHERE padre_id = $1', [id]);
-        await db.query('DELETE FROM padres WHERE id = $1', [id]);
+        // Con pagos de Mercado Pago no se borra la cuenta (se llevaría puestos los
+        // pagos, que la conciliación y las devoluciones necesitan): se desactiva
+        const conPagos = await db.query('SELECT 1 FROM pagos WHERE padre_id = $1 LIMIT 1', [id]);
+        if (conPagos.rows.length) await db.query('UPDATE padres SET activo = false WHERE id = $1', [id]);
+        else await db.query('DELETE FROM padres WHERE id = $1', [id]);
+        olvidarSesion('padre', id);
       }
       await db.query('COMMIT');
     } catch (err) {

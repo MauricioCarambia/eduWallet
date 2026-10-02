@@ -315,30 +315,47 @@ const anularVenta = async (req, res) => {
       return res.status(400).json({ error: 'Solo se pueden anular ventas de las últimas 24 horas' });
     }
 
-    // devolver saldo al alumno
+    // devolver saldo al alumno; el gasto del día solo si la venta es de hoy
+    // (una de ayer ya no cuenta en el límite diario de hoy)
     await client.query(
-      'UPDATE alumnos SET saldo = saldo + $1, gasto_hoy = GREATEST(0, gasto_hoy - $1) WHERE id = $2',
-      [t.monto, t.alumno_id]
+      `UPDATE alumnos SET saldo = saldo + $1,
+         gasto_hoy = CASE WHEN ${FECHA_AR('(SELECT fecha FROM transacciones WHERE id = $3)')}::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
+                          THEN GREATEST(0, gasto_hoy - $1) ELSE gasto_hoy END
+       WHERE id = $2`,
+      [t.monto, t.alumno_id, t.id]
     );
 
-    // devolver stock — parsear descripción para obtener productos
-    const items = t.descripcion.split(', ')
-    for (const item of items) {
-      const matchQty = item.match(/×(\d+)$/)
-      const qty = matchQty ? parseInt(matchQty[1]) : 1
-      const nombre = item.replace(/ ×\d+$/, '').trim()
-      await client.query(
-        `UPDATE productos SET stock = stock + $1
-         WHERE nombre = $2 AND local = $3 AND colegio_id = $4`,
-        [qty, nombre, t.lugar, req.empleado.colegio_id]
-      )
+    // devolver stock: con el detalle de la venta (producto exacto); las ventas
+    // viejas sin detalle, por nombre como antes
+    const detalle = await client.query('SELECT producto_id, nombre, cantidad FROM transaccion_items WHERE transaccion_id = $1', [id]);
+    if (detalle.rows.length) {
+      for (const d of detalle.rows) {
+        await client.query(
+          d.producto_id
+            ? 'UPDATE productos SET stock = stock + $1 WHERE id = $2 AND colegio_id = $3'
+            : 'UPDATE productos SET stock = stock + $1 WHERE nombre = $2 AND local = $4 AND colegio_id = $3 AND activo',
+          d.producto_id ? [d.cantidad, d.producto_id, req.empleado.colegio_id] : [d.cantidad, d.nombre, req.empleado.colegio_id, t.lugar]
+        );
+      }
+    } else {
+      for (const item of t.descripcion.split(', ')) {
+        const matchQty = item.match(/×(\d+)$/)
+        const qty = matchQty ? parseInt(matchQty[1]) : 1
+        const nombre = item.replace(/ ×\d+$/, '').trim()
+        await client.query(
+          `UPDATE productos SET stock = stock + $1
+           WHERE nombre = $2 AND local = $3 AND colegio_id = $4 AND activo`,
+          [qty, nombre, t.lugar, req.empleado.colegio_id]
+        )
+      }
     }
 
-    // restar de la caja activa del mismo local
+    // restar de la caja abierta del mismo cajero y zona, solo si la venta es de
+    // ese turno (si era de una caja ya cerrada, esa caja ya rindió)
     await client.query(
       `UPDATE cajas SET ventas = GREATEST(0, ventas - $1), tx_count = GREATEST(0, tx_count - 1)
-       WHERE local = $2 AND abierta = true AND empleado_id = $3 AND colegio_id = $4`,
-      [t.monto, t.lugar, t.empleado_id, req.empleado.colegio_id]
+       WHERE local = $2 AND abierta = true AND empleado_id = $3 AND colegio_id = $4 AND apertura <= (SELECT fecha FROM transacciones WHERE id = $5)`,
+      [t.monto, t.lugar, t.empleado_id, req.empleado.colegio_id, t.id]
     )
 
     // registrar anulación

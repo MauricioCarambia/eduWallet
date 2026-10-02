@@ -140,13 +140,14 @@ const getGastoSemanal = async (req, res) => {
     const resultado = await pool.query(
       `
       SELECT
-        EXTRACT(DOW FROM fecha) as dia,
+        -- día de la semana en Argentina, sin ventas anuladas
+        EXTRACT(DOW FROM fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires') as dia,
         SUM(monto) as total
       FROM transacciones
       WHERE alumno_id = $1
         AND colegio_id = $2
-        AND tipo = 'compra'
-        AND fecha >= NOW() - INTERVAL '7 days'
+        AND tipo = 'compra' AND COALESCE(descripcion, '') NOT LIKE '[ANULADA]%'
+        AND fecha >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days'
       GROUP BY dia
       ORDER BY dia
     `,

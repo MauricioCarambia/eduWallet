@@ -48,7 +48,7 @@ export default function Venta() {
   const [alumno, setAlumno] = useState(null)
   const [busq, setBusq] = useState('')
   const [descPct, setDescPct] = useState(0)
-  const [fondoCaja, setFondoCaja] = useState('500')
+  const [fondoCaja, setFondoCaja] = useState('0')
   const [local, setLocal] = useState('')
   const [msg, setMsg] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -439,7 +439,7 @@ export default function Venta() {
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            {[500, 1000, 2000].map(n => (
+            {[0, 500, 1000, 2000].map(n => (
               <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '10px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
             ))}
           </div>

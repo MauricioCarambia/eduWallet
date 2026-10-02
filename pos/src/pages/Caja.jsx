@@ -16,7 +16,7 @@ export default function Caja() {
   const [misCajas, setMisCajas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [msg, setMsg] = useState(null)
-  const [fondoCaja, setFondoCaja] = useState('500')
+  const [fondoCaja, setFondoCaja] = useState('0')
   const [local, setLocal] = useState('')
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(null), 3000) }
@@ -131,7 +131,7 @@ export default function Caja() {
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>Fondo inicial</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              {[500, 1000, 2000].map(n => (
+              {[0, 500, 1000, 2000].map(n => (
                 <button key={n} onClick={() => setFondoCaja(String(n))} style={{ flex: 1, padding: '9px', border: `1.5px solid ${fondoCaja == n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: fondoCaja == n ? 'var(--brand)' : 'var(--bg-card)', color: fondoCaja == n ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>{fmt(n)}</button>
               ))}
             </div>

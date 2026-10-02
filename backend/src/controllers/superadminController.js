@@ -51,9 +51,21 @@ const getColegios = async (req, res) => {
   }
 };
 
+// Comisión de la plataforma en %: 0 vale (ej.: un colegio sin cargo); vacío = 5
+const leerComision = v => {
+  if (v === undefined || v === null || v === '') return 5;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 30 ? n : null;
+};
+
+// Los tokens de Mercado Pago del colegio no salen del servidor
+const sinTokens = c => ({ ...c, mp_conectado: !!c.mp_access_token, mp_access_token: undefined, mp_refresh_token: undefined });
+
 const crearColegio = async (req, res) => {
-  const { nombre, comision_pct } = req.body;
+  const { nombre } = req.body;
   if (!nombre?.trim()) return res.status(400).json({ error: 'Nombre requerido' });
+  const comision = leerComision(req.body.comision_pct);
+  if (comision === null) return res.status(400).json({ error: 'La comisión tiene que ser un porcentaje entre 0 y 30' });
   try {
     let slug = slugify(nombre);
     let sufijo = 0;
@@ -65,9 +77,9 @@ const crearColegio = async (req, res) => {
     }
     const resultado = await pool.query(
       'INSERT INTO colegios (nombre, slug, comision_pct) VALUES ($1, $2, $3) RETURNING *',
-      [nombre.trim(), slug, comision_pct || 5]
+      [nombre.trim(), slug, comision]
     );
-    res.json(resultado.rows[0]);
+    res.json(sinTokens(resultado.rows[0]));
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -79,8 +91,12 @@ const actualizarColegio = async (req, res) => {
   try {
     const campos = [];
     const valores = [];
-    if (comision_pct !== undefined) { valores.push(comision_pct); campos.push(`comision_pct = $${valores.length}`); }
-    if (activo !== undefined)       { valores.push(activo);       campos.push(`activo = $${valores.length}`); }
+    if (comision_pct !== undefined) {
+      const comision = leerComision(comision_pct);
+      if (comision === null) return res.status(400).json({ error: 'La comisión tiene que ser un porcentaje entre 0 y 30' });
+      valores.push(comision); campos.push(`comision_pct = $${valores.length}`);
+    }
+    if (activo !== undefined)       { valores.push(activo === true || activo === 'true'); campos.push(`activo = $${valores.length}`); }
     if (plan !== undefined)         { valores.push(plan);         campos.push(`plan = $${valores.length}`); }
     if (campos.length === 0) return res.status(400).json({ error: 'Nada para actualizar' });
 
@@ -90,7 +106,7 @@ const actualizarColegio = async (req, res) => {
       valores
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: 'Colegio no encontrado' });
-    res.json(resultado.rows[0]);
+    res.json(sinTokens(resultado.rows[0]));
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

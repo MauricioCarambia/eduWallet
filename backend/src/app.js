@@ -102,4 +102,14 @@ app.get('/', (req, res) => {
   res.json({ mensaje: 'KoleTap API funcionando correctamente' });
 });
 
+// Errores que se escaparon de un controlador (Express 5 los manda acá): JSON y
+// sin detalles internos, en vez de la página de error por defecto
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'El pedido no es un JSON válido' });
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'El archivo o los datos son demasiado grandes' });
+  console.error(`Error en ${req.method} ${req.originalUrl}:`, err.message);
+  res.status(err.status || 500).json({ error: 'Error del servidor' });
+});
+
 module.exports = app;

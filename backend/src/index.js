@@ -3,6 +3,10 @@ require('./db/conexion');
 require('./tareas');
 
 const app = require('./app');
+
+// Un aviso (push, mail) que falla sin que nadie lo espere no tiene que tirar
+// el servidor de todos los colegios: se registra y se sigue
+process.on('unhandledRejection', err => console.error('Promesa rechazada sin atrapar:', err?.message || err));
 const { migrarSplit } = require('./db/migracion_split');
 const { migrarPagosVencidos } = require('./db/migracion_pagos_vencidos');
 const { migrarLinkPago } = require('./db/migracion_link_pago');

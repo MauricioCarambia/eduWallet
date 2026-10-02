@@ -51,7 +51,7 @@ export default function Control() {
       const res = await api.patch(`/padres/alumnos/${alumnoId}/toggle`)
       setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
       showMsg('ok', res.data.activo ? 'Compras habilitadas' : 'Todas las compras bloqueadas')
-    } catch { showMsg('error', 'Error al cambiar estado') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al cambiar estado') }
   }
 
   // Bloqueo de un solo medio: el QR de la credencial o la tarjeta/llavero
@@ -61,7 +61,7 @@ export default function Control() {
       setAlumnos(prev => prev.map(a => a.id === alumnoId ? { ...a, ...res.data } : a))
       const nombre = medio === 'qr' ? 'QR de la credencial' : 'Tarjeta'
       showMsg('ok', `${nombre} ${bloqueado ? 'bloqueado' : 'desbloqueado'}`)
-    } catch { showMsg('error', 'Error al cambiar el estado') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al cambiar el estado') }
   }
 
   const guardarLimite = async () => {

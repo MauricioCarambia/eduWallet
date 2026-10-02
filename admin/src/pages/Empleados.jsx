@@ -100,7 +100,7 @@ export default function Empleados() {
     try {
       const res = await api.patch(`/empleados/${id}/toggle`)
       setEmpleados(p => p.map(e => e.id === id ? { ...e, activo: res.data.activo } : e))
-    } catch { showMsg('error', 'Error') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error') }
   }
 
   const nuevoCodigo = async empleado => {

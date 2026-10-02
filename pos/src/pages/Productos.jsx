@@ -140,12 +140,12 @@ export default function Productos() {
   const eliminar = async id => {
     if (!confirm('¿Eliminar este producto?')) return
     try { await api.delete(`/productos/${id}`); setProductos(prev => prev.filter(p => p.id !== id)); showMsg('ok', 'Producto eliminado') }
-    catch (err) { showMsg('error', 'Error al eliminar') }
+    catch (err) { showMsg('error', err.response?.data?.error || 'Error al eliminar') }
   }
 
   const editarStock = async (id, delta) => {
     try { const res = await api.patch(`/productos/${id}/stock`, { delta }); setProductos(prev => prev.map(p => p.id === id ? res.data : p)) }
-    catch (err) { showMsg('error', 'Error al actualizar stock') }
+    catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar stock') }
   }
 
   const ajustarStock = async () => {
@@ -156,7 +156,7 @@ export default function Productos() {
       const res = await api.patch(`/productos/${seleccionado.id}/stock`, { delta })
       setProductos(prev => prev.map(p => p.id === seleccionado.id ? res.data : p))
       showMsg('ok', `Stock actualizado a ${nuevoStock}`); cerrarModal()
-    } catch (err) { showMsg('error', 'Error al ajustar stock') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al ajustar stock') }
   }
 
   // ─── Importar desde Excel / CSV ───────────────────────────────────────────

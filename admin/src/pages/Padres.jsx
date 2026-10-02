@@ -44,7 +44,7 @@ export default function Padres() {
     try {
       const res = await api.patch(`/admin/padres/${id}/toggle`)
       setPadres(p => p.map(x => x.id === id ? { ...x, activo: res.data.activo } : x))
-    } catch { showMsg('error', 'Error') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error') }
   }
 
   const desvincular = async (padreId, alumnoId) => {
@@ -53,7 +53,7 @@ export default function Padres() {
       await api.delete(`/admin/padres/${padreId}/alumnos/${alumnoId}`)
       setPadres(p => p.map(x => x.id === padreId ? { ...x, alumnos: x.alumnos.filter(a => a.id !== alumnoId) } : x))
       showMsg('ok', 'Alumno desvinculado')
-    } catch { showMsg('error', 'Error al desvincular') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al desvincular') }
   }
 
   const vincular = async () => {
@@ -69,7 +69,7 @@ export default function Padres() {
     try {
       await api.delete(`/admin/padres/${id}`)
       setPadres(p => p.filter(x => x.id !== id)); showMsg('ok', 'Padre quitado del colegio')
-    } catch { showMsg('error', 'Error al eliminar') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al eliminar') }
   }
 
   const filtrados = padres.filter(p => p.nombre.toLowerCase().includes(busq.toLowerCase()) || p.email.toLowerCase().includes(busq.toLowerCase()))

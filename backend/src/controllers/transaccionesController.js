@@ -22,6 +22,15 @@ const getTransacciones = async (req, res) => {
     if (hasta) { valores.push(hasta); condiciones.push(`t.fecha < (($${valores.length}::date + 1)::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires' AT TIME ZONE 'UTC')`); }
     if (tipo)  { valores.push(tipo);  condiciones.push(`t.tipo = $${valores.length}`); }
     if (lugar) { valores.push(lugar); condiciones.push(`t.lugar = $${valores.length}`); }
+    // El personal del POS ve solo ventas (no las recargas de las familias) y,
+    // si tiene zona fija, solo las de su zona
+    if (req.empleado.rol !== 'admin') {
+      condiciones.push("t.tipo IN ('compra', 'anulacion')");
+      if (req.empleado.local_id) {
+        const zona = await pool.query('SELECT nombre FROM locales WHERE id = $1 AND colegio_id = $2', [req.empleado.local_id, req.empleado.colegio_id]);
+        valores.push(zona.rows[0]?.nombre ?? ''); condiciones.push(`t.lugar = $${valores.length}`);
+      }
+    }
 
     const where = `WHERE ${condiciones.join(' AND ')}`;
 

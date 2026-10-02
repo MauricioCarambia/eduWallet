@@ -116,7 +116,7 @@ export default function Configuracion() {
       const a = document.createElement('a'); a.href = url; a.download = `koletap-backup-${hoyAR()}.sql`; a.click()
       URL.revokeObjectURL(url)
       showMsg('ok', 'Backup descargado correctamente')
-    } catch { showMsg('error', 'Error al descargar backup') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al descargar backup') }
     finally { setHaciendoBackup(false) }
   }
 
@@ -147,7 +147,7 @@ export default function Configuracion() {
     try {
       await api.patch(`/locales/${id}/toggle`)
       recargarLocales()
-    } catch { showMsg('error', 'Error al actualizar el local') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar el local') }
   }
 
   const onLogo = (e) => {

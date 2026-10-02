@@ -125,7 +125,7 @@ export default function Alumnos() {
       setAlumnos(p => [...p, res.data])
       showMsg('ok', `Alumno ${form.nombre} registrado`)
       cerrarModal()
-    } catch { showMsg('error', 'Error al registrar') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al registrar') }
   }
 
   const guardarEditar = async () => {
@@ -133,7 +133,7 @@ export default function Alumnos() {
       const res = await api.put(`/alumnos/${seleccionado.id}`, form)
       setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
       showMsg('ok', 'Alumno actualizado'); cerrarModal()
-    } catch { showMsg('error', 'Error al actualizar') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar') }
   }
 
   const regenerarCodigo = async () => {
@@ -143,7 +143,7 @@ export default function Alumnos() {
       setAlumnos(p => p.map(a => a.id === seleccionado.id ? res.data : a))
       setSeleccionado(res.data)
       showMsg('ok', 'Código regenerado')
-    } catch { showMsg('error', 'Error al regenerar el código') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al regenerar el código') }
   }
 
   const eliminar = async id => {
@@ -152,14 +152,14 @@ export default function Alumnos() {
       await api.delete(`/alumnos/${id}`)
       setAlumnos(p => p.filter(a => a.id !== id))
       showMsg('ok', 'Alumno eliminado')
-    } catch { showMsg('error', 'Error al eliminar') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al eliminar') }
   }
 
   const toggleBloqueo = async a => {
     try {
       const res = await api.patch(`/alumnos/${a.id}/toggle`)
       setAlumnos(p => p.map(x => x.id === a.id ? res.data : x))
-    } catch { showMsg('error', 'Error') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error') }
   }
 
   // Link de pago de Mercado Pago para padres que no usan la app: pagan como
@@ -239,7 +239,7 @@ export default function Alumnos() {
 
   const verQR = async alumno => {
     try { setQrModal(await cargarCredencial(alumno)) }
-    catch { showMsg('error', 'Error al obtener la credencial') }
+    catch (err) { showMsg('error', err.response?.data?.error || 'Error al obtener la credencial') }
   }
 
   const onArchivoCSV = (e) => {
@@ -275,7 +275,7 @@ export default function Alumnos() {
         showMsg('ok', `${res.data.creados} alumnos importados correctamente`)
       }
       setCsvFilas([])
-    } catch { showMsg('error', 'Error al importar') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al importar') }
     finally { setImportando(false) }
   }
 

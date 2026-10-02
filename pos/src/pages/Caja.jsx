@@ -3,6 +3,7 @@ import { SkeletonTable } from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { useCaja } from '../context/CajaContext'
 import api from '../api/axios'
+import { diaAR, hoyAR } from '../utils/fechas'
 import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
@@ -22,12 +23,14 @@ export default function Caja() {
 
   const zonaFija = sesion?.local || null
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar() }, [caja?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
 
   const cargar = async () => {
     try {
-      const [tRes, cRes] = await Promise.all([api.get('/transacciones'), api.get('/cajas')])
+      // Las ventas del turno: las de su zona desde el día que abrió (antes, las últimas 500 del colegio)
+      const params = caja ? { lugar: caja.local, desde: diaAR(caja.apertura), hasta: hoyAR(), tipo: 'compra', limit: 2000 } : { limit: 50 }
+      const [tRes, cRes] = await Promise.all([api.get('/transacciones', { params }), api.get('/cajas')])
       setTxs(tRes.data.data ?? tRes.data)
       setMisCajas(cRes.data.filter(c => c.empleado_id === sesion.id))
     } catch (err) { console.error(err) } finally { setCargando(false) }
@@ -35,20 +38,20 @@ export default function Caja() {
 
   const handleAbrirCaja = async () => {
     try { await abrirCaja(local, fondoCaja); showMsg('ok', `Caja abierta en ${local}`); cargar() }
-    catch (err) { showMsg('error', 'Error al abrir caja') }
+    catch (err) { showMsg('error', err.response?.data?.error || err.message || 'Error al abrir caja') }
   }
 
   const handleCerrarCaja = async () => {
     if (!confirm(`¿Cerrar caja? Total del turno: ${fmt(caja?.ventas || 0)}`)) return
     try { await cerrarCaja(); showMsg('ok', `Caja cerrada. Total: ${fmt(caja?.ventas || 0)}`); cargar() }
-    catch (err) { showMsg('error', 'Error al cerrar caja') }
+    catch (err) { showMsg('error', err.response?.data?.error || err.message || 'Error al cerrar caja') }
   }
 
   const txsCaja = caja ? txs.filter(t => {
     const inicio = new Date(caja.apertura)
     const fin = caja.cierre ? new Date(caja.cierre) : new Date()
     const fecha = new Date(t.fecha)
-    return t.lugar === caja.local && fecha >= inicio && fecha <= fin
+    return t.lugar === caja.local && fecha >= inicio && fecha <= fin && (!t.empleado_id || t.empleado_id === sesion.id)
   }) : []
 
   const totalEfectivo = parseFloat(caja?.fondo || 0) + parseFloat(caja?.ventas || 0)

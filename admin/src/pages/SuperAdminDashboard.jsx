@@ -25,7 +25,7 @@ export default function SuperAdminDashboard() {
     try {
       const res = await superadminApi.get('/superadmin/colegios')
       setColegios(res.data)
-    } catch { showMsg('error', 'Error al cargar colegios') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al cargar colegios') }
     finally { setCargando(false) }
   }
 
@@ -35,14 +35,14 @@ export default function SuperAdminDashboard() {
     try {
       await superadminApi.patch(`/superadmin/colegios/${colegio.id}`, { activo: !colegio.activo })
       cargar()
-    } catch { showMsg('error', 'Error al actualizar el colegio') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar el colegio') }
   }
 
   const cambiarComision = async (colegio, valor) => {
     try {
       await superadminApi.patch(`/superadmin/colegios/${colegio.id}`, { comision_pct: valor })
       cargar()
-    } catch { showMsg('error', 'Error al actualizar la comisión') }
+    } catch (err) { showMsg('error', err.response?.data?.error || 'Error al actualizar la comisión') }
   }
 
   const crearColegio = async () => {
@@ -68,7 +68,7 @@ export default function SuperAdminDashboard() {
       try {
         const res = await superadminApi.get(`/superadmin/colegios/${colegioAjusteId}/alumnos`, { params: { q: qAjuste || undefined } })
         setAjuste(a => a && { ...a, resultados: res.data })
-      } catch { showMsg('error', 'Error al buscar alumnos') }
+      } catch (err) { showMsg('error', err.response?.data?.error || 'Error al buscar alumnos') }
     }, 500)
     return () => clearTimeout(t)
   }, [colegioAjusteId, qAjuste])

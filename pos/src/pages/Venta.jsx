@@ -147,7 +147,7 @@ export default function Venta() {
       const c = await abrirCaja(local, fondoCaja)
       showMsg('ok', c?.offline ? `Caja abierta en ${c.local} sin conexión: se registra al volver internet` : `Caja abierta en ${local}`)
     }
-    catch (err) { showMsg('error', 'Error al abrir caja') }
+    catch (err) { showMsg('error', err.response?.data?.error || 'Error al abrir caja') }
   }
 
   const handleCerrarCaja = async () => {
@@ -156,7 +156,7 @@ export default function Venta() {
       const r = await cerrarCaja(); setCarrito([]); setAlumno(null); setVistaVentas(false)
       showMsg('ok', r?.sinConexion ? 'Caja cerrada sin conexión: el cierre se registra al volver internet' : 'Caja cerrada')
     }
-    catch (err) { showMsg('error', 'Error al cerrar caja') }
+    catch (err) { showMsg('error', err.response?.data?.error || 'Error al cerrar caja') }
   }
 
   const addProd = (p, confirmado = false) => {

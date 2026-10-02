@@ -1,7 +1,8 @@
 /**
- * Liquidaciones a concesionarios: la plata de las recargas entra a la cuenta
- * del colegio y, por cada zona que opera un concesionario, el colegio le paga
- * lo vendido (menos anulaciones) menos su canon.
+ * Liquidaciones por zona: la plata de las recargas entra a la cuenta del
+ * colegio y, por cada zona que opera un concesionario o un empleado encargado,
+ * el colegio le paga lo vendido (menos anulaciones) menos su canon o comisión
+ * (opcional: con un encargado suele ser 0 y se le liquida todo).
  *
  * Cada liquidación se queda con las ventas y anulaciones de la zona que
  * todavía no estaban liquidadas, hasta la fecha de corte. Así una venta sin
@@ -58,7 +59,7 @@ const getZonas = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   try {
     const r = await pool.query(
-      `SELECT l.nombre AS local, z.operador, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
+      `SELECT l.nombre AS local, z.operador, z.tipo, z.empleado_id, z.contacto, z.email, z.telefono, z.cuenta_pago, z.canon_pct,
          (SELECT MAX(hasta) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre) AS ultima_hasta,
          (SELECT COUNT(*) FROM liquidaciones q WHERE q.colegio_id = $1 AND q.local = l.nombre AND q.estado = 'pendiente') AS por_pagar
        FROM locales l
@@ -85,10 +86,17 @@ const getZonas = async (req, res) => {
 const guardarZona = async (req, res) => {
   const colegioId = req.empleado.colegio_id;
   const local = String(req.params.local || '');
-  const operador = texto(req.body.operador, 120);
+  const tipo = req.body.tipo === 'encargado' ? 'encargado' : 'concesionario';
+  let operador = texto(req.body.operador, 120);
+  let empleadoId = null;
   try {
     const existe = await pool.query('SELECT 1 FROM locales WHERE colegio_id = $1 AND nombre = $2', [colegioId, local]);
     if (!existe.rows.length) return res.status(404).json({ error: 'Zona no encontrada' });
+    if (tipo === 'encargado' && req.body.empleado_id) {
+      const e = await pool.query('SELECT id, nombre FROM empleados WHERE id = $1 AND colegio_id = $2 AND activo', [req.body.empleado_id, colegioId]);
+      if (!e.rows.length) return res.status(400).json({ error: 'El encargado tiene que ser un empleado activo del colegio' });
+      empleadoId = e.rows[0].id; operador = e.rows[0].nombre;
+    } else if (tipo === 'encargado' && operador) return res.status(400).json({ error: 'Elegí qué empleado está a cargo de la zona' });
     if (!operador) {
       await pool.query('DELETE FROM zonas_operador WHERE colegio_id = $1 AND local = $2', [colegioId, local]);
       await registrar(req.empleado.id, colegioId, 'Zona operada por el colegio', local);
@@ -99,13 +107,13 @@ const guardarZona = async (req, res) => {
     const email = texto(req.body.email, 150);
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'El email no es válido' });
     const r = await pool.query(
-      `INSERT INTO zonas_operador (colegio_id, local, operador, contacto, email, telefono, cuenta_pago, canon_pct)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (colegio_id, local) DO UPDATE SET operador = $3, contacto = $4, email = $5, telefono = $6, cuenta_pago = $7, canon_pct = $8
+      `INSERT INTO zonas_operador (colegio_id, local, operador, contacto, email, telefono, cuenta_pago, canon_pct, tipo, empleado_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (colegio_id, local) DO UPDATE SET operador = $3, contacto = $4, email = $5, telefono = $6, cuenta_pago = $7, canon_pct = $8, tipo = $9, empleado_id = $10
        RETURNING *`,
-      [colegioId, local, operador, texto(req.body.contacto, 120), email, texto(req.body.telefono, 40), texto(req.body.cuenta_pago, 120), canon]
+      [colegioId, local, operador, texto(req.body.contacto, 120), email, texto(req.body.telefono, 40), texto(req.body.cuenta_pago, 120), canon, tipo, empleadoId]
     );
-    await registrar(req.empleado.id, colegioId, 'Concesionario de zona', `${local}: ${operador}, canon ${canon}%`);
+    await registrar(req.empleado.id, colegioId, tipo === 'encargado' ? 'Encargado de zona' : 'Concesionario de zona', `${local}: ${operador}, ${tipo === 'encargado' ? 'comisión' : 'canon'} ${canon}%`);
     res.json(r.rows[0]);
   } catch (err) {
     console.error('Liquidaciones (zona):', err.message);
@@ -124,7 +132,7 @@ const getVistaPrevia = async (req, res) => {
     if (!z.rows.length) return res.status(400).json({ error: 'Esta zona la opera el colegio: no se liquida' });
     const ajuste = Number(req.query.ajuste) || 0;
     const p = await pendiente(pool, colegioId, local, hasta);
-    res.json({ local, operador: z.rows[0].operador, ...p, ...totales(p, z.rows[0].canon_pct, ajuste) });
+    res.json({ local, operador: z.rows[0].operador, tipo_operador: z.rows[0].tipo || 'concesionario', ...p, ...totales(p, z.rows[0].canon_pct, ajuste) });
   } catch (err) {
     console.error('Liquidaciones (vista previa):', err.message);
     res.status(500).json({ error: 'Error del servidor' });
@@ -152,10 +160,10 @@ const crearLiquidacion = async (req, res) => {
     const t = totales(p, zona.canon_pct, ajuste);
     const liq = await client.query(
       `INSERT INTO liquidaciones (colegio_id, local, operador, desde, hasta, ventas, cantidad_ventas, anulaciones, cantidad_anulaciones,
-         canon_pct, canon, ajuste, ajuste_motivo, total, creado_por)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *, to_char(desde, 'YYYY-MM-DD') AS desde, to_char(hasta, 'YYYY-MM-DD') AS hasta`,
+         canon_pct, canon, ajuste, ajuste_motivo, total, creado_por, tipo_operador)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *, to_char(desde, 'YYYY-MM-DD') AS desde, to_char(hasta, 'YYYY-MM-DD') AS hasta`,
       [colegioId, local, zona.operador, p.desde, hasta, p.ventas, p.cantidad_ventas, p.anulaciones, p.cantidad_anulaciones,
-        t.canon_pct, t.canon, t.ajuste, ajusteMotivo, t.total, req.empleado.id]
+        t.canon_pct, t.canon, t.ajuste, ajusteMotivo, t.total, req.empleado.id, zona.tipo || 'concesionario']
     );
     const id = liq.rows[0].id;
     const marcadas = await client.query(

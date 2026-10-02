@@ -4,11 +4,15 @@ import autoTable from 'jspdf-autotable'
 import api from '../api/axios'
 import { SkeletonTable } from '../components/Skeleton'
 
-// Liquidaciones a concesionarios: la plata de las recargas entra a la cuenta del
-// colegio y, por cada zona que opera un concesionario, el colegio le paga lo que
-// vendió en su zona menos el canon
+// Liquidaciones por zona: la plata de las recargas entra a la cuenta del colegio
+// y, por cada zona que opera un concesionario o un empleado encargado, el colegio
+// le paga lo que vendió en su zona menos el canon o la comisión (opcional)
 const fmt = n => `${Number(n) < 0 ? '−' : ''}$${Math.abs(Math.round(Number(n) || 0)).toLocaleString('es-AR')}`
 const dia = d => (d ? new Date(d + 'T12:00:00Z').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—')
+// Cómo se llama lo que se queda el colegio según quién opera la zona
+const nombreCanon = tipo => (tipo === 'encargado' ? 'Comisión' : 'Canon')
+const MODOS = [['colegio', 'El colegio'], ['encargado', 'Un encargado'], ['concesionario', 'Un concesionario']]
+
 const hoyAR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 
 const tarjeta = { background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }
@@ -42,9 +46,9 @@ function Cuentas({ l }) {
     <div>
       {fila(`Ventas (${l.cantidad_ventas})`, fmt(l.ventas))}
       {Number(l.anulaciones) > 0 && fila(`Anulaciones (${l.cantidad_anulaciones})`, '− ' + fmt(l.anulaciones))}
-      {Number(l.canon_pct) > 0 && fila(`Canon del colegio (${Number(l.canon_pct)}%)`, '− ' + fmt(l.canon))}
+      {Number(l.canon_pct) > 0 && fila(`${nombreCanon(l.tipo_operador)} del colegio (${Number(l.canon_pct)}%)`, '− ' + fmt(l.canon))}
       {Number(l.ajuste) !== 0 && fila(`Ajuste${l.ajuste_motivo ? `: ${l.ajuste_motivo}` : ''}`, (Number(l.ajuste) < 0 ? '− ' : '+ ') + fmt(Math.abs(l.ajuste)))}
-      {fila('Total a pagar al concesionario', fmt(l.total), true)}
+      {fila(l.tipo_operador === 'encargado' ? 'Total a pagar al encargado' : 'Total a pagar al concesionario', fmt(l.total), true)}
     </div>
   )
 }
@@ -58,6 +62,7 @@ export default function Liquidaciones() {
   const [liquidar, setLiquidar] = useState(null)         // { local, hasta, ajuste, ajuste_motivo, vista, guardando }
   const [detalle, setDetalle] = useState(null)           // liquidación con por_dia y por_producto
   const [referencia, setReferencia] = useState('')
+  const [empleados, setEmpleados] = useState([])
 
   const showMsg = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg(m => (m?.texto === texto ? null : m)), 5000) }
 
@@ -85,10 +90,23 @@ export default function Liquidaciones() {
     return () => { vigente = false; clearTimeout(t) }
   }, [localLiq, hastaLiq, ajusteLiq])
 
+  const editarZona = z => {
+    setZonaEditada({
+      local: z.local, modo: z.operador ? (z.tipo || 'concesionario') : 'colegio',
+      operador: z.tipo === 'encargado' ? '' : (z.operador || ''), empleado_id: z.empleado_id ? String(z.empleado_id) : '',
+      contacto: z.contacto || '', email: z.email || '', telefono: z.telefono || '', cuenta_pago: z.cuenta_pago || '', canon_pct: z.canon_pct ?? 0,
+    })
+    if (!empleados.length) api.get('/empleados').then(r => setEmpleados(r.data.filter(e => e.activo))).catch(() => {})
+  }
+
+  const zonaLista = z => z.modo === 'colegio' || (z.modo === 'encargado' ? !!z.empleado_id : !!z.operador.trim())
+
   const guardarZona = async () => {
+    const z = zonaEditada
+    const nombre = z.modo === 'encargado' ? empleados.find(e => String(e.id) === z.empleado_id)?.nombre : z.operador
     try {
-      await api.put(`/liquidaciones/zonas/${encodeURIComponent(zonaEditada.local)}`, zonaEditada.esColegio ? { operador: '' } : zonaEditada)
-      showMsg('ok', zonaEditada.esColegio ? `${zonaEditada.local} queda a cargo del colegio` : `${zonaEditada.local}: lo opera ${zonaEditada.operador}`)
+      await api.put(`/liquidaciones/zonas/${encodeURIComponent(z.local)}`, z.modo === 'colegio' ? { operador: '' } : { ...z, tipo: z.modo, operador: nombre })
+      showMsg('ok', z.modo === 'colegio' ? `${z.local} queda a cargo del colegio` : `${z.local}: ${z.modo === 'encargado' ? 'la maneja' : 'la opera'} ${nombre}`)
       setZonaEditada(null); cargar()
     } catch (err) { showMsg('error', err.response?.data?.error || 'No se pudo guardar') }
   }
@@ -135,7 +153,7 @@ export default function Liquidaciones() {
     doc.text(l.estado === 'pagada' ? `Pagada${l.referencia_pago ? ` · ${l.referencia_pago}` : ''}` : 'Pendiente de pago', 14, 31)
     const cuentas = [[`Ventas (${l.cantidad_ventas})`, fmt(l.ventas)]]
     if (Number(l.anulaciones)) cuentas.push([`Anulaciones (${l.cantidad_anulaciones})`, '− ' + fmt(l.anulaciones)])
-    if (Number(l.canon_pct)) cuentas.push([`Canon del colegio (${Number(l.canon_pct)}%)`, '− ' + fmt(l.canon)])
+    if (Number(l.canon_pct)) cuentas.push([`${nombreCanon(l.tipo_operador)} del colegio (${Number(l.canon_pct)}%)`, '− ' + fmt(l.canon)])
     if (Number(l.ajuste)) cuentas.push([`Ajuste${l.ajuste_motivo ? `: ${l.ajuste_motivo}` : ''}`, (Number(l.ajuste) < 0 ? '− ' : '+ ') + fmt(Math.abs(l.ajuste))])
     cuentas.push(['Total a pagar', fmt(l.total)])
     autoTable(doc, { startY: 36, body: cuentas, theme: 'plain', styles: { fontSize: 11 }, columnStyles: { 1: { halign: 'right' } }, didParseCell: d => { if (d.row.index === cuentas.length - 1) d.cell.styles.fontStyle = 'bold' } })
@@ -152,8 +170,8 @@ export default function Liquidaciones() {
       <div style={{ marginBottom: 20, maxWidth: 720 }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Liquidaciones</h1>
         <p style={{ color: 'var(--text)', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
-          Las recargas entran a la cuenta del colegio. Si una zona la opera un concesionario, acá se calcula cuánto pagarle:
-          lo que vendió en su zona, menos las anulaciones y el canon del colegio. Lo que se sube tarde o se anula después entra en la liquidación siguiente.
+          Las recargas entran a la cuenta del colegio. Si una zona la maneja un encargado o la opera un concesionario, acá se calcula cuánto pagarle:
+          lo que vendió en su zona, menos las anulaciones y, si corresponde, la comisión del colegio. Lo que se sube tarde o se anula después entra en la liquidación siguiente.
         </p>
       </div>
 
@@ -168,7 +186,9 @@ export default function Liquidaciones() {
                 <div>
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{z.local}</p>
                   <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-                    {z.operador ? <>Concesionario: <b style={{ color: 'var(--text)' }}>{z.operador}</b> · canon {z.canon_pct}%</> : 'La opera el colegio: no se liquida'}
+                    {z.operador
+                      ? <>{z.tipo === 'encargado' ? 'Encargado' : 'Concesionario'}: <b style={{ color: 'var(--text)' }}>{z.operador}</b> · {z.canon_pct ? `${nombreCanon(z.tipo).toLowerCase()} ${z.canon_pct}%` : 'se le liquida todo'}</>
+                      : 'La maneja el colegio: no se liquida'}
                   </p>
                 </div>
                 {z.operador && (
@@ -179,7 +199,7 @@ export default function Liquidaciones() {
                 )}
                 <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 4 }}>
                   {z.operador && <button disabled={!z.pendiente?.cantidad_ventas && !z.pendiente?.cantidad_anulaciones} onClick={() => setLiquidar({ local: z.local, hasta: hoyAR(), ajuste: '', ajuste_motivo: '' })} style={{ ...boton(true), opacity: z.pendiente?.cantidad_ventas || z.pendiente?.cantidad_anulaciones ? 1 : 0.5 }}>Liquidar</button>}
-                  <button onClick={() => setZonaEditada({ local: z.local, esColegio: !z.operador, operador: z.operador || '', contacto: z.contacto || '', email: z.email || '', telefono: z.telefono || '', cuenta_pago: z.cuenta_pago || '', canon_pct: z.canon_pct ?? 10 })} style={boton(false)}>{z.operador ? 'Editar' : 'Asignar concesionario'}</button>
+                  <button onClick={() => editarZona(z)} style={boton(false)}>{z.operador ? 'Editar' : 'Asignar encargado'}</button>
                 </div>
               </div>
             ))}
@@ -191,11 +211,11 @@ export default function Liquidaciones() {
           </div>
           <div style={{ ...tarjeta, overflow: 'hidden' }}>
             {lista.length === 0 ? (
-              <p style={{ padding: '1.5rem', margin: 0, textAlign: 'center', fontSize: 14, color: 'var(--text-secondary)' }}>Todavía no hay liquidaciones. Asigná un concesionario a una zona y tocá Liquidar.</p>
+              <p style={{ padding: '1.5rem', margin: 0, textAlign: 'center', fontSize: 14, color: 'var(--text-secondary)' }}>Todavía no hay liquidaciones. Asigná un encargado o un concesionario a una zona y tocá Liquidar.</p>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr>{['N°', 'Zona', 'Concesionario', 'Período', 'Vendido neto', 'Canon', 'Total', 'Estado'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+                  <thead><tr>{['N°', 'Zona', 'A quién', 'Período', 'Vendido neto', 'Comisión', 'Total', 'Estado'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
                   <tbody>
                     {lista.map(l => (
                       <tr key={l.id} onClick={() => abrirDetalle(l.id)} style={{ cursor: 'pointer' }}>
@@ -221,32 +241,45 @@ export default function Liquidaciones() {
 
       {zonaEditada && (
         <Modal titulo={`Quién opera ${zonaEditada.local}`} onCerrar={() => setZonaEditada(null)}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {[[true, 'El colegio'], [false, 'Un concesionario']].map(([v, texto]) => (
-              <button key={texto} aria-pressed={zonaEditada.esColegio === v} onClick={() => setZonaEditada(z => ({ ...z, esColegio: v }))} style={{ ...boton(zonaEditada.esColegio === v), flex: 1 }}>{texto}</button>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+            {MODOS.map(([v, texto]) => (
+              <button key={v} aria-pressed={zonaEditada.modo === v} onClick={() => setZonaEditada(z => ({ ...z, modo: v }))} style={{ ...boton(zonaEditada.modo === v), flex: '1 1 120px' }}>{texto}</button>
             ))}
           </div>
-          {zonaEditada.esColegio ? (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Lo que se vende en {zonaEditada.local} es del colegio: no se liquida a nadie.</p>
+          {zonaEditada.modo === 'colegio' ? (
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Lo que se vende en {zonaEditada.local} queda en el colegio: no se liquida a nadie.</p>
           ) : (
             <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-              <div><label style={etiqueta} htmlFor="z-op">Concesionario</label><input id="z-op" value={zonaEditada.operador} onChange={e => setZonaEditada(z => ({ ...z, operador: e.target.value }))} placeholder="Ej.: Cantina Don Pepe" autoFocus /></div>
+              {zonaEditada.modo === 'encargado' ? (
+                <div>
+                  <label style={etiqueta} htmlFor="z-emp">Empleado a cargo</label>
+                  <select id="z-emp" value={zonaEditada.empleado_id} onChange={e => setZonaEditada(z => ({ ...z, empleado_id: e.target.value }))}>
+                    <option value="">Elegí un empleado…</option>
+                    {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}{e.local_nombre ? ` · ${e.local_nombre}` : ''}</option>)}
+                  </select>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>Se le liquida lo que vende la zona para que pueda reponer y comprar mercadería.</p>
+                </div>
+              ) : (
+                <div><label style={etiqueta} htmlFor="z-op">Concesionario</label><input id="z-op" value={zonaEditada.operador} onChange={e => setZonaEditada(z => ({ ...z, operador: e.target.value }))} placeholder="Ej.: Cantina Don Pepe" autoFocus /></div>
+              )}
               <div>
-                <label style={etiqueta} htmlFor="z-canon">Canon del colegio (%)</label>
+                <label style={etiqueta} htmlFor="z-canon">{zonaEditada.modo === 'encargado' ? 'Comisión del colegio (%) — opcional' : 'Canon del colegio (%)'}</label>
                 <input id="z-canon" type="number" min="0" max="100" step="0.5" value={zonaEditada.canon_pct} onChange={e => setZonaEditada(z => ({ ...z, canon_pct: e.target.value }))} />
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>Lo que se queda el colegio de cada venta (si no cobra nada, 0).</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{zonaEditada.modo === 'encargado' ? 'Con 0 se le liquida el total de las ventas. Si el colegio se queda con una parte, poné el porcentaje.' : 'Lo que se queda el colegio de cada venta (si no cobra nada, 0).'}</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-                <div><label style={etiqueta} htmlFor="z-cont">Contacto</label><input id="z-cont" value={zonaEditada.contacto} onChange={e => setZonaEditada(z => ({ ...z, contacto: e.target.value }))} placeholder="Nombre" /></div>
-                <div><label style={etiqueta} htmlFor="z-tel">Teléfono</label><input id="z-tel" value={zonaEditada.telefono} onChange={e => setZonaEditada(z => ({ ...z, telefono: e.target.value }))} /></div>
-              </div>
+              {zonaEditada.modo === 'concesionario' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                  <div><label style={etiqueta} htmlFor="z-cont">Contacto</label><input id="z-cont" value={zonaEditada.contacto} onChange={e => setZonaEditada(z => ({ ...z, contacto: e.target.value }))} placeholder="Nombre" /></div>
+                  <div><label style={etiqueta} htmlFor="z-tel">Teléfono</label><input id="z-tel" value={zonaEditada.telefono} onChange={e => setZonaEditada(z => ({ ...z, telefono: e.target.value }))} /></div>
+                </div>
+              )}
               <div><label style={etiqueta} htmlFor="z-mail">Email (para mandarle cada liquidación)</label><input id="z-mail" type="email" value={zonaEditada.email} onChange={e => setZonaEditada(z => ({ ...z, email: e.target.value }))} /></div>
               <div><label style={etiqueta} htmlFor="z-cta">CBU o alias donde se le paga</label><input id="z-cta" value={zonaEditada.cuenta_pago} onChange={e => setZonaEditada(z => ({ ...z, cuenta_pago: e.target.value }))} /></div>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <button onClick={() => setZonaEditada(null)} style={boton(false)}>Cancelar</button>
-            <button onClick={guardarZona} disabled={!zonaEditada.esColegio && !zonaEditada.operador.trim()} style={{ ...boton(true), opacity: !zonaEditada.esColegio && !zonaEditada.operador.trim() ? 0.5 : 1 }}>Guardar</button>
+            <button onClick={guardarZona} disabled={!zonaLista(zonaEditada)} style={{ ...boton(true), opacity: zonaLista(zonaEditada) ? 1 : 0.5 }}>Guardar</button>
           </div>
         </Modal>
       )}

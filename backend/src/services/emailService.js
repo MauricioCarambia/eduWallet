@@ -247,7 +247,7 @@ const enviarEmailLiquidacion = async ({ colegioId, email, liq }) => {
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
       ${fila(`Ventas (${liq.cantidad_ventas})`, pesos(liq.ventas))}
       ${Number(liq.anulaciones) ? fila(`Anulaciones (${liq.cantidad_anulaciones})`, '− ' + pesos(liq.anulaciones)) : ''}
-      ${Number(liq.canon) ? fila(`Canon del colegio (${Number(liq.canon_pct)}%)`, '− ' + pesos(liq.canon)) : ''}
+      ${Number(liq.canon) ? fila(`${liq.tipo_operador === 'encargado' ? 'Comisión' : 'Canon'} del colegio (${Number(liq.canon_pct)}%)`, '− ' + pesos(liq.canon)) : ''}
       ${Number(liq.ajuste) ? fila(`Ajuste${liq.ajuste_motivo ? ': ' + escapar(liq.ajuste_motivo) : ''}`, (Number(liq.ajuste) < 0 ? '− ' : '') + pesos(Math.abs(liq.ajuste))) : ''}
       ${fila('Total a cobrar', pesos(liq.total), true)}
     </table>

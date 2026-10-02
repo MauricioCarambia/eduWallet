@@ -3,8 +3,9 @@
  * La plata de las recargas entra a la cuenta del colegio; cuando una zona la
  * opera un concesionario, el colegio le liquida lo vendido en esa zona menos
  * su canon.
- * - zonas_operador: quién opera cada zona (sin fila = la opera el colegio) y
- *   el canon (% que se queda el colegio).
+ * - zonas_operador: quién opera cada zona (sin fila = la opera el colegio):
+ *   un concesionario o un empleado encargado (tipo, empleado_id), y el canon o
+ *   comisión (% que se queda el colegio; con un encargado suele ser 0).
  * - liquidaciones: cada corte, con sus totales y si ya se pagó.
  * - transacciones.liquidacion_id: en qué liquidación entró cada venta o
  *   anulación, así nada se liquida dos veces y lo que se sube tarde (ventas
@@ -56,6 +57,10 @@ const migrarLiquidaciones = async () => {
       referencia_pago VARCHAR(200)
     );
     CREATE INDEX IF NOT EXISTS ix_liquidaciones_colegio ON liquidaciones (colegio_id, local);
+
+    ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS tipo VARCHAR(15) NOT NULL DEFAULT 'concesionario';
+    ALTER TABLE zonas_operador ADD COLUMN IF NOT EXISTS empleado_id INTEGER;
+    ALTER TABLE liquidaciones ADD COLUMN IF NOT EXISTS tipo_operador VARCHAR(15) NOT NULL DEFAULT 'concesionario';
 
     ALTER TABLE transacciones ADD COLUMN IF NOT EXISTS liquidacion_id INTEGER;
     CREATE INDEX IF NOT EXISTS ix_transacciones_sin_liquidar ON transacciones (colegio_id, lugar)

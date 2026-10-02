@@ -3,6 +3,7 @@ const { notificarCompra, notificarRechazo } = require('../services/notificacione
 const { evaluarReglas, conflictosAlergia, listaAlergenos } = require('../services/reglasCompra');
 const { registrar } = require('./auditoriaController');
 const { duracionVenta } = require('../services/duracionVenta');
+const { alumnoPara } = require('../services/privacidad');
 
 const { compradoHoyPorCategoria, gastoDeLaSemana, gastoPorZona } = require('../services/consumoAlumno');
 const tieneMaximos = a => Object.keys(a.restricciones?.maximos || {}).length > 0;
@@ -117,7 +118,7 @@ const cobrar = async (req, res) => {
       if (ya.rows.length) {
         await client.query('ROLLBACK');
         const al = await pool.query('SELECT * FROM alumnos WHERE id = $1', [ya.rows[0].alumno_id]);
-        return res.json({ transaccion: ya.rows[0], alumno: al.rows[0], repetida: true });
+        return res.json({ transaccion: ya.rows[0], alumno: alumnoPara(req.empleado, al.rows[0]), repetida: true });
       }
     }
 
@@ -272,7 +273,7 @@ const cobrar = async (req, res) => {
       saldoAnterior: a.saldo, saldoNuevo: alumnoActualizado.saldo,
     });
 
-    res.json({ transaccion: tx.rows[0], alumno: alumnoActualizado });
+    res.json({ transaccion: tx.rows[0], alumno: alumnoPara(req.empleado, alumnoActualizado) });
 
   } catch (err) {
     await client.query('ROLLBACK');
@@ -280,7 +281,7 @@ const cobrar = async (req, res) => {
     if (err.code === '23505' && id_venta) {
       const ya = await pool.query('SELECT * FROM transacciones WHERE colegio_id = $1 AND id_venta = $2', [req.empleado.colegio_id, id_venta]);
       const al = ya.rows[0] ? await pool.query('SELECT * FROM alumnos WHERE id = $1', [ya.rows[0].alumno_id]) : { rows: [] };
-      return res.json({ transaccion: ya.rows[0], alumno: al.rows[0], repetida: true });
+      return res.json({ transaccion: ya.rows[0], alumno: alumnoPara(req.empleado, al.rows[0]), repetida: true });
     }
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
@@ -384,7 +385,7 @@ const anularVenta = async (req, res) => {
 
     const alumno = await pool.query('SELECT * FROM alumnos WHERE id = $1', [t.alumno_id]);
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Venta anulada', `${alumno.rows[0]?.nombre || 'Alumno'}: ${t.descripcion} ($${Number(t.monto)}) en ${t.lugar}. Se devolvió el saldo.`);
-    res.json({ mensaje: 'Venta anulada correctamente', alumno: alumno.rows[0], monto: t.monto });
+    res.json({ mensaje: 'Venta anulada correctamente', alumno: alumnoPara(req.empleado, alumno.rows[0]), monto: t.monto });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);

@@ -9,6 +9,7 @@ const { variantesUid } = require("../services/tarjetasService");
 const { nuevoCodigoQr, normalizarCodigo, esCodigoQr } = require("../services/credencialesService");
 const { enviarEmailInvitacion } = require("../services/emailService");
 const QRCode = require('qrcode');
+const { alumnoPara } = require('../services/privacidad');
 
 // 8 caracteres al azar (con crypto: Math.random no es seguro para algo que da acceso a un alumno)
 const LETRAS_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -17,7 +18,7 @@ const generarCodigoVinculacion = () => [...crypto.randomBytes(8)].map(b => LETRA
 const getAlumnos = async (req, res) => {
   try {
     const resultado = await pool.query("SELECT * FROM alumnos WHERE colegio_id = $1 ORDER BY nombre", [req.empleado.colegio_id]);
-    res.json(resultado.rows);
+    res.json(resultado.rows.map(a => alumnoPara(req.empleado, a)));
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
   }
@@ -32,7 +33,7 @@ const getAlumno = async (req, res) => {
     if (resultado.rows.length === 0) {
       return res.status(404).json({ error: "Alumno no encontrado" });
     }
-    res.json(resultado.rows[0]);
+    res.json(alumnoPara(req.empleado, resultado.rows[0]));
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
   }
@@ -435,7 +436,7 @@ const identificarAlumno = async (req, res) => {
     if (r.medio === 'tarjeta' && r.alumno.tarjeta_bloqueada) {
       return res.status(403).json({ error: `La familia bloqueó la tarjeta de ${nombre}. Puede pagar con otro medio.`, bloqueado: 'tarjeta' });
     }
-    res.json({ ...r.alumno, medio: r.medio });
+    res.json({ ...alumnoPara(req.empleado, r.alumno), medio: r.medio });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

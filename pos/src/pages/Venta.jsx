@@ -372,20 +372,38 @@ export default function Venta() {
   useLectorTarjeta(leerCodigo, true, { repetidaMs: 0 })
   const lectorEscritorio = useLectorEscritorio()
 
-  // NFC del celular/tablet (Chrome en Android): queda escuchando hasta que se desactiva
+  // NFC del celular/tablet (Chrome en Android): queda escuchando en toda la
+  // pantalla de venta, aunque se busque por nombre o con la cámara. Una vez
+  // dado el permiso se prende solo al entrar, salvo que el cajero lo apague.
   const nfcAbortRef = useRef(null)
-  const detenerNFC = () => { nfcAbortRef.current?.abort(); nfcAbortRef.current = null }
-  useEffect(() => detenerNFC, [])
-  const iniciarNFC = async () => {
-    if (!nfcDisponible()) { showMsg('error', 'Este dispositivo no tiene NFC (sólo Chrome en Android). Usá un lector USB.'); return }
+  const [nfcActivo, setNfcActivo] = useState(false)
+  const leerNfcRef = useRef(null)
+  useEffect(() => { leerNfcRef.current = leerCodigo })
+  const detenerNFC = () => { nfcAbortRef.current?.abort(); nfcAbortRef.current = null; setNfcActivo(false) }
+  const iniciarNFC = async ({ silencioso = false } = {}) => {
+    if (!nfcDisponible()) { if (!silencioso) showMsg('error', 'Este dispositivo no tiene NFC (sólo Chrome en Android). Usá un lector USB.'); return }
     try {
-      detenerNFC()
+      nfcAbortRef.current?.abort()
       const ctrl = new AbortController()
       nfcAbortRef.current = ctrl
-      await escucharNfc(identificar, ctrl.signal)
-      setModoEscaneo('nfc')
-    } catch (err) { showMsg('error', 'Error al activar NFC: ' + err.message); setModoEscaneo('manual') }
+      await escucharNfc(codigo => leerNfcRef.current?.(codigo), ctrl.signal)
+      setNfcActivo(true)
+    } catch (err) { if (!silencioso) showMsg('error', 'Error al activar NFC: ' + err.message); setNfcActivo(false) }
   }
+  const alternarNFC = () => {
+    try { localStorage.setItem('pos_nfc_apagado', nfcActivo ? '1' : '') } catch { /* sin almacenamiento */ }
+    if (nfcActivo) detenerNFC(); else iniciarNFC()
+  }
+  useEffect(() => {
+    let apagado = false
+    try { apagado = localStorage.getItem('pos_nfc_apagado') === '1' } catch { /* sin almacenamiento */ }
+    if (nfcDisponible() && !apagado) {
+      navigator.permissions?.query({ name: 'nfc' })
+        .then(p => { if (p.state === 'granted') iniciarNFC({ silencioso: true }) })
+        .catch(() => {})
+    }
+    return () => nfcAbortRef.current?.abort()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (cargando) return <div style={{ padding: '1rem' }}><SkeletonCards count={6} /></div>
 
@@ -607,13 +625,16 @@ export default function Venta() {
               </div>
               <div id="alumno-search">
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                  {[{ id: 'manual', label: 'Nombre', icono: 'buscar' }, { id: 'qr', label: 'QR', icono: 'camara' }, ...(nfcDisponible() ? [{ id: 'nfc', label: 'NFC', icono: 'nfc' }] : [])].map(m => (
-                    <button key={m.id} onClick={() => {
-                      if (m.id === 'qr') { detenerNFC(); iniciarQR(); setModoEscaneo('qr') }
-                      else if (m.id === 'nfc') { detenerQR(); iniciarNFC() }
-                      else { detenerQR(); detenerNFC(); setModoEscaneo('manual') }
-                    }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${modoEscaneo === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: modoEscaneo === m.id ? 'var(--brand)' : 'var(--bg-card)', color: modoEscaneo === m.id ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: modoEscaneo === m.id ? 600 : 400, cursor: 'pointer' }}><Icono nombre={m.icono} />{m.label}</button>
-                  ))}
+                  {[{ id: 'manual', label: 'Nombre', icono: 'buscar' }, { id: 'qr', label: 'QR', icono: 'camara' }, ...(nfcDisponible() ? [{ id: 'nfc', label: 'NFC', icono: 'nfc' }] : [])].map(m => {
+                    const activo = m.id === 'nfc' ? nfcActivo : modoEscaneo === m.id
+                    return (
+                      <button key={m.id} aria-pressed={activo} onClick={() => {
+                        if (m.id === 'qr') { iniciarQR(); setModoEscaneo('qr') }
+                        else if (m.id === 'nfc') alternarNFC()
+                        else { detenerQR(); setModoEscaneo('manual') }
+                      }} style={{ flex: 1, padding: '8px', border: `1.5px solid ${activo ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 9, background: activo ? 'var(--brand)' : 'var(--bg-card)', color: activo ? 'var(--on-brand)' : 'var(--text-secondary)', fontSize: 12, fontWeight: activo ? 600 : 400, cursor: 'pointer' }}><Icono nombre={m.icono} />{m.label}</button>
+                    )
+                  })}
                 </div>
                 <input placeholder="Buscá por nombre o pasá la credencial..." value={busqAlumno}
                   onChange={e => { setBusqAlumno(e.target.value); setShowSugerencias(true) }}
@@ -646,7 +667,7 @@ export default function Venta() {
                   </div>
                 )}
                 {errorQR && <p style={{ fontSize: 12, color: 'var(--red)', margin: '0 0 6px' }}>{errorQR}</p>}
-                {modoEscaneo === 'nfc' && (
+                {nfcActivo && (
                   <div style={{ padding: '10px 14px', background: 'var(--green-bg)', borderRadius: 8, fontSize: 13, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
                     NFC activo — acercá la tarjeta del alumno

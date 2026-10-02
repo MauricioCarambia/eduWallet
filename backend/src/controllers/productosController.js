@@ -45,6 +45,13 @@ const normalizarCodigoBarras = v => {
   return c ? c.slice(0, 50) : null;
 };
 
+// Precio de compra por unidad (lo pone el empleado); vacío = sin cargar
+const normalizarCosto = v => {
+  if (v === undefined || v === null || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 10000000 ? Math.round(n * 100) / 100 : undefined; // undefined = inválido
+};
+
 // Grupo de variedades (ej. "Alfajores"); vacío = producto suelto
 const normalizarGrupo = v => {
   const g = String(v ?? '').trim().replace(/\s+/g, ' ');
@@ -74,6 +81,8 @@ const crearProducto = async (req, res) => {
   if (error) return res.status(400).json({ error });
   const categoria = normalizarCategoria(req.body.categoria) || 'otro';
   const codigo = normalizarCodigoBarras(req.body.codigo_barras);
+  const costo = normalizarCosto(req.body.costo);
+  if (costo === undefined) return res.status(400).json({ error: 'El precio de compra tiene que ser un número' });
   const alergenos = normalizarAlergenos(req.body.alergenos);
   try {
     // Un empleado con zona fija siempre crea en su zona
@@ -83,9 +92,9 @@ const crearProducto = async (req, res) => {
     if (existe.rows.length === 0) return res.status(400).json({ error: 'Zona inválida' });
 
     const resultado = await pool.query(
-      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo, alergenos, normalizarGrupo(req.body.grupo)]
+      `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo, costo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [String(nombre).trim(), Number(precio), Math.max(0, parseInt(stock) || 0), categoria, local, req.empleado.colegio_id, codigo, alergenos, normalizarGrupo(req.body.grupo), costo]
     );
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Nuevo producto', `${String(nombre).trim()} — ${Number(precio)} (${local})`);
     res.json(resultado.rows[0]);
@@ -102,6 +111,8 @@ const actualizarProducto = async (req, res) => {
   const nombre = String(req.body.nombre ?? '');
   const error = validarDatos(req.body);
   if (error) return res.status(400).json({ error });
+  const costo = 'costo' in req.body ? normalizarCosto(req.body.costo) : null;
+  if (costo === undefined) return res.status(400).json({ error: 'El precio de compra tiene que ser un número' });
   try {
     const producto = await productoDelColegio(id, req.empleado.colegio_id);
     if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -109,11 +120,12 @@ const actualizarProducto = async (req, res) => {
       return res.status(403).json({ error: `Sólo podés modificar productos de tu zona` });
     }
     const resultado = await pool.query(
-      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4, alergenos = $5, grupo = $6 WHERE id = $7 RETURNING *',
+      'UPDATE productos SET nombre = $1, precio = $2, categoria = $3, codigo_barras = $4, alergenos = $5, grupo = $6, costo = $7 WHERE id = $8 RETURNING *',
       [nombre.trim(), Number(precio), normalizarCategoria(req.body.categoria) || producto.categoria,
         'codigo_barras' in req.body ? normalizarCodigoBarras(req.body.codigo_barras) : producto.codigo_barras,
         Array.isArray(req.body.alergenos) ? normalizarAlergenos(req.body.alergenos) : producto.alergenos,
-        'grupo' in req.body ? normalizarGrupo(req.body.grupo) : producto.grupo, id]
+        'grupo' in req.body ? normalizarGrupo(req.body.grupo) : producto.grupo,
+        'costo' in req.body ? costo : producto.costo, id]
     );
     const cambios = [
       producto.nombre !== nombre.trim() && `nombre: ${producto.nombre} → ${nombre.trim()}`,
@@ -201,6 +213,8 @@ const importarProductos = async (req, res) => {
       const codigo = normalizarCodigoBarras(f.codigo_barras);
       const alergenos = String(f.alergenos ?? '').trim() ? deducirAlergenos(f.alergenos) : null;
       const grupo = normalizarGrupo(f.grupo);
+      const costo = normalizarCosto(f.costo);
+      if (costo === undefined) { errores.push({ fila, error: 'El precio de compra tiene que ser un número' }); continue; }
 
       let previo = null;
       if (codigo) {
@@ -217,16 +231,16 @@ const importarProductos = async (req, res) => {
           await db.query(
             `UPDATE productos SET nombre = $1, precio = $2, categoria = COALESCE($3, categoria),
                codigo_barras = COALESCE($4, codigo_barras), stock = COALESCE($5, stock), alergenos = COALESCE($7, alergenos),
-               grupo = COALESCE($8, grupo)
+               grupo = COALESCE($8, grupo), costo = COALESCE($9, costo)
              WHERE id = $6`,
-            [nombre, precio, categoria, codigo, stock, previo.id, alergenos, grupo]
+            [nombre, precio, categoria, codigo, stock, previo.id, alergenos, grupo, costo]
           );
           actualizados++;
         } else {
           await db.query(
-            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo, alergenos || [], grupo]
+            `INSERT INTO productos (nombre, precio, stock, categoria, local, colegio_id, codigo_barras, alergenos, grupo, costo)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [nombre, precio, stock ?? 0, categoria || 'otro', local, colegioId, codigo, alergenos || [], grupo, costo]
           );
           creados++;
         }

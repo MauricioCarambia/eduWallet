@@ -24,8 +24,9 @@ test('compra con internet: aviso de siempre', async () => {
 });
 
 test('compra sin conexión: dice la hora de Argentina en que se hizo', async () => {
-  const hoyA_las_11_26 = new Date();
-  hoyA_las_11_26.setUTCHours(14, 26, 0, 0); // 11:26 en Argentina
+  // hoy (en Argentina) a las 11:26, aunque el test corra de noche
+  const hoyAR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+  const hoyA_las_11_26 = new Date(`${hoyAR}T11:26:00-03:00`);
   await notificarCompra({ ...compra, saldoNuevo: 2700, sinConexion: hoyA_las_11_26 });
   expect(mockPush.mock.calls[0][1].body).toContain('Compra hecha sin conexión a las 11:26.');
   expect(mockEmail.mock.calls[0][0].sinConexion).toBe('11:26');

@@ -67,7 +67,7 @@ function SelectCategoria({ value, onChange }) {
 const btnSec = { padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-secondary)' }
 const btnPri = { padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }
 
-const FORM_VACIO = { nombre: '', precio: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [], grupo: '' }
+const FORM_VACIO = { nombre: '', precio: '', costo: '', stock: '10', categoria: 'comida', codigo_barras: '', alergenos: [], grupo: '' }
 const limpiarCodigo = c => String(c ?? '').replace(/\s+/g, '')
 
 export default function Productos() {
@@ -131,7 +131,7 @@ export default function Productos() {
   const guardarEdicion = async () => {
     if (!form.nombre) return
     try {
-      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras, alergenos: form.alergenos || [], grupo: form.grupo || '' })
+      const res = await api.put(`/productos/${seleccionado.id}`, { nombre: form.nombre, precio: form.precio, categoria: form.categoria, codigo_barras: form.codigo_barras, alergenos: form.alergenos || [], grupo: form.grupo || '', costo: form.costo ?? '' })
       setProductos(prev => prev.map(p => p.id === res.data.id ? res.data : p))
       showMsg('ok', `Producto ${res.data.nombre} actualizado`); cerrarModal()
     } catch (err) { showMsg('error', err.response?.data?.error || 'Error al guardar el producto') }
@@ -230,7 +230,7 @@ export default function Productos() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Producto', 'Código de barras', 'Precio', 'Stock', 'Categoría', 'Acciones'].map(h => (
+              {['Producto', 'Código de barras', 'Precio', 'Compra', 'Ganancia', 'Stock', 'Categoría', 'Acciones'].map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
               ))}
             </tr>
@@ -245,6 +245,10 @@ export default function Productos() {
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, fontFamily: 'monospace', color: p.codigo_barras ? 'var(--text)' : 'var(--text-tertiary)' }}>{p.codigo_barras || '—'}</td>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)' }}>{fmt(p.precio)}</td>
+                <td style={{ padding: '12px 16px', fontSize: 14, color: p.costo != null ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}>{p.costo != null ? fmt(p.costo) : '—'}</td>
+                <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: p.costo == null ? 'var(--text-tertiary)' : Number(p.precio) > Number(p.costo) ? 'var(--green)' : 'var(--red)' }}>
+                  {p.costo == null ? '—' : <>{fmt(Number(p.precio) - Number(p.costo))} <span style={{ fontWeight: 400, fontSize: 12 }}>({Math.round((Number(p.precio) - Number(p.costo)) / Number(p.precio) * 100)}%)</span></>}
+                </td>
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button onClick={() => editarStock(p.id, -1)} style={{ width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>−</button>
@@ -256,7 +260,7 @@ export default function Productos() {
                 </td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.categoria}</td>
                 <td style={{ padding: '12px 16px', display: 'flex', gap: 6 }}>
-                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '', alergenos: p.alergenos || [], grupo: p.grupo || '' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, precio: String(Number(p.precio)), categoria: p.categoria || 'otro', codigo_barras: p.codigo_barras || '', alergenos: p.alergenos || [], grupo: p.grupo || '', costo: p.costo != null ? String(Number(p.costo)) : '' }); setModal('editar') }} style={{ padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Editar</button>
                   <button onClick={() => eliminar(p.id)} style={{ padding: '4px 10px', border: 'none', borderRadius: 6, background: 'var(--red-bg)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>Eliminar</button>
                 </td>
               </tr>
@@ -270,6 +274,9 @@ export default function Productos() {
         <Modal title={`Nuevo producto — ${local}`} onClose={cerrarModal}>
           <Campo label="Nombre"><input autoFocus value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
+          <Campo label="Precio de compra (opcional)" ayuda={Number(form.costo) > 0 && Number(form.precio) > 0 ? `Ganancia por unidad: ${fmt(Number(form.precio) - Number(form.costo))} (${Math.round((Number(form.precio) - Number(form.costo)) / Number(form.precio) * 100)}% del precio)` : 'Lo que te cuesta cada unidad: sirve para ver la ganancia'}>
+            <input type="number" min="0" value={form.costo ?? ''} onChange={e => setForm(p => ({ ...p, costo: e.target.value }))} placeholder="Ej: 500" />
+          </Campo>
           <Campo label="Stock inicial"><input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} /></Campo>
           <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
           <Campo label="Grupo (opcional)" ayuda="Para variedades del mismo producto (ej. Alfajores): en Venta se muestran juntas en una sola tarjeta">
@@ -292,6 +299,9 @@ export default function Productos() {
         <Modal title={`Editar — ${seleccionado.nombre}`} onClose={cerrarModal}>
           <Campo label="Nombre"><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} /></Campo>
           <Campo label="Precio"><input type="number" value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} /></Campo>
+          <Campo label="Precio de compra (opcional)" ayuda={Number(form.costo) > 0 && Number(form.precio) > 0 ? `Ganancia por unidad: ${fmt(Number(form.precio) - Number(form.costo))} (${Math.round((Number(form.precio) - Number(form.costo)) / Number(form.precio) * 100)}% del precio)` : 'Lo que te cuesta cada unidad: sirve para ver la ganancia'}>
+            <input type="number" min="0" value={form.costo ?? ''} onChange={e => setForm(p => ({ ...p, costo: e.target.value }))} placeholder="Ej: 500" />
+          </Campo>
           <Campo label="Categoría"><SelectCategoria value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} /></Campo>
           <Campo label="Grupo (opcional)" ayuda="Para variedades del mismo producto (ej. Alfajores): en Venta se muestran juntas en una sola tarjeta">
             <input list="grupos-zona" value={form.grupo || ''} onChange={e => setForm(p => ({ ...p, grupo: e.target.value }))} placeholder="Ej: Alfajores" />
@@ -342,7 +352,7 @@ export default function Productos() {
           ) : (
             <div>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b>, <b>codigo_barras</b>, <b>alergenos</b> y <b>grupo</b> (ej.: "maní, gluten").
+                Subí un Excel (.xlsx) o CSV con las columnas <b>nombre</b> y <b>precio</b>, y si querés <b>stock</b>, <b>categoria</b>, <b>codigo_barras</b>, <b>alergenos</b>, <b>grupo</b> y <b>costo</b> (precio de compra) (ej.: "maní, gluten").
                 Los productos que ya existen en {local} (mismo código o mismo nombre) se actualizan; el resto se crea.
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>

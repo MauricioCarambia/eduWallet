@@ -14,6 +14,8 @@ const COLUMNAS = {
   codigo_barras: ['codigo barras', 'codigo de barras', 'cod barras', 'codigo', 'ean', 'barcode', 'upc'],
   alergenos: ['alergenos', 'alergeno', 'alergias', 'contiene'],
   grupo: ['grupo', 'familia', 'variedad', 'linea'],
+  costo: ['costo', 'precio compra', 'precio de compra', 'compra'],
+  unidades_bulto: ['bulto', 'unidades bulto', 'unidades por bulto', 'x caja', 'unidades por caja', 'caja'],
 }
 
 // "$ 1.500,50" → 1500.5 · "1500.5" → 1500.5 · "1.500" → 1500 (punto de miles)
@@ -92,6 +94,8 @@ export function filasAProductos(filas) {
       codigo_barras: typeof codigo === 'string' ? codigo : '',
       alergenos: String(celda('alergenos')).trim(),
       grupo: String(celda('grupo')).trim(),
+      costo: leerNumero(celda('costo')),
+      unidades_bulto: leerNumero(celda('unidades_bulto')) || 1,
       aviso: typeof codigo === 'string' ? null : codigo.error,
     })
   })

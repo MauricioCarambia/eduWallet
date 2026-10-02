@@ -88,6 +88,7 @@ app.use('/api/mp', mpRoutes);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/conciliacion', conciliacionRoutes);
 app.use('/api/offline', require('./routes/offline'));
+app.use('/api/proveedores', require('./routes/proveedores'));
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'KoleTap API Docs',

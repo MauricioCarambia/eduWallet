@@ -1,6 +1,15 @@
 {
   "cleanUrls": true,
   "headers": [
-    { "source": "/capturas/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
-  ]
+    {
+      "source": "/capturas/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
+    }
+  ],
+  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff --quiet $VERCEL_GIT_PREVIOUS_SHA HEAD -- ."
 }

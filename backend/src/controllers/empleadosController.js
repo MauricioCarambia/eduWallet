@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { registrar } = require('./auditoriaController');
+const { olvidarSesion } = require('../middlewares/auth');
 
 // ─── Activación de cuentas ──────────────────────────────────────────────────
 // El admin da de alta al empleado sin PIN; el sistema genera un código de un
@@ -187,6 +188,7 @@ const asignarZona = async (req, res) => {
       [localId, id, req.empleado.colegio_id]
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: 'Empleado no encontrado' });
+    olvidarSesion('empleado', resultado.rows[0].id); // la zona nueva vale enseguida
     await registrar(req.empleado.id, req.empleado.colegio_id, 'Zona reasignada', `Empleado: ${resultado.rows[0].nombre}`);
     res.json(resultado.rows[0]);
   } catch (err) {
@@ -196,13 +198,17 @@ const asignarZona = async (req, res) => {
 
 const toggleEmpleado = async (req, res) => {
   const { id } = req.params;
+  if (Number(id) === req.empleado.id) return res.status(400).json({ error: 'No podés desactivar tu propio usuario' });
   try {
     const resultado = await pool.query(
       'UPDATE empleados SET activo = NOT activo WHERE id = $1 AND colegio_id = $2 RETURNING id, nombre, activo',
       [id, req.empleado.colegio_id]
     );
     if (resultado.rows.length === 0) return res.status(404).json({ error: 'Empleado no encontrado' });
-    res.json(resultado.rows[0]);
+    const e = resultado.rows[0];
+    olvidarSesion('empleado', e.id); // desactivado: deja de poder usar el sistema enseguida
+    await registrar(req.empleado.id, req.empleado.colegio_id, e.activo ? 'Empleado activado' : 'Empleado desactivado', e.nombre);
+    res.json(e);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }

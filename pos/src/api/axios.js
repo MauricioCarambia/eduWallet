@@ -21,7 +21,8 @@ api.interceptors.response.use(
     // Sólo los errores de sesión cierran la sesión; un 403 del negocio (QR bloqueado por la
     // familia, regla de compra, producto de otra zona) se muestra y el cajero sigue
     const status = error.response?.status;
-    const deSesion = status === 401 || (status === 403 && /token|acceso restringido|no operan el POS/i.test(error.response?.data?.error || ''));
+    // (y solo si el pedido llevaba sesión: un 401 del login es el PIN incorrecto y se muestra)
+    const deSesion = !!error.config?.headers?.Authorization && (status === 401 || (status === 403 && /token|acceso restringido|no operan el POS/i.test(error.response?.data?.error || '')));
     if (deSesion) {
       localStorage.removeItem('pos_token');
       localStorage.removeItem('pos_sesion');

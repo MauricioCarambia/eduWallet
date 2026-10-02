@@ -1,4 +1,5 @@
 const pool = require('../db/conexion');
+const { olvidarSesion } = require('../middlewares/auth');
 const { registrarPadreEnColegio } = require('../db/migracion_padres_colegios');
 
 // El padre es parte del colegio (aunque no tenga alumnos vinculados ahora)
@@ -40,6 +41,7 @@ const togglePadre = async (req, res) => {
       'UPDATE padres SET activo = NOT activo WHERE id = $1 RETURNING id, nombre, activo',
       [id]
     );
+    olvidarSesion('padre', id);
     res.json(resultado.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });

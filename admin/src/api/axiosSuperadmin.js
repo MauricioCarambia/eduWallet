@@ -16,7 +16,7 @@ superadminApi.interceptors.response.use(
   response => response,
   error => {
     const esLogin = error.config?.url?.includes('/login');
-    if (!esLogin && (error.response?.status === 401 || error.response?.status === 403)) {
+    if (!esLogin && error.response?.status === 401) {
       localStorage.removeItem('superadmin_token');
       window.location.href = '/superadmin';
     }

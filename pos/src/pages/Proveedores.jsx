@@ -3,7 +3,7 @@ import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { useLocales } from '../hooks/useLocales'
 import useLectorTarjeta from '../hooks/useLectorTarjeta'
-import useUmbralStock from '../hooks/useUmbralStock'
+import useUmbralStock, { useConfigColegio } from '../hooks/useUmbralStock'
 import { leerArchivo } from '../utils/importarProductos'
 import Icono from '../components/Icono'
 
@@ -72,6 +72,7 @@ export default function Proveedores() {
   const { sesion } = useAuth()
   const { locales } = useLocales()
   const umbral = useUmbralStock()
+  const nombreColegio = useConfigColegio().nombre_colegio
   const zonaFija = sesion?.local || null
   const [local, setLocal] = useState('')
   const [tab, setTab] = useState('pedidos')
@@ -175,7 +176,7 @@ export default function Proveedores() {
           <div style={{ display: 'grid', gap: 10 }}>
             {pedidosZona.map(p => {
               const unidades = p.items.reduce((s, i) => s + i.bultos * i.unidades_bulto, 0)
-              const wa = p.estado === 'pedido' && linkWhatsapp(p.proveedor_telefono, textoPedido(p, sesion?.colegio_nombre))
+              const wa = p.estado === 'pedido' && linkWhatsapp(p.proveedor_telefono, textoPedido(p, nombreColegio))
               return (
                 <div key={p.id} style={{ ...tarjeta, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 220 }}>

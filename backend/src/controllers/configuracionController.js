@@ -16,7 +16,9 @@ const getConfiguracion = async (req, res) => {
 const getMiColegio = async (req, res) => {
   try {
     const resultado = await pool.query(
-      'SELECT nombre_colegio, logo, umbral_stock_bajo FROM configuracion WHERE colegio_id = $1',
+      // Sin nombre en Configuración, el nombre con el que se dio de alta el colegio
+      `SELECT COALESCE(NULLIF(c.nombre_colegio, ''), co.nombre) AS nombre_colegio, c.logo, COALESCE(c.umbral_stock_bajo, 5) AS umbral_stock_bajo
+       FROM colegios co LEFT JOIN configuracion c ON c.colegio_id = co.id WHERE co.id = $1`,
       [req.empleado.colegio_id]
     );
     res.json(resultado.rows[0] || { nombre_colegio: 'KoleTap', logo: null, umbral_stock_bajo: 5 });

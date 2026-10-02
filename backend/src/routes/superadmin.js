@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { login, getColegios, crearColegio, actualizarColegio, buscarAlumnos, ajustarSaldo } = require('../controllers/superadminController');
+const { getMetricas } = require('../controllers/metricasController');
 const { verificarSuperAdmin } = require('../middlewares/auth');
 const { loginEmpleadosLimiter } = require('../middlewares/rateLimiter');
 
@@ -13,6 +14,8 @@ const { loginEmpleadosLimiter } = require('../middlewares/rateLimiter');
 
 router.post('/login', loginEmpleadosLimiter, login);
 router.get('/colegios', verificarSuperAdmin, getColegios);
+// Métricas de uso, dinero y velocidad de atención (?desde&hasta YYYY-MM-DD, ?colegio_id)
+router.get('/metricas', verificarSuperAdmin, getMetricas);
 router.post('/colegios', verificarSuperAdmin, crearColegio);
 router.patch('/colegios/:id', verificarSuperAdmin, actualizarColegio);
 

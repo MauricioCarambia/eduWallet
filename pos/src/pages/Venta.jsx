@@ -28,6 +28,9 @@ const esRepeticion = (ref, codigo) => {
   return repetida
 }
 
+// Milisegundos desde un instante (o null si no empezó)
+const msDesde = t => (t ? Date.now() - t : null)
+
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
 export default function Venta() {
@@ -186,17 +189,24 @@ export default function Venta() {
   const idVentaRef = useRef(null)
   useEffect(() => { idVentaRef.current = null }, [alumno?.id])
 
+  // Cuánto tarda cada venta (velocidad del recreo): desde el primer producto o
+  // el alumno identificado hasta el cobro
+  const inicioVentaRef = useRef(null)
+  const ventaEnCurso = carrito.length > 0 || !!alumno
+  useEffect(() => { inicioVentaRef.current = ventaEnCurso ? (inicioVentaRef.current ?? Date.now()) : null }, [ventaEnCurso])
+
   const cobrar = async (opciones = {}) => {
     if (!alumno || !caja || procesando) return
     setProcesando(true)
     idVentaRef.current ??= crypto.randomUUID()
+    const duracion_ms = msDesde(inicioVentaRef.current)
     if (esCajaLocal(caja)) await sincronizar() // la caja abierta sin internet se crea en el servidor antes de cobrar
     try {
       const res = await api.post('/transacciones/cobrar', {
         alumno_id: alumno.id, empleado_id: sesion.id, caja_id: caja.id,
         items: carrito.map(i => ({ id: i.id, nombre: i.nombre, precio: i.precio, qty: i.qty })),
         lugar: local, descuento: descPct, confirmar_alergias: opciones.confirmarAlergias === true,
-        id_venta: idVentaRef.current,
+        id_venta: idVentaRef.current, duracion_ms,
       }, offlineHabilitado() ? { timeout: 15000 } : undefined) // sin respuesta en 15 s, se vende sin conexión
       idVentaRef.current = null
       setAlumnos(prev => prev.map(a => a.id === res.data.alumno.id ? res.data.alumno : a))
@@ -218,14 +228,14 @@ export default function Venta() {
           alConfirmar: () => cobrar({ confirmarAlergias: true }),
         })
       } else if (offlineHabilitado() && esErrorDeRed(err)) {
-        await cobrarSinConexion(opciones)
+        await cobrarSinConexion(opciones, duracion_ms)
       } else showMsg('error', d?.error || 'Error al cobrar')
     } finally { setProcesando(false) }
   }
 
   // Venta sin internet: se controla con la copia del equipo (saldo, límites,
   // reglas, alergias y el tope por día sin conexión) y queda en la cola
-  const cobrarSinConexion = async (opciones = {}) => {
+  const cobrarSinConexion = async (opciones = {}, duracion_ms = null) => {
     const copia = await leerCopia()
     const a = copia?.alumnos.find(x => x.id === alumno.id)
     if (!a) { showMsg('error', 'Sin internet y sin datos de este alumno en el equipo: no se puede cobrar'); return }
@@ -263,7 +273,7 @@ export default function Venta() {
     await encolarVenta({
       id_venta: idVenta, alumno_id: a.id, alumno_nombre: a.nombre, lugar: local,
       items: carrito.map(i => ({ id: i.id, qty: i.qty, nombre: i.nombre, categoria: porId.get(i.id)?.categoria })),
-      descuento: descPct, caja_id: caja.id, empleado_id: sesion.id, fecha: new Date().toISOString(), total,
+      descuento: descPct, caja_id: caja.id, empleado_id: sesion.id, fecha: new Date().toISOString(), total, duracion_ms,
     })
     idVentaRef.current = null
     setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, saldo: String(Number(a.saldo) - total), gasto_hoy: String(Number(a.gasto_hoy) + total) } : x))

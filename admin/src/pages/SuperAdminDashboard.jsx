@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSuperAdmin } from '../context/SuperAdminContext'
 import superadminApi from '../api/axiosSuperadmin'
+import SuperMetricas from '../components/SuperMetricas'
 
 const fmt = n => `$${Number(n || 0).toLocaleString('es-AR')}`
 
@@ -8,6 +9,7 @@ export default function SuperAdminDashboard() {
   const { logout } = useSuperAdmin()
   const [colegios, setColegios] = useState([])
   const [cargando, setCargando] = useState(true)
+  const [vista, setVista] = useState('colegios')
   const [msg, setMsg] = useState(null)
   const [modalNuevo, setModalNuevo] = useState(false)
   const [nombreNuevo, setNombreNuevo] = useState('')
@@ -106,6 +108,15 @@ export default function SuperAdminDashboard() {
 
         {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)' }}>{msg.texto}</div>}
 
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
+          {[['colegios', 'Colegios'], ['metricas', 'Métricas']].map(([val, label]) => (
+            <button key={val} onClick={() => setVista(val)} aria-pressed={vista === val} style={{ padding: '8px 16px', border: 'none', borderBottom: `2px solid ${vista === val ? 'var(--brand)' : 'transparent'}`, background: 'transparent', fontSize: 14, fontWeight: vista === val ? 600 : 400, color: vista === val ? 'var(--brand)' : 'var(--text-secondary)', cursor: 'pointer', marginBottom: -1 }}>{label}</button>
+          ))}
+        </div>
+
+        {vista === 'metricas' && <SuperMetricas colegios={colegios} />}
+
+        {vista === 'colegios' && <>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
           {[
             { label: 'Colegios', valor: totalColegios },
@@ -172,6 +183,7 @@ export default function SuperAdminDashboard() {
             </table>
           )}
         </div>
+        </>}
       </div>
 
       {ajuste && (

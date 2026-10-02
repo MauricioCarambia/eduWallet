@@ -162,8 +162,8 @@ export const sincronizar = () => {
         ] : []
         const { data } = await api.post('/offline/ventas', {
           cajas: primera ? ops.abiertas.map(({ id_local, local, fondo, apertura }) => ({ id_local, local, fondo, apertura })) : [],
-          ventas: tanda.map(({ id_venta, alumno_id, lugar, items, descuento, caja_id, empleado_id, fecha, anulada, anulada_en }) =>
-            ({ id_venta, alumno_id, lugar, items: items.map(({ id, qty }) => ({ id, qty })), descuento, caja_id, empleado_id, fecha, anulada: !!anulada, anulada_en })),
+          ventas: tanda.map(({ id_venta, alumno_id, lugar, items, descuento, caja_id, empleado_id, fecha, anulada, anulada_en, duracion_ms }) =>
+            ({ id_venta, alumno_id, lugar, items: items.map(({ id, qty }) => ({ id, qty })), descuento, caja_id, empleado_id, fecha, anulada: !!anulada, anulada_en, duracion_ms })),
           cierres,
         }, { timeout: 60000 })
         const listas = (data.resultados || []).filter(r => r.estado === 'ok' || r.estado === 'ya_estaba')

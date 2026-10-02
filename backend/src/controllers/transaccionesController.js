@@ -2,6 +2,7 @@ const pool = require('../db/conexion');
 const { notificarCompra, notificarRechazo } = require('../services/notificacionesService');
 const { evaluarReglas, conflictosAlergia, listaAlergenos } = require('../services/reglasCompra');
 const { registrar } = require('./auditoriaController');
+const { duracionVenta } = require('../services/duracionVenta');
 
 const { compradoHoyPorCategoria, gastoDeLaSemana, gastoPorZona } = require('../services/consumoAlumno');
 const tieneMaximos = a => Object.keys(a.restricciones?.maximos || {}).length > 0;
@@ -86,6 +87,7 @@ const cobrar = async (req, res) => {
   // Cantidades enteras positivas y descuento entre 0 y 100: una cantidad
   // negativa haría que el cobro sume saldo en vez de restarlo
   const descuento = Number(req.body.descuento) || 0;
+  const duracion_ms = duracionVenta(req.body.duracion_ms);
   if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'El carrito está vacío' });
   if (items.some(i => !Number.isInteger(Number(i.qty)) || Number(i.qty) <= 0 || Number(i.qty) > 100)) {
     return res.status(400).json({ error: 'Cantidad inválida' });
@@ -215,9 +217,9 @@ const cobrar = async (req, res) => {
     // registrar transacción
     const desc = lineas.map(l => `${l.nombre}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(', ');
     const tx = await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, id_venta)
-       VALUES ($1, $2, $3, 'compra', $4, $5, $6, $7) RETURNING *`,
-      [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id, id_venta]
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, id_venta, duracion_ms)
+       VALUES ($1, $2, $3, 'compra', $4, $5, $6, $7, $8) RETURNING *`,
+      [alumno_id, empleado_id, total, lugar, desc, req.empleado.colegio_id, id_venta, duracion_ms]
     );
 
     // detalle de la compra (para contar unidades por categoría)

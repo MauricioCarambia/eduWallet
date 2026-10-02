@@ -12,6 +12,7 @@
 const crypto = require('crypto');
 const pool = require('../db/conexion');
 const { registrar } = require('./auditoriaController');
+const { duracionVenta } = require('../services/duracionVenta');
 const { notificarCompra, notificarSaldoNegativo } = require('../services/notificacionesService');
 const { normalizarCodigo } = require('../services/credencialesService');
 const { resumenReglas } = require('../services/reglasCompra');
@@ -180,9 +181,9 @@ const sincronizarUna = async (v, req) => {
       await client.query('UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 AND colegio_id = $3', [l.qty, l.id, colegioId]);
     }
     const tx = await client.query(
-      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline, sincronizada_en)
-       VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true, NOW() AT TIME ZONE 'UTC') RETURNING *`,
-      [a.id, empleadoId, total, lugar, desc, colegioId, fecha.toISOString(), id_venta]
+      `INSERT INTO transacciones (alumno_id, empleado_id, monto, tipo, lugar, descripcion, colegio_id, fecha, id_venta, offline, sincronizada_en, duracion_ms)
+       VALUES ($1, $2, $3, 'compra', $4, $5, $6, ($7::timestamptz AT TIME ZONE 'UTC'), $8, true, NOW() AT TIME ZONE 'UTC', $9) RETURNING *`,
+      [a.id, empleadoId, total, lugar, desc, colegioId, fecha.toISOString(), id_venta, duracionVenta(v.duracion_ms)]
     );
     for (const l of lineas) {
       await client.query(

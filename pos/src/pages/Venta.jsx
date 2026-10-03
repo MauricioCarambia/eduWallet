@@ -46,6 +46,11 @@ export default function Venta() {
   const ancho = useAncho()
   const movil = ancho < ANCHO_CELULAR
   const [verCobro, setVerCobro] = useState(false) // celular: pantalla del carrito y el alumno
+  // Cobro al apoyar la tarjeta o el llavero (con productos en el carrito): se
+  // elige en cada equipo y viene activado
+  const [cobroConTarjeta, setCobroConTarjeta] = useState(() => { try { return localStorage.getItem('pos_cobro_tarjeta') !== '0' } catch { return true } })
+  const alternarCobroConTarjeta = () => setCobroConTarjeta(v => { try { localStorage.setItem('pos_cobro_tarjeta', v ? '0' : '1') } catch { /* sin almacenamiento */ } return !v })
+  const [pedidoCobro, setPedidoCobro] = useState(0)
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja, actualizarVentas } = useCaja()
   const { locales } = useLocales()
@@ -295,6 +300,19 @@ export default function Venta() {
     setTimeout(() => busqRef.current?.focus(), 100)
   }
 
+  // Tarjeta o llavero apoyado con productos en el carrito: se cobra solo, sin
+  // tocar Cobrar. Pasa por los mismos controles (saldo, límites, reglas de la
+  // familia, alergias: si hay alergia aparece el aviso y el cajero decide). El
+  // cobro corre después de que se actualiza el alumno, en el efecto de abajo.
+  // Con el carrito vacío la tarjeta solo identifica (y una segunda lectura no
+  // cobra dos veces: después del cobro el carrito queda vacío).
+  const programarCobro = medio => {
+    if (medio === 'tarjeta' && cobroConTarjeta && carrito.length > 0) setPedidoCobro(n => n + 1)
+  }
+  useEffect(() => {
+    if (pedidoCobro) cobrar()
+  }, [pedidoCobro]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const anularUltimaVenta = async () => {
     if (!ultimaVenta || !confirm(`¿Anular la venta de ${fmt(ultimaVenta.monto)}?`)) return
     // Hecha sin internet y todavía sin subir: se saca de la cola y se devuelve todo acá
@@ -348,6 +366,7 @@ export default function Venta() {
       if (!encontrado.activo) { showMsg('error', `${encontrado.nombre}: la cuenta está bloqueada`); return }
       setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
       showMsg('ok', `✓ ${encontrado.nombre}`)
+      programarCobro(res.data.medio)
     } catch (err) {
       if (offlineHabilitado() && esErrorDeRed(err)) { await identificarSinConexion(codigo); return }
       showMsg('error', err.response?.data?.error || 'No se pudo leer la credencial')
@@ -366,6 +385,7 @@ export default function Venta() {
     if (!encontrado.activo) { showMsg('error', `${encontrado.nombre}: la cuenta está bloqueada`); return }
     setAlumno(encontrado); setBusqAlumno(''); setShowSugerencias(false); setModoEscaneo('manual')
     showMsg('ok', `✓ ${encontrado.nombre} (sin conexión)`)
+    programarCobro(r.medio)
   }
 
   // Producto de esta zona con ese código de barras (o nada)
@@ -636,6 +656,10 @@ export default function Venta() {
                       : <>Para leer tarjetas con el NFC del celular, abrí el POS en <b>Chrome</b>.</>}
                   </div>
                 )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={cobroConTarjeta} onChange={alternarCobroConTarjeta} style={{ width: 'auto', margin: 0 }} />
+                  Cobrar al apoyar la tarjeta o el llavero (con productos cargados)
+                </label>
                 {lectorEscritorio.disponible && (
                   <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: lectorEscritorio.conectado ? 'var(--green)' : 'var(--amber)' }}>
                     {lectorEscritorio.conectado ? `● Lector listo: ${lectorEscritorio.lectores[0]}` : '● Conectá el lector NFC por USB'}

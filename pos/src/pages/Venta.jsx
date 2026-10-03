@@ -576,6 +576,7 @@ export default function Venta() {
           setBusq={setBusq}
           busqRef={busqRef}
           onAgregar={addProd}
+          onQuitar={remProd}
           productoPorCodigo={productoPorCodigo}
           masVendidos={masVendidos}
         />

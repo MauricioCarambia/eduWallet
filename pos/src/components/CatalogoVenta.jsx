@@ -39,7 +39,7 @@ const agrupar = lista => {
   return items.map(i => i.tipo === 'grupo' && i.variantes.length === 1 ? { tipo: 'producto', p: i.variantes[0], nombre: i.variantes[0].nombre, stock: i.variantes[0].stock } : i)
 }
 
-export default function CatalogoVenta({ encabezado, productos, carrito, estado, umbral, busq, setBusq, busqRef, onAgregar, productoPorCodigo, masVendidos }) {
+export default function CatalogoVenta({ encabezado, productos, carrito, estado, umbral, busq, setBusq, busqRef, onAgregar, onQuitar, productoPorCodigo, masVendidos }) {
   const [categoria, setCategoria] = useState('auto') // auto: Más vendidos si ya hay ventas, si no Todos
   const [vista, setVista] = useState(leerVista)
   const [grupoAbierto, setGrupoAbierto] = useState(null) // nombre del grupo
@@ -127,10 +127,19 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
     return min === max ? fmt(min) : <><span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)' }}>desde </span>{fmt(min)}</>
   }
 
+  // Clic derecho: resta uno del carrito (si estaba cargado). En un grupo
+  // (ej.: alfajores), la última variedad que se cargó. Sin menú del navegador.
+  const quitarUno = (ev, ids) => {
+    ev.preventDefault()
+    const ultimo = [...carrito].reverse().find(i => ids.includes(i.id))
+    if (ultimo && onQuitar) onQuitar(ultimo.id)
+  }
+  const ayuda = (e, n) => [e.bloqueo || (e.alergias.length ? `Alergia: ${nombresAlergenos(e.alergias)}` : null), n ? 'Clic derecho: quitar uno' : null].filter(Boolean).join(' · ') || undefined
+
   const tarjetaProducto = (p, { marcado } = {}) => {
     const e = estado(p); const n = enCarrito(p.id)
     return (
-      <button key={p.id} className="prod-card" onClick={() => onAgregar(p)} disabled={p.stock === 0} title={e.bloqueo || (e.alergias.length ? `Alergia: ${nombresAlergenos(e.alergias)}` : undefined)}
+      <button key={p.id} className="prod-card" onClick={() => onAgregar(p)} onContextMenu={ev => quitarUno(ev, [p.id])} disabled={p.stock === 0} title={ayuda(e, n)}
         style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 150, padding: 12, border: `1.5px solid ${e.alergias.length ? 'var(--red)' : n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 16, background: n ? 'var(--brand-light)' : 'var(--bg-card)', boxShadow: 'var(--shadow)', textAlign: 'left', opacity: e.apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer', outline: marcado ? 'var(--focus-ring)' : 'none', outlineOffset: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           {iconoCat(p.categoria, { sobreTinte: n > 0 })}
@@ -149,7 +158,7 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
   const tarjetaGrupo = g => {
     const n = g.variantes.reduce((s, v) => s + enCarrito(v.id), 0)
     return (
-      <button key={'g-' + g.nombre} className="prod-card" onClick={() => setGrupoAbierto(g.nombre)} disabled={g.stock === 0}
+      <button key={'g-' + g.nombre} className="prod-card" onClick={() => setGrupoAbierto(g.nombre)} onContextMenu={ev => quitarUno(ev, g.variantes.map(v => v.id))} disabled={g.stock === 0} title={n ? 'Clic derecho: quitar uno' : undefined}
         style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 150, padding: 12, border: `1.5px solid ${n ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 16, background: n ? 'var(--brand-light)' : 'var(--bg-card)', boxShadow: '4px 4px 0 -1px var(--bg-card), 4px 4px 0 0 var(--border), var(--shadow)', textAlign: 'left', opacity: g.stock === 0 ? 0.55 : 1, cursor: g.stock === 0 ? 'not-allowed' : 'pointer' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           {iconoCat(g.variantes[0].categoria, { sobreTinte: n > 0 })}
@@ -170,7 +179,7 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
   const filaProducto = (p, { marcado, sangria } = {}) => {
     const e = estado(p); const n = enCarrito(p.id)
     return (
-      <button key={p.id} className="prod-fila" onClick={() => onAgregar(p)} disabled={p.stock === 0} title={e.bloqueo || (e.alergias.length ? `Alergia: ${nombresAlergenos(e.alergias)}` : undefined)}
+      <button key={p.id} className="prod-fila" onClick={() => onAgregar(p)} onContextMenu={ev => quitarUno(ev, [p.id])} disabled={p.stock === 0} title={ayuda(e, n)}
         style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: `8px 12px 8px ${sangria ? 36 : 12}px`, border: 'none', borderBottom: '1px solid var(--border-light)', borderLeft: `3px solid ${e.alergias.length ? 'var(--red)' : n ? 'var(--brand)' : 'transparent'}`, background: n ? 'var(--brand-light)' : 'var(--bg-card)', textAlign: 'left', opacity: e.apagado ? 0.55 : 1, cursor: p.stock === 0 ? 'not-allowed' : 'pointer', outline: marcado ? 'var(--focus-ring)' : 'none', outlineOffset: -3 }}>
         {iconoCat(p.categoria, { chico: true, sobreTinte: n > 0 })}
         <span style={{ flex: 1, minWidth: 0 }}>
@@ -188,7 +197,7 @@ export default function CatalogoVenta({ encabezado, productos, carrito, estado, 
     const abierto = abiertosLista.includes(g.nombre)
     const n = g.variantes.reduce((s, v) => s + enCarrito(v.id), 0)
     return <Fragment key={'g-' + g.nombre}>
-      <button className="prod-fila" onClick={() => setAbiertosLista(a => abierto ? a.filter(x => x !== g.nombre) : [...a, g.nombre])} aria-expanded={abierto}
+      <button className="prod-fila" onClick={() => setAbiertosLista(a => abierto ? a.filter(x => x !== g.nombre) : [...a, g.nombre])} onContextMenu={ev => quitarUno(ev, g.variantes.map(v => v.id))} aria-expanded={abierto}
         style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', borderBottom: '1px solid var(--border-light)', borderLeft: `3px solid ${n ? 'var(--brand)' : 'transparent'}`, background: 'var(--bg-subtle)', textAlign: 'left' }}>
         {iconoCat(g.variantes[0].categoria, { chico: true })}
         <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>

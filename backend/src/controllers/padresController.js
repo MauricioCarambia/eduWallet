@@ -179,7 +179,7 @@ const actualizarLimite = async (req, res) => {
     }
     const campos = Object.keys(cambios);
     const resultado = await pool.query(
-      `UPDATE alumnos SET ${campos.map((c, i) => `${c} = ${i + 1}`).join(', ')} WHERE id = ${campos.length + 1} RETURNING *`,
+      `UPDATE alumnos SET ${campos.map((c, i) => `${c} = $${i + 1}`).join(', ')} WHERE id = $${campos.length + 1} RETURNING *`,
       [...campos.map(c => cambios[c]), alumno_id]
     );
     const alumno = resultado.rows[0];

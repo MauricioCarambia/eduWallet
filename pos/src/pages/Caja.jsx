@@ -33,7 +33,12 @@ export default function Caja() {
   useEffect(() => { cargar() }, [caja?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!local) setLocal(zonaFija || (locales.length > 0 ? locales[0] : '')) }, [locales, zonaFija])
 
+  // Total del día de la zona (todas las cajas): el mismo número que muestra Resumen
+  const [dia, setDia] = useState(null)
+
   const cargar = async () => {
+    api.get('/transacciones/resumen-dia', { params: { fecha: hoyAR(), ...(caja?.local || zonaFija ? { local: caja?.local || zonaFija } : {}) } })
+      .then(r => setDia(r.data)).catch(() => setDia(null))
     try {
       // Las ventas del turno: las de su zona desde el día que abrió (antes, las últimas 500 del colegio)
       const params = caja ? { lugar: caja.local, desde: diaAR(caja.apertura), hasta: hoyAR(), tipo: 'compra', limit: 2000 } : { limit: 50 }
@@ -63,6 +68,7 @@ export default function Caja() {
   }) : []
 
   const totalEfectivo = totalesCaja(caja).total
+  const turnosConVentas = (dia?.cajas || []).filter(c => Number(c.tx_count) > 0).length
 
   if (cargando) return <SkeletonTable rows={6} cols={3} />
 
@@ -71,6 +77,13 @@ export default function Caja() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px', color: 'var(--text)' }}>Caja</h1>
         <p style={{ color: 'var(--text)', fontSize: 13, margin: 0 }}>Control de turno y arqueo</p>
+        {dia && (
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+            Hoy{dia.local ? ` en ${dia.local}` : ''}: <b style={{ color: 'var(--text)' }}>{dia.resumen.cantidad} venta{dia.resumen.cantidad === 1 ? '' : 's'} por {fmt(dia.resumen.total)}</b>
+            {turnosConVentas > 0 && ` en ${turnosConVentas} turno${turnosConVentas === 1 ? '' : 's'}`}
+            {turnosConVentas > 1 && caja && ' (abajo, solo el turno abierto)'}
+          </p>
+        )}
       </div>
 
       {msg && <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, background: msg.tipo === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)', color: msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)', borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--red)'}` }}>{msg.texto}</div>}

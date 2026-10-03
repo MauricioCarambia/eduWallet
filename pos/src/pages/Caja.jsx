@@ -36,6 +36,21 @@ export default function Caja() {
   // Total del día de la zona (todas las cajas): el mismo número que muestra Resumen
   const [dia, setDia] = useState(null)
 
+  // Detalle de un turno anterior: sus ventas (las de su zona entre la apertura
+  // y el cierre, de este cajero), con las anuladas tachadas
+  const [turno, setTurno] = useState(null) // { caja, ventas: null | [] }
+  const abrirTurno = async c => {
+    setTurno({ caja: c, ventas: null })
+    try {
+      const r = await api.get('/transacciones', { params: { lugar: c.local, desde: diaAR(c.apertura), hasta: c.cierre ? diaAR(c.cierre) : hoyAR(), tipo: 'compra', limit: 2000 } })
+      const inicio = new Date(c.apertura), fin = c.cierre ? new Date(c.cierre) : new Date()
+      const ventas = (r.data.data ?? r.data).filter(t => { const f = new Date(t.fecha); return f >= inicio && f <= fin && (!t.empleado_id || t.empleado_id === sesion.id) })
+      setTurno(x => x && x.caja.id === c.id ? { ...x, ventas } : x)
+    } catch (err) {
+      setTurno(x => x && x.caja.id === c.id ? { ...x, ventas: [], error: err.response?.data?.error || 'No se pudieron cargar las ventas del turno' } : x)
+    }
+  }
+
   const cargar = async () => {
     api.get('/transacciones/resumen-dia', { params: { fecha: hoyAR(), ...(caja?.local || zonaFija ? { local: caja?.local || zonaFija } : {}) } })
       .then(r => setDia(r.data)).catch(() => setDia(null))
@@ -169,7 +184,7 @@ export default function Caja() {
         {misCajas.filter(c => !c.abierta).length === 0
           ? <p style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Sin turnos anteriores</p>
           : misCajas.filter(c => !c.abierta).map(c => (
-            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: 8 }}>
+            <button key={c.id} onClick={() => abrirTurno(c)} title="Ver el detalle del turno" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', border: 'none', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: 8, width: '100%', background: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit' }}>
               <div>
                 <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{c.local}</p>
                 <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
@@ -179,10 +194,79 @@ export default function Caja() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(c.ventas)}</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Total vendido</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>Total vendido ›</p>
               </div>
+            </button>
+          ))}
+      </div>
+
+      {turno && <DetalleTurno turno={turno} onCerrar={() => setTurno(null)} />}
+    </div>
+  )
+}
+
+// Ventana con el detalle de un turno ya cerrado
+function DetalleTurno({ turno, onCerrar }) {
+  const { caja: c, ventas, error } = turno
+  const anulada = t => t.descripcion?.startsWith('[ANULADA]')
+  const validas = (ventas || []).filter(t => !anulada(t))
+  const anuladas = (ventas || []).filter(anulada)
+  const t = totalesCaja(c)
+  // Más vendidos del turno, a partir de la descripción ("Agua ×2, Alfajor")
+  const productos = {}
+  for (const v of validas) for (const item of (v.descripcion || '').split(', ')) {
+    const m = item.match(/^(.*?)(?: ×(\d+))?$/)
+    if (m?.[1]) productos[m[1]] = (productos[m[1]] || 0) + Number(m[2] || 1)
+  }
+  const top = Object.entries(productos).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const hora = f => new Date(f).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  const fecha = f => new Date(f).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  const celda = { background: 'var(--bg-subtle)', borderRadius: 10, padding: '8px 10px' }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`Turno de ${c.local}`} onClick={onCerrar} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', padding: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Turno · {c.local}</h2>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{fecha(c.apertura)}{c.cierre ? ` → ${fecha(c.cierre)}` : ''}</p>
+          </div>
+          <button onClick={onCerrar} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: 22, lineHeight: 1, color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginBottom: 14 }}>
+          {[['Fondo inicial', fmt(t.fondo)], ['Vendido', fmt(t.ventas)], ['Total', fmt(t.total)], ['Ventas', ventas ? validas.length : c.tx_count]].map(([k, v]) => (
+            <div key={k} style={celda}>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>{k}</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{v}</p>
             </div>
           ))}
+        </div>
+
+        {!ventas ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Cargando ventas…</p> : <>
+          {error && <p role="alert" style={{ fontSize: 13, color: 'var(--red)' }}>{error}</p>}
+          {anuladas.length > 0 && <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-secondary)' }}>{anuladas.length} anulada{anuladas.length > 1 ? 's' : ''} (no suman)</p>}
+          {top.length > 0 && <>
+            <h3 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Más vendidos</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {top.map(([nombre, n]) => <span key={nombre} style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, background: 'var(--bg-subtle)', color: 'var(--text)' }}>{nombre} · {n}</span>)}
+            </div>
+          </>}
+          <h3 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Ventas</h3>
+          {ventas.length === 0
+            ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{error ? '' : 'No hubo ventas en este turno.'}</p>
+            : <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+              {ventas.map(v => (
+                <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderBottom: '1px solid var(--border-light)', opacity: anulada(v) ? 0.55 : 1 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{v.alumno_nombre || 'Alumno'}{v.offline && <span style={{ fontSize: 11, color: 'var(--amber)' }}> · sin conexión</span>}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hora(v.fecha)} · {(v.descripcion || '').replace(/^\[ANULADA\] /, '')}</p>
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', textDecoration: anulada(v) ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>{fmt(v.monto)}</span>
+                </div>
+              ))}
+            </div>}
+        </>}
       </div>
     </div>
   )

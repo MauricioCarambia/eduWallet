@@ -8,6 +8,13 @@ import { useLocales } from '../hooks/useLocales'
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
+// Cierre de caja: el fondo inicial más lo vendido en el turno
+const totalesCaja = c => {
+  const fondo = parseFloat(c?.fondo || 0), ventas = parseFloat(c?.ventas || 0)
+  return { fondo, ventas, total: fondo + ventas }
+}
+const lineasCierre = c => { const t = totalesCaja(c); return [`Fondo inicial: ${fmt(t.fondo)}`, `Vendido en el turno: ${fmt(t.ventas)}`, `Total: ${fmt(t.total)}`] }
+
 export default function Caja() {
   const { sesion } = useAuth()
   const { caja, abrirCaja, cerrarCaja } = useCaja()
@@ -42,8 +49,9 @@ export default function Caja() {
   }
 
   const handleCerrarCaja = async () => {
-    if (!confirm(`¿Cerrar caja? Total del turno: ${fmt(caja?.ventas || 0)}`)) return
-    try { await cerrarCaja(); showMsg('ok', `Caja cerrada. Total: ${fmt(caja?.ventas || 0)}`); cargar() }
+    const resumen = lineasCierre(caja)
+    if (!confirm(['¿Cerrar caja?', '', ...resumen].join('\n'))) return
+    try { await cerrarCaja(); showMsg('ok', `Caja cerrada. ${resumen.join(' · ')}`); cargar() }
     catch (err) { showMsg('error', err.response?.data?.error || err.message || 'Error al cerrar caja') }
   }
 
@@ -54,7 +62,7 @@ export default function Caja() {
     return t.lugar === caja.local && fecha >= inicio && fecha <= fin && (!t.empleado_id || t.empleado_id === sesion.id)
   }) : []
 
-  const totalEfectivo = parseFloat(caja?.fondo || 0) + parseFloat(caja?.ventas || 0)
+  const totalEfectivo = totalesCaja(caja).total
 
   if (cargando) return <SkeletonTable rows={6} cols={3} />
 

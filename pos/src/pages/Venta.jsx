@@ -34,6 +34,13 @@ const msDesde = t => (t ? Date.now() - t : null)
 
 const fmt = n => `$${Number(n).toLocaleString('es-AR')}`
 
+// Cierre de caja: el fondo inicial más lo vendido en el turno
+const totalesCaja = c => {
+  const fondo = parseFloat(c?.fondo || 0), ventas = parseFloat(c?.ventas || 0)
+  return { fondo, ventas, total: fondo + ventas }
+}
+const lineasCierre = c => { const t = totalesCaja(c); return [`Fondo inicial: ${fmt(t.fondo)}`, `Vendido en el turno: ${fmt(t.ventas)}`, `Total: ${fmt(t.total)}`] }
+
 export default function Venta() {
   const umbral = useUmbralStock()
   const ancho = useAncho()
@@ -151,10 +158,11 @@ export default function Venta() {
   }
 
   const handleCerrarCaja = async () => {
-    if (!confirm(`¿Cerrar caja? Total del turno: ${fmt(caja?.ventas || 0)}`)) return
+    const resumen = lineasCierre(caja)
+    if (!confirm(['¿Cerrar caja?', '', ...resumen].join('\n'))) return
     try {
       const r = await cerrarCaja(); setCarrito([]); setAlumno(null); setVistaVentas(false)
-      showMsg('ok', r?.sinConexion ? 'Caja cerrada sin conexión: el cierre se registra al volver internet' : 'Caja cerrada')
+      showMsg('ok', `${r?.sinConexion ? 'Caja cerrada sin conexión (el cierre se registra al volver internet)' : 'Caja cerrada'}. ${resumen.join(' · ')}`)
     }
     catch (err) { showMsg('error', err.response?.data?.error || 'Error al cerrar caja') }
   }
